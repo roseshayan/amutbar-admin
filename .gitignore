@@ -1,0 +1,10 @@
+/vendor/
+/node_modules/
+.env
+/public/dist/
+/storage/logs/
+/storage/cache/
+/storage/uploads/
+.DS_Store
+.idea/
+.vscode/
