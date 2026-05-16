@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 require_once __DIR__ . '/../includes/init.php';
@@ -104,17 +105,24 @@ if ($action === 'list') {
 
     $items = [];
     $seenAbs = [];
+
     foreach ($rows as $r) {
         $id = (int)($r['id'] ?? 0);
         $ft = (int)($r['file_type'] ?? 0);
         $key = (string)($r['file_key'] ?? '');
         $mime = (string)($r['mime_type'] ?? '');
 
-        // در دیتابیس فقط file_key داریم (مثل images/..). مسیر کامل: storage/uploads/{file_key}
-        $urlRel = 'storage/uploads/' . ltrim($key, '/');
+        // یکسان‌سازی مسیر کلیدها (بعضی فایل‌های قدیمی ممکن است پیشوند storage/uploads نداشته باشند)
+        $urlRel = ltrim($key, '/');
+        if ($urlRel !== '' && !str_starts_with($urlRel, 'storage/uploads/')) {
+            $urlRel = 'storage/uploads/' . $urlRel;
+        }
+
         $url = base_url() . '/../' . $urlRel;
 
-        $abs = BASE_PATH . '/' . $urlRel;
+        // نرمال‌سازی مسیر برای جلوگیری از تکرار (تبدیل \ به / برای ویندوز)
+        $abs = str_replace('\\', '/', BASE_PATH . '/' . $urlRel);
+        $abs = preg_replace('#/+#', '/', $abs); // حذف اسلش‌های اضافی
         $seenAbs[$abs] = true;
 
         $isImage = str_starts_with($mime, 'image/') || preg_match('/\.(png|jpe?g|gif|webp)$/i', $key);
@@ -160,12 +168,18 @@ if ($action === 'list') {
                 if (!$file->isFile()) continue;
 
                 $absPath = $file->getPathname();
-                if (isset($seenAbs[$absPath])) continue;
+
+                // نرمال‌سازی مسیر فایل‌های سیستمی دقیقاً مشابه دیتابیس
+                $normFs = str_replace('\\', '/', $absPath);
+                $normFs = preg_replace('#/+#', '/', $normFs);
+
+                // اگر این فایل دقیقاً در دیتابیس ثبت شده بود، از آن پرش کن (رفع مشکل دوبل شدن)
+                if (isset($seenAbs[$normFs])) continue;
 
                 $rel = 'storage/uploads/' . ltrim(str_replace('\\', '/', substr($absPath, strlen($root))), '/');
                 if ($rel === 'storage/uploads/') continue;
 
-                // فیلتر user_id در حالت فایل سیستم: فعلاً فقط بر اساس نام فایل/پوشه حدس می‌زنیم
+                // فیلتر user_id
                 if ($userId > 0) {
                     $bn = basename($absPath);
                     if (!str_contains($bn, 'user_' . $userId . '_') && !str_contains($bn, 'avatar_' . $userId . '_') && !str_contains($bn, 'verify_' . $userId . '_')) {
@@ -177,9 +191,8 @@ if ($action === 'list') {
                 $isImage = str_starts_with($mime2, 'image/') || preg_match('/\.(png|jpe?g|gif|webp)$/i', $rel);
                 $isVideo = str_starts_with($mime2, 'video/') || preg_match('/\.(mp4|mov|mkv|webm|3gp)$/i', $rel);
 
-                // فیلتر file_type در حالت فایل سیستم: mapping دقیق نداریم؛ فقط allow all اگر فیلتر نخورده
+                // فیلتر file_type (اگر ادمین فیلتر نوع زده، فایل‌های ثبت‌نشده رو نشون نمی‌دیم چون نوعشون معلوم نیست)
                 if ($fileType > 0) {
-                    // اگر ادمین فیلتر نوع زده، فایل‌های بدون رکورد را نمایش ندهیم چون نوع مشخص نیست.
                     continue;
                 }
 
@@ -256,6 +269,68 @@ if ($action === 'delete_fs') {
 
     @unlink($abs);
     echo json_encode(['ok' => true], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// --- عملیات حذف گروهی (چندگانه) فایل‌ها ---
+if ($action === 'bulk_delete') {
+    $ids = $_POST['ids'] ?? [];
+    $keys = $_POST['keys'] ?? [];
+
+    if (empty($ids) && empty($keys)) {
+        echo json_encode(['ok' => false, 'message' => 'هیچ فایلی انتخاب نشده است'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $deletedCount = 0;
+
+    // ۱. حذف فایل‌هایی که در دیتابیس ثبت شده‌اند (dbIds)
+    if (!empty($ids) && is_array($ids)) {
+        $cleanIds = array_filter(array_map('intval', $ids), fn($id) => $id > 0);
+        if (!empty($cleanIds)) {
+            $placeholders = implode(',', array_fill(0, count($cleanIds), '?'));
+
+            // ابتدا پیدا کردن آدرس فایل‌ها و حذف فیزیکی آن‌ها از روی هاست
+            $st = $pdo->prepare("SELECT file_key FROM user_files WHERE id IN ($placeholders)");
+            $st->execute($cleanIds);
+            while ($row = $st->fetch()) {
+                $k = (string)($row['file_key'] ?? '');
+                if ($k !== '') {
+                    // یکسان‌سازی مسیر کلیدها برای جلوگیری از اشکال در حذف
+                    $urlRel = ltrim($k, '/');
+                    if (!str_starts_with($urlRel, 'storage/uploads/')) {
+                        $urlRel = 'storage/uploads/' . $urlRel;
+                    }
+                    $path = BASE_PATH . '/' . $urlRel;
+                    if (is_file($path)) @unlink($path);
+                }
+            }
+
+            // در نهایت حذف رکوردها از خود دیتابیس
+            $delSt = $pdo->prepare("DELETE FROM user_files WHERE id IN ($placeholders)");
+            $delSt->execute($cleanIds);
+            $deletedCount += count($cleanIds);
+        }
+    }
+
+    // ۲. حذف فایل‌های سیستمی (پوشه uploads) که در دیتابیس نبودند (fsKeys)
+    if (!empty($keys) && is_array($keys)) {
+        foreach ($keys as $k) {
+            $safeKey = mf_safe_key((string)$k);
+            if ($safeKey !== '' && str_starts_with($safeKey, 'storage/uploads/')) {
+                $abs = BASE_PATH . '/' . $safeKey;
+                if (is_file($abs)) {
+                    @unlink($abs);
+                    $deletedCount++;
+                }
+            }
+        }
+    }
+
+    echo json_encode([
+        'ok' => true,
+        'message' => "تعداد $deletedCount فایل با موفقیت حذف شد."
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 

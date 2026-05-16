@@ -575,11 +575,11 @@ function save_driver_info(int $userId, array $data): array
 function save_driver_files(int $userId, int $driverId, array $files): void
 {
     $fileTypes = [
-        'national_card_image' => 1,
-        'license_image' => 2,
-        'vehicle_card_image' => 3,
-        'green_card_image' => 4,
-        'insurance_image' => 5,
+        'national_card_image' => 2,
+        'license_image' => 3,
+        'vehicle_card_image' => 4,
+        'green_card_image' => 5,
+        'insurance_image' => 7,
         'verification_video' => 6,
     ];
 
@@ -676,7 +676,7 @@ function save_company_info(int $userId, array $data): array
 
         // ذخیره عکس کارت ملی برای باربری
         if (isset($_FILES['company_national_card_image']) && $_FILES['company_national_card_image']['error'] === UPLOAD_ERR_OK) {
-            save_user_file($userId, 1, $_FILES['company_national_card_image'], $companyId ?: $pdo->lastInsertId());
+            save_user_file($userId, 2, $_FILES['company_national_card_image'], $companyId ?: $pdo->lastInsertId());
         }
 
         return ['ok' => true];
@@ -687,10 +687,11 @@ function save_company_info(int $userId, array $data): array
 }
 
 // تابع عمومی برای ذخیره فایل کاربر
+// تابع عمومی برای ذخیره فایل کاربر
 function save_user_file(int $userId, int $fileType, array $file, int $relatedId = null): void
 {
-    $allowedImageTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
-    $allowedVideoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo'];
+    $allowedImageTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
+    $allowedVideoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
 
     $maxImageSize = 5 * 1024 * 1024; // 5MB
     $maxVideoSize = 50 * 1024 * 1024; // 50MB
@@ -714,43 +715,77 @@ function save_user_file(int $userId, int $fileType, array $file, int $relatedId 
 
     // ایجاد نام فایل
     $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+    if (empty($extension)) {
+        $extension = $isImage ? 'jpg' : 'mp4';
+    }
     $filename = "user_{$userId}_" . uniqid() . ".{$extension}";
 
     // پوشه‌های ذخیره‌سازی
     $uploadDir = __DIR__ . '/../storage/uploads/';
-    if ($isImage) {
-        $uploadPath = $uploadDir . 'images/' . $filename;
-    } else {
-        $uploadPath = $uploadDir . 'videos/' . $filename;
-    }
+    $relativePath = ($isImage ? 'images/' : 'videos/') . $filename;
+    $uploadPath = $uploadDir . $relativePath;
+
+    // مسیر کامل برای ذخیره در دیتابیس تا در نمایشِ پنل مشکلی نباشد
+    $dbFileKey = 'storage/uploads/' . $relativePath;
 
     // اطمینان از وجود پوشه
     if (!is_dir(dirname($uploadPath))) {
-        mkdir(dirname($uploadPath), 0777, true);
+        @mkdir(dirname($uploadPath), 0777, true);
     }
 
     if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
         $pdo = db();
-        $st = $pdo->prepare("
-            INSERT INTO user_files 
-            (user_id, file_type, file_key, mime_type, file_size, metadata, created_at, updated_at) 
-            VALUES (?, ?, ?, ?, ?, ?, NOW(3), NOW(3))
-        ");
 
-        $fileKey = ($isImage ? 'images/' : 'videos/') . $filename;
+        // ایمن‌سازی دیتای متادیتا برای جلوگیری از خطای نام فایل‌های فارسی
         $metadata = json_encode([
             'related_id' => $relatedId,
             'original_name' => $file['name'],
             'uploaded_at' => date('Y-m-d H:i:s')
-        ]);
+        ], JSON_UNESCAPED_UNICODE) ?: '{}';
 
-        $st->execute([
-            $userId,
-            $fileType,
-            $fileKey,
-            $file['type'],
-            $file['size'],
-            $metadata
-        ]);
+        // بررسی اینکه آیا قبلاً فایلی از این نوع برای این کاربر آپلود شده است یا نه
+        $stCheck = $pdo->prepare("SELECT id, file_key FROM user_files WHERE user_id = ? AND file_type = ? LIMIT 1");
+        $stCheck->execute([$userId, $fileType]);
+        $existing = $stCheck->fetch();
+
+        if ($existing) {
+            // حذف هوشمندانه فایل قدیمی از هاست (جلوگیری از پر شدن بی‌دلیل سرور)
+            $oldKey = $existing['file_key'];
+            if (!empty($oldKey)) {
+                $oldPath = __DIR__ . '/../' . ltrim(str_replace('storage/uploads/', '', $oldKey), '/');
+                if (is_file($oldPath)) {
+                    @unlink($oldPath);
+                }
+            }
+
+            // آپدیت رکورد قبلی در دیتابیس (بدون ساخت رکورد اضافه)
+            $stUpdate = $pdo->prepare("
+                UPDATE user_files 
+                SET file_key = ?, mime_type = ?, file_size = ?, metadata = ?, updated_at = NOW(3)
+                WHERE id = ?
+            ");
+            $stUpdate->execute([
+                $dbFileKey,
+                $file['type'],
+                $file['size'],
+                $metadata,
+                $existing['id']
+            ]);
+        } else {
+            // ایجاد رکورد کاملاً جدید در دیتابیس
+            $stInsert = $pdo->prepare("
+                INSERT INTO user_files 
+                (user_id, file_type, file_key, mime_type, file_size, metadata, created_at, updated_at) 
+                VALUES (?, ?, ?, ?, ?, ?, NOW(3), NOW(3))
+            ");
+            $stInsert->execute([
+                $userId,
+                $fileType,
+                $dbFileKey,
+                $file['type'],
+                $file['size'],
+                $metadata
+            ]);
+        }
     }
 }

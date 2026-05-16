@@ -16,10 +16,14 @@ if (!empty($_POST['birth_date'])) {
     $_POST['birth_date'] = str_replace($arabic_digits, $english_digits, $temp_date);
 }
 
-// پیشنهاد: بهتره برای سایر فیلدهای عددی مهم هم این کار رو بکنی
-if (!empty($_POST['code_meli'])) {
-    $temp_meli = str_replace($persian_digits, $english_digits, $_POST['code_meli']);
-    $_POST['code_meli'] = str_replace($arabic_digits, $english_digits, $temp_meli);
+if (!empty($_POST['insurance_expiry'])) {
+    $temp_date = str_replace($persian_digits, $english_digits, $_POST['insurance_expiry']);
+    $_POST['insurance_expiry'] = str_replace($arabic_digits, $english_digits, $temp_date);
+}
+
+if (!empty($_POST['registration_date'])) {
+    $temp_date = str_replace($persian_digits, $english_digits, $_POST['registration_date']);
+    $_POST['registration_date'] = str_replace($arabic_digits, $english_digits, $temp_date);
 }
 
 // اجرای ذخیره‌سازی

@@ -402,14 +402,23 @@ if ($method === 'POST' && $path === '/auth/verify-identity') {
     if (!$fullName) api_err('full_name الزامی است', 422);
     if (!$nationalCode) api_err('national_code الزامی است', 422);
     if (!$birthDate) api_err('birth_date الزامی است', 422);
-    if (!$cardSerial) api_err('card_serial الزامی است', 422);
+
+    // --- اصلاح بخش اعتبارسنجی داینامیک بر اساس تنظیمات ادمین ---
+    require_once __DIR__ . '/../../includes/settings.php';
+    $requireSerial = (settings_get('auth.require_national_serial') === '1');
+
+    // اگر سریال از پنل ادمین الزامی بود و فرستاده نشده بود، خطا بدهد
+    if ($requireSerial && !$cardSerial) {
+        api_err('card_serial الزامی است', 422);
+    }
+    // --------------------------------------------------------
 
     require_once __DIR__ . '/../../includes/ExternalApiHelper.php';
     $pdo = db();
     $apiHelper = new ExternalApiHelper($pdo);
     $providerSlug = 'api_ir';
 
-    // 1) شاهکار لایت: تطبیق موبایل و کد ملی
+    // 1) شاهکار لایت: تطبیق موبایل و کد ملی (همیشه اجرا می‌شود)
     $shahkarBody = [
         'mobile' => (string)$u['phone'],
         'nationalCode' => $nationalCode,
@@ -427,43 +436,45 @@ if ($method === 'POST' && $path === '/auth/verify-identity') {
         api_err('کد ملی وارد شده متعلق به این شماره موبایل نیست.', 422);
     }
 
-    // 2) استعلام عکس
-    $photoBody = [
-        'birthDate' => $birthDate,
-        'nationalCode' => $nationalCode,
-        'serialNumber' => $cardSerial,
-    ];
-    try {
-        $photoRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/PersonImage', 'POST', $photoBody);
-    } catch (Throwable $e) {
-        api_err('خطا در ارتباط با سرویس عکس: ' . $e->getMessage(), 502);
-    }
-    if (empty($photoRes['success']) || $photoRes['success'] !== true) {
-        $msg = $photoRes['message'] ?? 'اطلاعات هویتی صحیح نیست.';
-        api_err('استعلام عکس تایید نشد: ' . (string)$msg, 400);
-    }
-
-    // ذخیره عکس به عنوان avatar_key (اگر imageBase64 موجود باشد)
+    // 2) استعلام عکس (فقط و فقط اگر سریال کارت ملی در تنظیمات فعال باشد)
     $avatarKey = null;
-    $imageBase64 = $photoRes['data']['imageBase64'] ?? null;
-    if (is_string($imageBase64) && $imageBase64 !== '') {
-        $bin = base64_decode($imageBase64, true);
-        if ($bin !== false && strlen($bin) > 0) {
-            $dir = __DIR__ . '/../../storage/uploads/avatars';
-            if (!is_dir($dir)) {
-                @mkdir($dir, 0775, true);
-            }
-            $filename = 'avatar_' . (int)$u['id'] . '_' . time() . '.jpg';
-            $abs = $dir . '/' . $filename;
-            if (@file_put_contents($abs, $bin) !== false) {
-                $avatarKey = 'storage/uploads/avatars/' . $filename;
-                $pdo->prepare("UPDATE users SET avatar_key=?, updated_at=NOW(3) WHERE id=? LIMIT 1")
-                    ->execute([$avatarKey, (int)$u['id']]);
+    if ($requireSerial) {
+        $photoBody = [
+            'birthDate' => $birthDate,
+            'nationalCode' => $nationalCode,
+            'serialNumber' => $cardSerial,
+        ];
+        try {
+            $photoRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/PersonImage', 'POST', $photoBody);
+        } catch (Throwable $e) {
+            api_err('خطا در ارتباط با سرویس عکس: ' . $e->getMessage(), 502);
+        }
+        if (empty($photoRes['success']) || $photoRes['success'] !== true) {
+            $msg = $photoRes['message'] ?? 'اطلاعات هویتی صحیح نیست.';
+            api_err('استعلام عکس تایید نشد: ' . (string)$msg, 400);
+        }
+
+        // ذخیره عکس به عنوان avatar_key (اگر imageBase64 موجود باشد)
+        $imageBase64 = $photoRes['data']['imageBase64'] ?? null;
+        if (is_string($imageBase64) && $imageBase64 !== '') {
+            $bin = base64_decode($imageBase64, true);
+            if ($bin !== false && strlen($bin) > 0) {
+                $dir = __DIR__ . '/../../storage/uploads/avatars';
+                if (!is_dir($dir)) {
+                    @mkdir($dir, 0775, true);
+                }
+                $filename = 'avatar_' . (int)$u['id'] . '_' . time() . '.jpg';
+                $abs = $dir . '/' . $filename;
+                if (@file_put_contents($abs, $bin) !== false) {
+                    $avatarKey = 'storage/uploads/avatars/' . $filename;
+                    $pdo->prepare("UPDATE users SET avatar_key=?, updated_at=NOW(3) WHERE id=? LIMIT 1")
+                        ->execute([$avatarKey, (int)$u['id']]);
+                }
             }
         }
     }
 
-    // Upsert پروفایل راننده + ثبت وضعیت احراز
+    // 3) ثبت اطلاعات نهایی در دیتابیس
     $pdo->beginTransaction();
     try {
         $st = $pdo->prepare("SELECT id FROM drivers WHERE user_id=? AND deleted_at IS NULL LIMIT 1");
@@ -473,20 +484,18 @@ if ($method === 'POST' && $path === '/auth/verify-identity') {
             $pdo->prepare("UPDATE drivers SET full_name=?, national_code=?, verification_status=1, verified_at=NOW(3), reject_reason=NULL, updated_at=NOW(3) WHERE id=? LIMIT 1")
                 ->execute([$fullName, $nationalCode, $driverId]);
         } else {
-            // توجه: vehicle_type_id و plate_number در این مرحله معلوم نیست؛ فقط اطلاعات هویتی ثبت می‌شود.
             $pdo->prepare("INSERT INTO drivers (user_id, full_name, national_code, verification_status, verified_at, created_at, updated_at) VALUES (?, ?, ?, 1, NOW(3), NOW(3), NOW(3))")
                 ->execute([(int)$u['id'], $fullName, $nationalCode]);
         }
 
-        // در جدول users هم نام را همسان می‌کنیم
+        // در جدول users هم نام و فیلدها را همسان می‌کنیم
         $pdo->prepare("UPDATE users SET full_name=?, code_meli=?, birth_date=?, national_card_serial=?, updated_at=NOW(3) WHERE id=? LIMIT 1")
             ->execute([$fullName, $nationalCode, $birthDate, $cardSerial, (int)$u['id']]);
 
         $pdo->commit();
     } catch (Throwable $e) {
         $pdo->rollBack();
-        $msg = ((string)env('APP_DEBUG', '0') === '1') ? $e->getMessage() : 'خطای سرور';
-        api_err($msg, 500);
+        api_err('خطا در ذخیره‌سازی اطلاعات: ' . $e->getMessage(), 500);
     }
 
     api_ok([

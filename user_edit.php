@@ -24,6 +24,30 @@ if (($user['user_type'] ?? 0) == 2) {
     $companyInfo = get_company_info($user['id']);
 }
 
+// --- کدهای جدید برای دریافت فایل‌های آپلودی کاربر ---
+function get_user_files($userId)
+{
+    $pdo = db();
+    $st = $pdo->prepare("SELECT file_type, file_key FROM user_files WHERE user_id = ?");
+    $st->execute([$userId]);
+    $files = [];
+    while ($row = $st->fetch()) {
+        $files[$row['file_type']] = $row['file_key'];
+    }
+    return $files;
+}
+
+$userFiles = get_user_files($id);
+
+// تابعی برای ساخت URL کامل تصویر (با توجه به BASE_URL یا مسیر نسبی)
+function get_file_url($fileKey)
+{
+    if (empty($fileKey)) return '';
+    if (preg_match('~^https?://~i', $fileKey)) return $fileKey;
+    return '/' . ltrim($fileKey, '/');
+}
+// ---------------------------------------------------
+
 // تابع کمکی برای دریافت اطلاعات راننده
 function get_driver_info($userId)
 {
@@ -506,68 +530,62 @@ function jdate_str_to_gdate(string $jdate): ?string
                                         <!-- آپلود فایل‌ها برای راننده -->
                                         <div id="driverFiles" class="card mt-4">
                                             <div class="card-header">
-                                                <h5 class="card-title mb-0">آپلود فایل‌های
-                                                    راننده</h5>
+                                                <h5 class="card-title mb-0">آپلود فایل‌های راننده</h5>
                                             </div>
                                             <div class="card-body">
                                                 <div class="row">
                                                     <div class="col-md-6 col-lg-4 mb-3">
-                                                        <label for="national_card_image" class="form-label">عکس کارت
-                                                            ملی</label>
-                                                        <input type="file" class="form-control"
-                                                            id="national_card_image"
-                                                            name="national_card_image" accept="image/*">
-                                                        <img id="national_card_image_preview"
-                                                            class="img-thumbnail mt-2 d-none" alt="preview">
+                                                        <label for="national_card_image" class="form-label">عکس کارت ملی</label>
+                                                        <input type="file" class="form-control" id="national_card_image" name="national_card_image" accept="image/*">
+                                                        <?php
+                                                        $ncImg = get_file_url($userFiles[2] ?? ''); // 2 برای کارت ملی
+                                                        ?>
+                                                        <img id="national_card_image_preview" class="img-thumbnail mt-2 <?= $ncImg ? '' : 'd-none' ?>" src="<?= htmlspecialchars($ncImg) ?>" alt="preview">
                                                     </div>
+
                                                     <div class="col-md-6 col-lg-4 mb-3">
-                                                        <label for="license_image" class="form-label">عکس
-                                                            گواهینامه</label>
-                                                        <input type="file" class="form-control" id="license_image"
-                                                            name="license_image" accept="image/*">
-                                                        <img id="license_image_preview"
-                                                            class="img-thumbnail mt-2 d-none"
-                                                            alt="preview">
+                                                        <label for="license_image" class="form-label">عکس گواهینامه</label>
+                                                        <input type="file" class="form-control" id="license_image" name="license_image" accept="image/*">
+                                                        <?php
+                                                        $lcImg = get_file_url($userFiles[3] ?? ''); // 3 برای گواهینامه
+                                                        ?>
+                                                        <img id="license_image_preview" class="img-thumbnail mt-2 <?= $lcImg ? '' : 'd-none' ?>" src="<?= htmlspecialchars($lcImg) ?>" alt="preview">
                                                     </div>
+
                                                     <div class="col-md-6 col-lg-4 mb-3">
-                                                        <label for="vehicle_card_image" class="form-label">عکس کارت
-                                                            ماشین</label>
-                                                        <input type="file" class="form-control"
-                                                            id="vehicle_card_image"
-                                                            name="vehicle_card_image" accept="image/*">
-                                                        <img id="vehicle_card_image_preview"
-                                                            class="img-thumbnail mt-2 d-none" alt="preview">
+                                                        <label for="vehicle_card_image" class="form-label">عکس کارت ماشین</label>
+                                                        <input type="file" class="form-control" id="vehicle_card_image" name="vehicle_card_image" accept="image/*">
+                                                        <?php
+                                                        $vcImg = get_file_url($userFiles[4] ?? ''); // 4 برای کارت ماشین
+                                                        ?>
+                                                        <img id="vehicle_card_image_preview" class="img-thumbnail mt-2 <?= $vcImg ? '' : 'd-none' ?>" src="<?= htmlspecialchars($vcImg) ?>" alt="preview">
                                                     </div>
+
                                                     <div class="col-md-6 col-lg-4 mb-3">
-                                                        <label for="green_card_image" class="form-label">عکس برگه
-                                                            سبز</label>
-                                                        <input type="file" class="form-control"
-                                                            id="green_card_image"
-                                                            name="green_card_image" accept="image/*">
-                                                        <img id="green_card_image_preview"
-                                                            class="img-thumbnail mt-2 d-none"
-                                                            alt="preview">
+                                                        <label for="green_card_image" class="form-label">عکس برگه سبز</label>
+                                                        <input type="file" class="form-control" id="green_card_image" name="green_card_image" accept="image/*">
+                                                        <?php
+                                                        $gcImg = get_file_url($userFiles[5] ?? ''); // 5 برای برگه سبز
+                                                        ?>
+                                                        <img id="green_card_image_preview" class="img-thumbnail mt-2 <?= $gcImg ? '' : 'd-none' ?>" src="<?= htmlspecialchars($gcImg) ?>" alt="preview">
                                                     </div>
+
                                                     <div class="col-md-6 col-lg-4 mb-3">
-                                                        <label for="insurance_image" class="form-label">عکس بیمه
-                                                            نامه
-                                                            خودرو</label>
-                                                        <input type="file" class="form-control" id="insurance_image"
-                                                            name="insurance_image" accept="image/*">
-                                                        <img id="insurance_image_preview"
-                                                            class="img-thumbnail mt-2 d-none"
-                                                            alt="preview">
+                                                        <label for="insurance_image" class="form-label">عکس بیمه نامه خودرو</label>
+                                                        <input type="file" class="form-control" id="insurance_image" name="insurance_image" accept="image/*">
+                                                        <?php
+                                                        $inImg = get_file_url($userFiles[7] ?? ''); // 7 برای بیمه
+                                                        ?>
+                                                        <img id="insurance_image_preview" class="img-thumbnail mt-2 <?= $inImg ? '' : 'd-none' ?>" src="<?= htmlspecialchars($inImg) ?>" alt="preview">
                                                     </div>
+
                                                     <div class="col-md-6 col-lg-4 mb-3">
-                                                        <label for="verification_video" class="form-label">ویدئو
-                                                            احراز
-                                                            هویت</label>
-                                                        <input type="file" class="form-control"
-                                                            id="verification_video"
-                                                            name="verification_video" accept="video/*">
-                                                        <video id="verification_video_preview" class="mt-2 d-none"
-                                                            controls
-                                                            style="max-width:100%;height:auto"></video>
+                                                        <label for="verification_video" class="form-label">ویدئو احراز هویت</label>
+                                                        <input type="file" class="form-control" id="verification_video" name="verification_video" accept="video/*">
+                                                        <?php
+                                                        $vidUrl = get_file_url($userFiles[6] ?? ''); // 6 برای ویدیو
+                                                        ?>
+                                                        <video id="verification_video_preview" class="mt-2 <?= $vidUrl ? '' : 'd-none' ?>" controls style="max-width:100%;height:auto" src="<?= htmlspecialchars($vidUrl) ?>"></video>
                                                     </div>
                                                 </div>
                                             </div>

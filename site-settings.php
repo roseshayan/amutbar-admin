@@ -277,9 +277,8 @@ require_once "views/panel/sidebar.php";
                                         <div class="fw-semibold mb-3 border-bottom pb-2">آزمایش ارسال پیامک</div>
                                         <div class="row g-3 align-items-end bg-light p-3 rounded border">
                                             <div class="col-md-4">
-                                                <label for="test_sms_from" class="form-label">شماره خط فرستنده</label>
-                                                <input type="text" class="form-control" id="test_sms_from" dir="ltr" placeholder="مثال: 500012345">
-                                                <div class="text-muted small mt-1">خط اختصاصی پنل ملی پیامک شما</div>
+                                                <label for="test_sms_from" class="form-label">شماره خط فرستنده مثال : 9982003626, 50002710054653</label>
+                                                <input type="text" class="form-control" id="test_sms_from" dir="ltr" placeholder="مثال: 9982003626, 50002710054653">
                                             </div>
                                             <div class="col-md-5">
                                                 <label for="test_sms_to" class="form-label">شماره موبایل گیرنده (شما)</label>
