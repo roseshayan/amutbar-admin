@@ -831,6 +831,7 @@ function jdate_str_to_gdate(string $jdate): ?string
         if (!window.jQuery || !$.fn.pDatepicker) return;
         $('#birth_date').val('').pDatepicker({
             format: 'YYYY/MM/DD',
+            persianDigit: false,
             autoClose: true,
             maxDate: new persianDate().valueOf(),
             toolbox: {
@@ -845,12 +846,14 @@ function jdate_str_to_gdate(string $jdate): ?string
         });
         $('#insurance_expiry').pDatepicker({
             format: 'YYYY/MM/DD',
+            persianDigit: false,
             autoClose: true,
             initialValue: false,
             maxDate: new persianDate().valueOf(),
         });
         $('#registration_date').pDatepicker({
             format: 'YYYY/MM/DD',
+            persianDigit: false,
             autoClose: true,
             initialValue: false,
             maxDate: new persianDate().valueOf(),

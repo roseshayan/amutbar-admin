@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 header('Content-Type: application/json');
@@ -23,14 +24,27 @@ try {
     if ($action === 'get') {
         $keys = [
             'company.name',
-            'site.name','site.url','site.logo_path','site.favicon_path',
-            'links.terms_url','links.terms_text','links.app_download_url',
-            'support.phone','support.whatsapp','support.telegram',
-            'app.android.latest_version_code','app.android.min_supported_code','app.android.update_url',
-            'app.ios.latest_version_code','app.ios.min_supported_code','app.ios.update_url',
-            'maintenance.enabled','maintenance.message',
+            'site.name',
+            'site.url',
+            'site.logo_path',
+            'site.favicon_path',
+            'links.terms_url',
+            'links.terms_text',
+            'links.app_download_url',
+            'support.phone',
+            'support.whatsapp',
+            'support.telegram',
+            'app.android.latest_version_code',
+            'app.android.min_supported_code',
+            'app.android.update_url',
+            'app.ios.latest_version_code',
+            'app.ios.min_supported_code',
+            'app.ios.update_url',
+            'maintenance.enabled',
+            'maintenance.message',
 
             // Verification / onboarding
+            'auth.require_national_serial',
             'onboarding.require_verification_video',
             'verification.video_phrase_template',
             'verification.video_guide_text',
@@ -63,13 +77,23 @@ try {
             'company.name',
             'site.name',
             'site.url',
-            'links.terms_url','links.terms_text','links.app_download_url',
-            'support.phone','support.whatsapp','support.telegram',
-            'app.android.latest_version_code','app.android.min_supported_code','app.android.update_url',
-            'app.ios.latest_version_code','app.ios.min_supported_code','app.ios.update_url',
-            'maintenance.enabled','maintenance.message',
+            'links.terms_url',
+            'links.terms_text',
+            'links.app_download_url',
+            'support.phone',
+            'support.whatsapp',
+            'support.telegram',
+            'app.android.latest_version_code',
+            'app.android.min_supported_code',
+            'app.android.update_url',
+            'app.ios.latest_version_code',
+            'app.ios.min_supported_code',
+            'app.ios.update_url',
+            'maintenance.enabled',
+            'maintenance.message',
 
             // Verification / onboarding
+            'auth.require_national_serial',
             'onboarding.require_verification_video',
             'verification.video_phrase_template',
             'verification.video_guide_text',
@@ -91,6 +115,92 @@ try {
         exit;
     }
 
+    // --- ارسال پیامک تستی ---
+    if ($action === 'send_test_sms') {
+        $to = trim($_POST['to'] ?? '');
+        $from = trim($_POST['from'] ?? '');
+
+        if (empty($to) || empty($from)) {
+            echo json_encode(['ok' => false, 'message' => 'شماره فرستنده و گیرنده الزامی است']);
+            exit;
+        }
+
+        // استفاده از کلید جدید API که در env قرار دادی
+        $apiKey = env('PAYAMAK_APIKEY_CONSOLE', '2ca7e34c99a14308aa5fd0c69e441dea');
+        $url = 'https://console.melipayamak.com/api/send/simple/' . $apiKey;
+
+        $data = [
+            'from' => $from,
+            'to' => $to,
+            'text' => 'این یک پیامک آزمایشی از سیستم مدیریت آموت‌بار است. اتصال با موفقیت برقرار شد!'
+        ];
+        $data_string = json_encode($data);
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'Content-Length: ' . strlen($data_string)
+        ]);
+
+        $result = curl_exec($ch);
+        $curl_error = curl_error($ch);
+        curl_close($ch);
+
+        if ($curl_error) {
+            echo json_encode(['ok' => false, 'message' => 'خطا در ارتباط با سرور: ' . $curl_error]);
+            exit;
+        }
+
+        $decoded = json_decode((string)$result, true);
+
+        if (isset($decoded['recId'])) {
+            echo json_encode(['ok' => true, 'message' => 'پیامک با موفقیت ارسال شد (کد رهگیری: ' . $decoded['recId'] . ')']);
+        } else {
+            echo json_encode(['ok' => false, 'message' => $decoded['status'] ?? 'خطای نامشخص از سمت ملی پیامک']);
+        }
+        exit;
+    }
+    // ---------------------------------
+
+    // --- دریافت اعتبار پنل پیامکی ---
+    if ($action === 'get_sms_credit') {
+        // کلید API را از فایل env می‌خوانیم، در غیر این صورت از کلیدی که دادی استفاده می‌کند
+        $apiKey = env('PAYAMAK_APIKEY_CONSOLE', '2ca7e34c99a14308aa5fd0c69e441dea');
+        $url = "https://console.melipayamak.com/api/receive/credit/" . $apiKey;
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'Content-Length: 0'
+        ]);
+
+        $result = curl_exec($ch);
+        $curl_error = curl_error($ch);
+        curl_close($ch);
+
+        if ($curl_error) {
+            echo json_encode(['ok' => false, 'message' => 'خطا در ارتباط با سرور پیامک']);
+            exit;
+        }
+
+        $decoded = json_decode((string)$result, true);
+
+        if (isset($decoded['amount'])) {
+            echo json_encode(['ok' => true, 'amount' => $decoded['amount']]);
+        } else {
+            echo json_encode(['ok' => false, 'message' => $decoded['status'] ?? 'خطای نامشخص از سمت ملی پیامک']);
+        }
+        exit;
+    }
+    // ---------------------------------
+
     if ($action === 'upload_logo') {
         if (!isset($_FILES['logo']) || $_FILES['logo']['error'] !== UPLOAD_ERR_OK) {
             throw new RuntimeException('آپلود ناموفق بود');
@@ -99,7 +209,7 @@ try {
         $f = $_FILES['logo'];
         $tmp = $f['tmp_name'];
         $mime = mime_content_type($tmp);
-        if (!in_array($mime, ['image/png','image/jpeg','image/webp'], true)) {
+        if (!in_array($mime, ['image/png', 'image/jpeg', 'image/webp'], true)) {
             throw new RuntimeException('فرمت فایل نامعتبر است (png/jpg/webp)');
         }
 
@@ -135,7 +245,7 @@ try {
         $mime = mime_content_type($tmp);
 
         // Favicon can be png/jpg/webp/ico/svg
-        $allowedMimes = ['image/png','image/jpeg','image/webp','image/x-icon','image/vnd.microsoft.icon','image/svg+xml'];
+        $allowedMimes = ['image/png', 'image/jpeg', 'image/webp', 'image/x-icon', 'image/vnd.microsoft.icon', 'image/svg+xml'];
         if (!in_array($mime, $allowedMimes, true)) {
             throw new RuntimeException('فرمت فایل نامعتبر است (png/jpg/webp/ico/svg)');
         }

@@ -17,108 +17,99 @@ if ($user_id <= 0) api_err('Unauthorized - لطفا مجدد وارد شوید',
 $in = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 $full_name = trim($in['full_name'] ?? '');
 $national_code = trim($in['national_code'] ?? '');
-$birth_date = trim($in['birth_date'] ?? ''); // فرمت: 1370/01/01
+$birth_date = trim($in['birth_date'] ?? '');
 $card_serial = trim($in['card_serial'] ?? '');
 
-if (empty($full_name) || empty($national_code) || empty($birth_date) || empty($card_serial)) {
-    api_err('لطفاً تمام فیلدها (نام، کدملی، تاریخ تولد، سریال کارت) را وارد کنید.');
+// اضافه کردن تنظیمات برای بررسی الزامی بودن سریال کارت
+require_once __DIR__ . '/../../../includes/settings.php';
+$requireSerial = (settings_get('auth.require_national_serial') === '1');
+
+// بررسی خالی بودن فیلدهای پایه
+if (empty($full_name) || empty($national_code) || empty($birth_date)) {
+    api_err('لطفاً تمام فیلدها (نام، کدملی، تاریخ تولد) را وارد کنید.');
+}
+
+// اگر سریال الزامی بود، چک کن که خالی نباشه
+if ($requireSerial && empty($card_serial)) {
+    api_err('وارد کردن سریال کارت ملی الزامی است.');
 }
 
 try {
-    // 3. دریافت شماره موبایل کاربر
     $user_mobile = (string)($user['phone'] ?? '');
     if ($user_mobile === '') api_err('شماره موبایل کاربر یافت نشد.');
 
-    // ایجاد نمونه از کلاس کمکی
     $apiHelper = new ExternalApiHelper($pdo);
-
-    // نام اسلاگ در دیتابیس (باید مطمئن شوید در جدول external_api_providers مقدار slug برابر api_ir است)
     $providerSlug = 'api_ir';
 
-    // ---------------------------------------------------------
-    // 4. فراخوانی شاهکار لایت (Shahkar Lite)
-    // طبق مستندات: تطبیق موبایل و کد ملی
-    // ---------------------------------------------------------
+    // --- 1. استعلام شاهکار لایت (همیشه اجرا می‌شود) ---
     $shahkarBody = [
         'mobile' => $user_mobile,
         'nationalCode' => $national_code
     ];
 
-    // نکته: طبق مستندات متنی شما، آدرس اندپوینت باید دقیق باشد.
-    // اگر آدرس پایه در دیتابیس https://s.api.ir است، اینجا ادامه آن را می‌نویسیم.
-    // فرض: آدرس کامل https://s.api.ir/v1/shahkar/lite باشد.
     try {
         $shahkarRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/ShahkarLite', 'POST', $shahkarBody);
     } catch (Exception $e) {
         api_err('خطا در ارتباط با سرویس شاهکار: ' . $e->getMessage());
     }
 
-    // بررسی پاسخ شاهکار طبق مستندات متنی شما
-    // Response: { "data": true, "success": true, ... }
     if (empty($shahkarRes['success']) || $shahkarRes['success'] !== true) {
         $msg = $shahkarRes['message'] ?? 'خطای ناشناخته در سرویس شاهکار';
         api_err("استعلام شاهکار ناموفق: $msg");
     }
 
-    // فیلد data باید true باشد
     if (($shahkarRes['data'] ?? false) !== true) {
         api_err('کد ملی وارد شده متعلق به این شماره موبایل نیست.');
     }
 
-    // ---------------------------------------------------------
-    // 5. استعلام عکس هویتی (Photo Inquiry)
-    // ---------------------------------------------------------
-    // فرمت تاریخ برای این سرویس: 1370/1/1 (طبق مستندات متنی شما)
-    // کدی که از فلاتر می آید 1370/01/01 است. معمولا api.ir با هر دو کار میکند اما اگر حساس بود:
-    // $birth_date_clean = sprintf("%d/%d/%d", ...explode('/', $birth_date)); 
 
-    $photoBody = [
-        'birthDate' => $birth_date,
-        'nationalCode' => $national_code,
-        'serialNumber' => $card_serial
-    ];
-
-    // فرض: آدرس کامل https://s.api.ir/v1/estelam/photo باشد
-    try {
-        $photoRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/PersonImage', 'POST', $photoBody);
-    } catch (Exception $e) {
-        api_err('خطا در ارتباط با سرویس عکس: ' . $e->getMessage());
-    }
-
-    // بررسی پاسخ عکس
-    // Response: { "data": { "imageBase64": "..." }, "success": true }
-    if (empty($photoRes['success']) || $photoRes['success'] !== true) {
-        $msg = $photoRes['message'] ?? 'اطلاعات هویتی (سریال/تاریخ تولد) صحیح نیست.';
-        api_err("استعلام عکس تایید نشد: $msg");
-    }
-
-    $imageBase64 = $photoRes['data']['imageBase64'] ?? null;
+    // --- 2. استعلام عکس هویتی (فقط اگر سریال کارت فعال باشد) ---
     $avatarFilename = null;
 
-    if (!empty($imageBase64)) {
-        $imgBin = base64_decode($imageBase64);
-        if ($imgBin) {
-            $fileName = 'avatar_' . $user_id . '_' . time() . '.jpg';
-            $uploadDir = __DIR__ . '/../../../storage/avatars/';
+    if ($requireSerial) {
+        $photoBody = [
+            'birthDate' => $birth_date,
+            'nationalCode' => $national_code,
+            'serialNumber' => $card_serial
+        ];
 
-            if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
-            file_put_contents($uploadDir . $fileName, $imgBin);
+        try {
+            $photoRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/PersonImage', 'POST', $photoBody);
+        } catch (Exception $e) {
+            api_err('خطا در ارتباط با سرویس عکس: ' . $e->getMessage());
+        }
 
-            $avatarFilename = $fileName;
+        if (empty($photoRes['success']) || $photoRes['success'] !== true) {
+            $msg = $photoRes['message'] ?? 'اطلاعات هویتی (سریال/تاریخ تولد) صحیح نیست.';
+            api_err("استعلام عکس تایید نشد: $msg");
+        }
+
+        $imageBase64 = $photoRes['data']['imageBase64'] ?? null;
+        if (!empty($imageBase64)) {
+            $imgBin = base64_decode($imageBase64);
+            if ($imgBin) {
+                $fileName = 'avatar_' . $user_id . '_' . time() . '.jpg';
+                $uploadDir = __DIR__ . '/../../../storage/avatars/';
+
+                if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+                file_put_contents($uploadDir . $fileName, $imgBin);
+
+                $avatarFilename = $fileName;
+            }
         }
     }
 
-    // 6. ثبت در دیتابیس (همسان با ساختار جدید پروژه)
+    // --- 3. ثبت در دیتابیس ---
     $pdo->beginTransaction();
     try {
-        // همسان سازی و ذخیره اطلاعات هویتی کاربر (برای سرویس‌های بعدی مثل VideoVerify)
+        // آپدیت یوزر (اگر $card_serial خالی باشه هم همون خالی ذخیره میشه که درسته)
         $pdo->prepare("UPDATE users SET full_name=?, code_meli=?, birth_date=?, national_card_serial=?, updated_at=NOW(3) WHERE id=? LIMIT 1")
             ->execute([$full_name, $national_code, $birth_date, $card_serial, $user_id]);
 
-        // آپدیت/ایجاد پروفایل راننده + تایید
         $st = $pdo->prepare("SELECT id FROM drivers WHERE user_id=? AND deleted_at IS NULL LIMIT 1");
         $st->execute([$user_id]);
         $driverId = (int)($st->fetchColumn() ?: 0);
+
         if ($driverId > 0) {
             $pdo->prepare("UPDATE drivers SET full_name=?, national_code=?, verification_status=1, verified_at=NOW(3), reject_reason=NULL, updated_at=NOW(3) WHERE id=? LIMIT 1")
                 ->execute([$full_name, $national_code, $driverId]);
@@ -127,7 +118,6 @@ try {
                 ->execute([$user_id, $full_name, $national_code]);
         }
 
-        // اگر عکس ذخیره شد، به avatar_key تبدیل می‌کنیم
         if ($avatarFilename) {
             $newKey = 'storage/avatars/' . $avatarFilename;
             $pdo->prepare("UPDATE users SET avatar_key=?, updated_at=NOW(3) WHERE id=? LIMIT 1")
@@ -137,7 +127,7 @@ try {
         $pdo->commit();
     } catch (Throwable $e) {
         $pdo->rollBack();
-        api_err('خطا در پردازش: ' . $e->getMessage(), 500);
+        api_err('خطا در ذخیره‌سازی اطلاعات: ' . $e->getMessage(), 500);
     }
 
     api_ok([

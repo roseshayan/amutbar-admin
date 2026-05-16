@@ -147,6 +147,7 @@ if ($method === 'GET' && $path === '/meta/app-config') {
         'maintenance.message',
 
         // onboarding / verification
+        'auth.require_national_serial',
         'onboarding.require_verification_video',
         'verification.video_phrase_template',
         'verification.video_guide_text',
@@ -209,6 +210,10 @@ if ($method === 'GET' && $path === '/meta/app-config') {
 
         'onboarding' => [
             'require_verification_video' => (string)($it['onboarding.require_verification_video'] ?? '0') === '1',
+        ],
+
+        'auth' => [
+            'require_national_serial' => ($it['auth.require_national_serial'] === '1')
         ],
 
         'verification' => [
