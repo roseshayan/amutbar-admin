@@ -848,4 +848,47 @@ if ($method === 'POST' && $path === '/driver/verification-video') {
     ]);
 }
 
+// دریافت بنرهای تبلیغاتی
+if ($method === 'GET' && $path === '/banners') {
+    $pdo = db();
+    // 1 برای اپلیکیشن رانندگان
+    $targetAppId = isset($_GET['target_app_id']) ? (int)$_GET['target_app_id'] : 1;
+    $placement = isset($_GET['placement']) ? trim($_GET['placement']) : 'dashboard';
+
+    // استفاده از فیلدهای دیتابیس شامل action_value و target_app_id
+    $st = $pdo->prepare("
+        SELECT id, title, body, image_key, action_value, action_type 
+        FROM banners 
+        WHERE is_active = 1 
+          AND target_app_id = ? 
+          AND placement = ? 
+          AND (start_at IS NULL OR start_at <= NOW()) 
+          AND (end_at IS NULL OR end_at >= NOW())
+        ORDER BY priority ASC, id DESC
+    ");
+    $st->execute([$targetAppId, $placement]);
+    $rows = $st->fetchAll();
+
+    require_once __DIR__ . '/../../includes/settings.php';
+    $siteUrl = rtrim((string)settings_get('site.url', ''), '/');
+    if ($siteUrl === '') {
+        $siteUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'];
+    }
+
+    $banners = array_map(function ($r) use ($siteUrl) {
+        $urlRel = ltrim((string)$r['image_key'], '/');
+        $imgUrl = preg_match('~^https?://~i', $urlRel) ? $urlRel : $siteUrl . '/' . $urlRel;
+        return [
+            'id' => (int)$r['id'],
+            'title' => (string)$r['title'],
+            'body' => (string)$r['body'],
+            'image_url' => $imgUrl,
+            // برای فلاتر همون کلید target_url رو میفرستیم که کدهاش تغییر نکنه
+            'target_url' => !empty($r['action_value']) ? (string)$r['action_value'] : null,
+        ];
+    }, $rows);
+
+    api_ok(['items' => $banners]);
+}
+
 api_err('Not found', 404, ['path' => $path]);
