@@ -474,16 +474,16 @@ function jdate_str_to_gdate(string $jdate): ?string
                                         </div>
                                         <?php $vs = (int)($driverInfo['verification_status'] ?? 0); ?>
                                         <div class="col-md-6 col-lg-3 mb-3">
-                                            <label for="verification_status" class="form-label">وضعیت احراز
-                                                هویت</label>
-                                            <select class="form-select" id="verification_status"
-                                                name="verification_status">
-                                                <option value="0" <?= $vs === 0 ? 'selected' : '' ?>>تأیید نشده
-                                                </option>
-                                                <option value="1" <?= $vs === 1 ? 'selected' : '' ?>>تأیید شده
-                                                </option>
+                                            <label for="driver_verification_status" class="form-label">وضعیت احراز هویت</label>
+                                            <select class="form-select" id="driver_verification_status" name="driver_verification_status" onchange="toggleDriverRejectReason()">
+                                                <option value="0" <?= $vs === 0 ? 'selected' : '' ?>>تأیید نشده</option>
+                                                <option value="1" <?= $vs === 1 ? 'selected' : '' ?>>تأیید شده</option>
                                                 <option value="2" <?= $vs === 2 ? 'selected' : '' ?>>رد شده</option>
                                             </select>
+                                        </div>
+                                        <div class="col-md-12 mb-3" id="driverRejectReasonWrapper" style="display: <?= $vs === 2 ? 'block' : 'none' ?>;">
+                                            <label for="driver_reject_reason" class="form-label text-danger">دلیل رد احراز هویت (نمایش به کاربر)</label>
+                                            <textarea class="form-control border-danger" id="driver_reject_reason" name="driver_reject_reason" rows="2" placeholder="دلیل رد شدن مدارک یا مشخصات را بنویسید..."><?= htmlspecialchars($driverInfo['reject_reason'] ?? '') ?></textarea>
                                         </div>
                                         <div class="col-md-12 mb-3">
                                             <label for="address" class="form-label">آدرس</label>
@@ -660,18 +660,18 @@ function jdate_str_to_gdate(string $jdate): ?string
                                                 value="<?= htmlspecialchars($companyInfo['postal_code'] ?? '') ?>">
                                         </div>
 
-                                        <?php $vs = (int)($companyInfo['verification_status'] ?? 0); ?>
+                                        <?php $vsComp = (int)($companyInfo['verification_status'] ?? 0); ?>
                                         <div class="col-md-6 mb-3">
-                                            <label for="verification_status" class="form-label">وضعیت احراز
-                                                هویت</label>
-                                            <select class="form-select" id="verification_status"
-                                                name="verification_status">
-                                                <option value="0" <?= $vs === 0 ? 'selected' : '' ?>>تأیید نشده
-                                                </option>
-                                                <option value="1" <?= $vs === 1 ? 'selected' : '' ?>>تأیید شده
-                                                </option>
-                                                <option value="2" <?= $vs === 2 ? 'selected' : '' ?>>رد شده</option>
+                                            <label for="company_verification_status" class="form-label">وضعیت احراز هویت</label>
+                                            <select class="form-select" id="company_verification_status" name="company_verification_status" onchange="toggleCompanyRejectReason()">
+                                                <option value="0" <?= $vsComp === 0 ? 'selected' : '' ?>>تأیید نشده</option>
+                                                <option value="1" <?= $vsComp === 1 ? 'selected' : '' ?>>تأیید شده</option>
+                                                <option value="2" <?= $vsComp === 2 ? 'selected' : '' ?>>رد شده</option>
                                             </select>
+                                        </div>
+                                        <div class="col-md-12 mb-3" id="companyRejectReasonWrapper" style="display: <?= $vsComp === 2 ? 'block' : 'none' ?>;">
+                                            <label for="company_reject_reason" class="form-label text-danger">دلیل رد احراز هویت (نمایش به کاربر)</label>
+                                            <textarea class="form-control border-danger" id="company_reject_reason" name="company_reject_reason" rows="2" placeholder="دلیل رد شدن مدارک را بنویسید..."><?= htmlspecialchars($companyInfo['reject_reason'] ?? '') ?></textarea>
                                         </div>
 
                                         <div class="col-md-12 mb-3">
@@ -1244,6 +1244,17 @@ function jdate_str_to_gdate(string $jdate): ?string
             return;
         }
         row.remove();
+    }
+
+    function toggleDriverRejectReason() {
+        const status = document.getElementById('driver_verification_status').value;
+        document.getElementById('driverRejectReasonWrapper').style.display = (status === '2') ? 'block' : 'none';
+    }
+
+    function toggleCompanyRejectReason() {
+        const status = document.getElementById('company_verification_status').value;
+        const wrap = document.getElementById('companyRejectReasonWrapper');
+        if (wrap) wrap.style.display = (status === '2') ? 'block' : 'none';
     }
 </script>
 

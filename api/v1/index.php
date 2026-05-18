@@ -35,7 +35,8 @@ function api_user_with_profile(array $u): array
     $company = null;
 
     if ((int)$u['user_type'] === 1) {
-        $st = $pdo->prepare("SELECT id, full_name, national_code, vehicle_type_id, plate_number, model_year, color, capacity_kg, province_id, city_id, verification_status, reject_reason, rating_avg, rating_count, created_at, updated_at FROM drivers WHERE user_id=? AND deleted_at IS NULL LIMIT 1");
+        // فیلدهای ماشین (vin, chassis, engine, insurance) اضافه شد
+        $st = $pdo->prepare("SELECT id, full_name, national_code, vehicle_type_id, plate_number, smart_card_number, model_year, color, capacity_kg, province_id, city_id, verification_status, reject_reason, rating_avg, rating_count, vin_number, insurance_number, insurance_expiry, engine_number, chassis_number, created_at, updated_at FROM drivers WHERE user_id=? AND deleted_at IS NULL LIMIT 1");
         $st->execute([(int)$u['id']]);
         $driver = $st->fetch() ?: null;
     }
@@ -267,16 +268,6 @@ if ($method === 'GET' && $path === '/meta/vehicle-types') {
     ], $rows)]);
 }
 
-if ($method === 'GET' && $path === '/meta/cargo-types') {
-    $pdo = db();
-    $rows = $pdo->query("SELECT id, title, description FROM cargo_types WHERE is_active=1 ORDER BY title ASC")->fetchAll();
-    api_ok(['items' => array_map(fn($r) => [
-        'id' => (int)$r['id'],
-        'title' => (string)$r['title'],
-        'description' => $r['description'] !== null ? (string)$r['description'] : null,
-    ], $rows)]);
-}
-
 // Auth: request OTP
 if ($method === 'POST' && $path === '/auth/request-otp') {
     $in = api_input();
@@ -357,21 +348,13 @@ if ($method === 'POST' && $path === '/auth/verify-otp') {
     auth_mark_last_login((int)$userId);
     auth_log_event((int)$userId, (int)$userType, 4, ['platform' => $platform, 'device_id' => $deviceId]);
 
+    // --- این کد جایگزین کد قبلی شود ---
     // Load user for response
-    $st = db()->prepare("SELECT id, full_name, phone, email, user_type, status, display_name, avatar_key FROM users WHERE id=? LIMIT 1");
+    $st = db()->prepare("SELECT * FROM users WHERE id=? LIMIT 1");
     $st->execute([$userId]);
     $user = $st->fetch();
 
-    $profile = api_user_with_profile([
-        'id' => (int)$user['id'],
-        'full_name' => (string)$user['full_name'],
-        'display_name' => $user['display_name'] !== null ? (string)$user['display_name'] : null,
-        'avatar_key' => $user['avatar_key'] !== null ? (string)$user['avatar_key'] : null,
-        'phone' => (string)$user['phone'],
-        'email' => $user['email'] !== null ? (string)$user['email'] : null,
-        'user_type' => (int)$user['user_type'],
-        'status' => (int)$user['status'],
-    ]);
+    $profile = api_user_with_profile($user);
 
     // مرحله/مسیر پیشنهادی برای اپلیکیشن
     // (برای جلوگیری از ابهام، مبنا را «کامل بودن پروفایل» گذاشتیم)
@@ -572,7 +555,13 @@ if ($method === 'POST' && $path === '/me/avatar') {
 // Me
 if ($method === 'GET' && $path === '/me') {
     $u = api_require_auth();
-    api_ok(api_user_with_profile($u));
+
+    // --- این دو خط اضافه شود تا کد ملی و تاریخ تولد هم خوانده شود ---
+    $st = db()->prepare("SELECT * FROM users WHERE id=? LIMIT 1");
+    $st->execute([$u['id']]);
+    $uFull = $st->fetch();
+
+    api_ok(api_user_with_profile($uFull));
 }
 
 // Driver: profile upsert
@@ -600,6 +589,13 @@ if ($method === 'POST' && $path === '/driver/profile') {
     $provinceId = api_int($in, 'province_id');
     $cityId = api_int($in, 'city_id');
 
+    // فیلدهای جدید ماشین
+    $vinNumber = api_str($in, 'vin_number', 64);
+    $insuranceNumber = api_str($in, 'insurance_number', 64);
+    $insuranceExpiry = api_str($in, 'insurance_expiry', 10);
+    $engineNumber = api_str($in, 'engine_number', 64);
+    $chassisNumber = api_str($in, 'chassis_number', 64);
+
     $pdo->beginTransaction();
     try {
         // Unique plate across active drivers
@@ -615,12 +611,12 @@ if ($method === 'POST' && $path === '/driver/profile') {
         $driverId = (int)($st->fetchColumn() ?: 0);
 
         if ($driverId > 0) {
-            $up = $pdo->prepare("UPDATE drivers SET full_name=?, national_code=?, smart_card_number=?, vehicle_type_id=?, plate_number=?, model_year=?, color=?, capacity_kg=?, province_id=?, city_id=?, updated_at=NOW(3) WHERE id=? LIMIT 1");
-            $up->execute([$fullName, $nationalCode, $smart, $vehicleTypeId, $plate, $modelYear, $color, $capacityKg, $provinceId, $cityId, $driverId]);
+            $up = $pdo->prepare("UPDATE drivers SET full_name=?, national_code=?, smart_card_number=?, vehicle_type_id=?, plate_number=?, model_year=?, color=?, capacity_kg=?, province_id=?, city_id=?, vin_number=?, insurance_number=?, insurance_expiry=?, engine_number=?, chassis_number=?, updated_at=NOW(3) WHERE id=? LIMIT 1");
+            $up->execute([$fullName, $nationalCode, $smart, $vehicleTypeId, $plate, $modelYear, $color, $capacityKg, $provinceId, $cityId, $vinNumber, $insuranceNumber, $insuranceExpiry, $engineNumber, $chassisNumber, $driverId]);
         } else {
-            $ins = $pdo->prepare("INSERT INTO drivers (user_id, full_name, national_code, smart_card_number, vehicle_type_id, plate_number, model_year, color, capacity_kg, province_id, city_id, verification_status, created_at, updated_at)
-                                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NOW(3), NOW(3))");
-            $ins->execute([(int)$u['id'], $fullName, $nationalCode, $smart, $vehicleTypeId, $plate, $modelYear, $color, $capacityKg, $provinceId, $cityId]);
+            $ins = $pdo->prepare("INSERT INTO drivers (user_id, full_name, national_code, smart_card_number, vehicle_type_id, plate_number, model_year, color, capacity_kg, province_id, city_id, vin_number, insurance_number, insurance_expiry, engine_number, chassis_number, verification_status, created_at, updated_at)
+                                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NOW(3), NOW(3))");
+            $ins->execute([(int)$u['id'], $fullName, $nationalCode, $smart, $vehicleTypeId, $plate, $modelYear, $color, $capacityKg, $provinceId, $cityId, $vinNumber, $insuranceNumber, $insuranceExpiry, $engineNumber, $chassisNumber]);
             $driverId = (int)$pdo->lastInsertId();
         }
 
@@ -635,9 +631,7 @@ if ($method === 'POST' && $path === '/driver/profile') {
         api_err($msg, 500);
     }
 
-    $st = db()->prepare("SELECT id, full_name, national_code, smart_card_number, vehicle_type_id, plate_number, model_year, color, capacity_kg, province_id, city_id, verification_status, reject_reason, rating_avg, rating_count, created_at, updated_at FROM drivers WHERE id=? LIMIT 1");
-    $st->execute([$driverId]);
-    api_ok(['driver' => ($st->fetch() ?: null)]);
+    api_ok(['driver' => api_user_with_profile($u)]);
 }
 
 // Driver: upload docs (license + vehicle card)
@@ -646,18 +640,23 @@ if ($method === 'POST' && $path === '/driver/docs') {
     if ((int)$u['user_type'] !== 1) api_err('Forbidden', 403);
 
     $hasAny = false;
+    $pdo = db();
+    $st = $pdo->prepare("SELECT id FROM drivers WHERE user_id=? LIMIT 1");
+    $st->execute([$u['id']]);
+    $driverId = (int)$st->fetchColumn();
 
     if (!empty($_FILES['license_image']) && is_array($_FILES['license_image'])) {
         $hasAny = true;
-        save_user_file((int)$u['id'], 3, $_FILES['license_image']);
+        $k = save_user_file((int)$u['id'], 3, $_FILES['license_image']);
+        if ($k && $driverId > 0) save_driver_document($driverId, 3, $k);
     }
     if (!empty($_FILES['vehicle_card_image']) && is_array($_FILES['vehicle_card_image'])) {
         $hasAny = true;
-        save_user_file((int)$u['id'], 4, $_FILES['vehicle_card_image']);
+        $k = save_user_file((int)$u['id'], 4, $_FILES['vehicle_card_image']);
+        if ($k && $driverId > 0) save_driver_document($driverId, 4, $k);
     }
 
     if (!$hasAny) api_err('هیچ فایلی ارسال نشده است', 422);
-
     api_ok(['uploaded' => true]);
 }
 
@@ -889,6 +888,225 @@ if ($method === 'GET' && $path === '/banners') {
     }, $rows);
 
     api_ok(['items' => $banners]);
+}
+
+// ==========================================
+// Support Tickets API
+// ==========================================
+
+// 1. دریافت لیست تیکت‌های من
+if ($method === 'GET' && $path === '/support/tickets') {
+    $u = api_require_auth();
+    $pdo = db();
+    $st = $pdo->prepare("SELECT id, subject, status, created_at, updated_at FROM support_tickets WHERE user_id=? ORDER BY updated_at DESC");
+    $st->execute([$u['id']]);
+    api_ok(['items' => $st->fetchAll()]);
+}
+
+// 2. ایجاد تیکت جدید
+if ($method === 'POST' && $path === '/support/tickets') {
+    $u = api_require_auth();
+    $in = api_input();
+    $subject = api_str($in, 'subject', 255);
+    $message = trim((string)($in['message'] ?? ''));
+
+    if (!$subject || !$message) api_err('موضوع و متن تیکت الزامی است', 422);
+
+    $pdo = db();
+    $pdo->beginTransaction();
+    try {
+        $st1 = $pdo->prepare("INSERT INTO support_tickets (user_id, subject, status, created_at, updated_at) VALUES (?, ?, 1, NOW(3), NOW(3))");
+        $st1->execute([$u['id'], $subject]);
+        $ticketId = (int)$pdo->lastInsertId();
+
+        $st2 = $pdo->prepare("INSERT INTO support_ticket_messages (ticket_id, sender_user_id, message, created_at) VALUES (?, ?, ?, NOW(3))");
+        $st2->execute([$ticketId, $u['id'], $message]);
+
+        $pdo->commit();
+        api_ok(['message' => 'تیکت با موفقیت ایجاد شد', 'ticket_id' => $ticketId]);
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        api_err('خطا در ثبت تیکت', 500);
+    }
+}
+
+// 3. دریافت پیام‌های یک تیکت
+if ($method === 'GET' && preg_match('~^/support/tickets/(\d+)/messages$~', $path, $m)) {
+    $u = api_require_auth();
+    $ticketId = (int)$m[1];
+    $pdo = db();
+
+    // بررسی مالکیت تیکت
+    $stCheck = $pdo->prepare("SELECT id, subject, status FROM support_tickets WHERE id=? AND user_id=? LIMIT 1");
+    $stCheck->execute([$ticketId, $u['id']]);
+    $ticket = $stCheck->fetch();
+    if (!$ticket) api_err('تیکت یافت نشد', 404);
+
+    $stMsg = $pdo->prepare("SELECT id, sender_user_id, message, created_at FROM support_ticket_messages WHERE ticket_id=? ORDER BY created_at ASC");
+    $stMsg->execute([$ticketId]);
+
+    api_ok([
+        'ticket' => $ticket,
+        'messages' => $stMsg->fetchAll()
+    ]);
+}
+
+// 4. ارسال پیام جدید در تیکت (Reply)
+if ($method === 'POST' && preg_match('~^/support/tickets/(\d+)/messages$~', $path, $m)) {
+    $u = api_require_auth();
+    $ticketId = (int)$m[1];
+    $in = api_input();
+    $message = trim((string)($in['message'] ?? ''));
+    if (!$message) api_err('متن پیام الزامی است', 422);
+
+    $pdo = db();
+    $stCheck = $pdo->prepare("SELECT id, status FROM support_tickets WHERE id=? AND user_id=? LIMIT 1");
+    $stCheck->execute([$ticketId, $u['id']]);
+    $ticket = $stCheck->fetch();
+    if (!$ticket) api_err('تیکت یافت نشد', 404);
+    if ((int)$ticket['status'] === 3) api_err('این تیکت بسته شده است', 403);
+
+    $pdo->beginTransaction();
+    try {
+        $pdo->prepare("INSERT INTO support_ticket_messages (ticket_id, sender_user_id, message, created_at) VALUES (?, ?, ?, NOW(3))")
+            ->execute([$ticketId, $u['id'], $message]);
+
+        // تغییر وضعیت به "باز" (چون کاربر پیام داده)
+        $pdo->prepare("UPDATE support_tickets SET status=1, updated_at=NOW(3) WHERE id=?")
+            ->execute([$ticketId]);
+
+        $pdo->commit();
+        api_ok(['message' => 'پیام ارسال شد']);
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        api_err('خطا در ارسال پیام', 500);
+    }
+}
+
+// ==========================================
+// Notifications API
+// ==========================================
+
+// چک کردن تعداد و دیتای نوتیفیکیشن‌های خوانده نشده
+if ($method === 'GET' && $path === '/me/notifications/unread-count') {
+    $u = api_require_auth();
+    $pdo = db();
+
+    // ۱. گرفتن تعداد کل خوانده نشده‌ها
+    $st = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE user_id=? AND is_read=0");
+    $st->execute([$u['id']]);
+    $unreadCount = (int)$st->fetchColumn();
+
+    $latestType = null;
+    $latestData = null;
+
+    // ۲. اگر اعلانی بود، جزئیات آخرین اعلان را برای مسیریابی هوشمند در اپلیکیشن بفرست
+    if ($unreadCount > 0) {
+        $stLatest = $pdo->prepare("SELECT type, data_json FROM notifications WHERE user_id=? AND is_read=0 ORDER BY id DESC LIMIT 1");
+        $stLatest->execute([$u['id']]);
+        $latest = $stLatest->fetch();
+        if ($latest) {
+            $latestType = $latest['type'];
+            $latestData = $latest['data_json'] ? json_decode($latest['data_json'], true) : null;
+        }
+    }
+
+    api_ok([
+        'unread_count' => $unreadCount,
+        'latest_type' => $latestType,
+        'latest_data' => $latestData
+    ]);
+}
+
+// علامت‌گذاری همه به عنوان خوانده شده (یا دریافت لیست)
+if ($method === 'GET' && $path === '/me/notifications') {
+    $u = api_require_auth();
+    $pdo = db();
+
+    // گرفتن لیست
+    $st = $pdo->prepare("SELECT * FROM notifications WHERE user_id=? ORDER BY created_at DESC LIMIT 50");
+    $st->execute([$u['id']]);
+    $items = $st->fetchAll();
+
+    // مارک کردن به عنوان خوانده شده به صورت خودکار با باز کردن لیست
+    $pdo->prepare("UPDATE notifications SET is_read=1, read_at=NOW(3) WHERE user_id=? AND is_read=0")->execute([$u['id']]);
+
+    api_ok(['items' => $items]);
+}
+
+// ==========================================
+// Loads API (برای اپلیکیشن رانندگان)
+// ==========================================
+
+if ($method === 'GET' && $path === '/loads') {
+    $u = api_require_auth();
+    // فقط رانندگان (و در صورت نیاز ادمین‌ها) به این لیست دسترسی دارند
+    if (!in_array((int)$u['user_type'], [1, 3], true)) {
+        api_err('دسترسی غیرمجاز', 403);
+    }
+
+    $pdo = db();
+
+    // دریافت لیست بارهای فعال (وضعیت 1)
+    $st = $pdo->query("
+        SELECT l.id, l.public_code, l.load_type, l.weight_kg, l.is_tonnage_free, l.price_type, l.proposed_price, 
+               l.description, l.published_at, l.created_at, l.has_insurance, l.insurance_value,
+               c1.name as origin_city, p1.name as origin_province,
+               c2.name as dest_city, p2.name as dest_province,
+               vt.title as vehicle_title, cl.title as cargo_title
+        FROM loads l
+        LEFT JOIN cities c1 ON l.origin_city_id = c1.id
+        LEFT JOIN provinces p1 ON c1.province_id = p1.id
+        LEFT JOIN cities c2 ON l.dest_city_id = c2.id
+        LEFT JOIN provinces p2 ON c2.province_id = p2.id
+        LEFT JOIN vehicle_types vt ON l.primary_vehicle_type_id = vt.id
+        LEFT JOIN cargos_list cl ON l.cargo_type_id = cl.id
+        WHERE l.load_status = 1 AND l.deleted_at IS NULL
+        ORDER BY l.id DESC
+        LIMIT 50
+    ");
+    $loads = $st->fetchAll();
+
+    $items = array_map(function ($r) {
+        return [
+            'id' => (int)$r['id'],
+            'public_code' => $r['public_code'],
+            'load_type_id' => (int)$r['load_type'],
+            'load_type_text' => (int)$r['load_type'] === 1 ? 'دربستی' : 'روباری',
+            'origin' => [
+                'city' => $r['origin_city'],
+                'province' => $r['origin_province'],
+                'full_text' => $r['origin_city'] . ' (' . $r['origin_province'] . ')'
+            ],
+            'destination' => [
+                'city' => $r['dest_city'],
+                'province' => $r['dest_province'],
+                'full_text' => $r['dest_city'] . ' (' . $r['dest_province'] . ')'
+            ],
+            'vehicle_title' => $r['vehicle_title'] ?? 'نامشخص',
+            'cargo_title' => $r['cargo_title'] ?? 'نامشخص',
+            'weight' => [
+                'is_free' => (bool)$r['is_tonnage_free'],
+                'value' => $r['weight_kg'] !== null ? (float)$r['weight_kg'] : null,
+                'text' => (bool)$r['is_tonnage_free']
+                    ? 'تناژ آزاد'
+                    : $r['weight_kg'] . ((int)$r['load_type'] === 1 ? ' تن' : ' کیلوگرم')
+            ],
+            'price' => [
+                'type_id' => (int)$r['price_type'],
+                'type_text' => (int)$r['price_type'] === 1 ? 'صافی سرویسی' : 'صافی تنی',
+                'value' => (float)$r['proposed_price'],
+            ],
+            'insurance' => [
+                'has_insurance' => (bool)$r['has_insurance'],
+                'value' => $r['insurance_value'] !== null ? (float)$r['insurance_value'] : null
+            ],
+            'description' => $r['description'] ?? '',
+            'published_at' => $r['published_at'],
+        ];
+    }, $loads);
+
+    api_ok(['items' => $items]);
 }
 
 api_err('Not found', 404, ['path' => $path]);

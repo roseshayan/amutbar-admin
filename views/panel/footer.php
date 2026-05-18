@@ -52,6 +52,48 @@
 
 <!-- END SCRIPTS -->
 
+<script>
+    let lastTicketCount = -1;
+    const BASE_URL_NOTIF = "<?= base_url() ?>";
+
+    function checkAdminNotifs() {
+        fetch(`${BASE_URL_NOTIF}/ajax/get_header_notifs.php`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.ok) {
+                    const currentCount = data.open_tickets;
+                    const badge = document.getElementById('ticket-badge');
+
+                    if (badge) {
+                        badge.textContent = currentCount;
+                        badge.style.display = currentCount > 0 ? 'inline-block' : 'none';
+                    }
+
+                    // اگر تیکت جدیدی اضافه شده بود (نسبت به چک قبلی)
+                    if (lastTicketCount !== -1 && currentCount > lastTicketCount) {
+                        const audio = document.getElementById('notifSound');
+                        if (audio) audio.play().catch(e => console.log('Audio play prevented by browser'));
+
+                        if (window.Toastify) {
+                            Toastify({
+                                text: "تیکت پشتیبانی جدید دریافت شد!",
+                                duration: 5000,
+                                backgroundColor: "#28a745"
+                            }).showToast();
+                        }
+                    }
+                    lastTicketCount = currentCount;
+                }
+            }).catch(e => console.error(e));
+    }
+
+    // چک کردن اولیه و سپس هر 15 ثانیه یک‌بار
+    document.addEventListener("DOMContentLoaded", () => {
+        checkAdminNotifs();
+        setInterval(checkAdminNotifs, 15000);
+    });
+</script>
+
 </body>
 
 </html>

@@ -182,7 +182,8 @@ function convertPersianNumbersToEnglishPHP($string): array|string
 }
 
 // فارسی: تبدیل ویدئو به نسخه سبک‌تر (H264 + scale + CRF)
-function compress_video_if_possible(string $src, string $dst): bool {
+function compress_video_if_possible(string $src, string $dst): bool
+{
     // اگر ffmpeg روی سرور نصب نبود، false برمی‌گردانیم
     $ff = trim((string)shell_exec('command -v ffmpeg'));
     if ($ff === '') return false;

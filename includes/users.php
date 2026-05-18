@@ -454,7 +454,9 @@ function save_driver_info(int $userId, array $data): array
     $chassisNumber = trim((string)($data['chassis_number'] ?? ''));
     $extraPhonesJson = json_encode($data['extra_phones'] ?? []);
 
-    $verificationStatus = isset($data['verification_status']) ? (int)$data['verification_status'] : null;
+    // خواندن کلیدهای تفکیک‌شده جدید
+    $verificationStatus = isset($data['driver_verification_status']) ? (int)$data['driver_verification_status'] : (isset($data['verification_status']) ? (int)$data['verification_status'] : null);
+    $rejectReason = trim((string)($data['driver_reject_reason'] ?? ($data['reject_reason'] ?? '')));
     $adminId = admin_id() ?: null;
     $verifiedAt = ($verificationStatus === 1) ? date('Y-m-d H:i:s') : null;
     $verifiedBy = ($verificationStatus === 1) ? $adminId : null;
@@ -474,7 +476,12 @@ function save_driver_info(int $userId, array $data): array
 
     try {
         if ($driverId > 0) {
-            // بروزرسانی راننده موجود
+
+            // قبل از آپدیت، وضعیت قبلی را می‌گیریم
+            $stOld = $pdo->prepare("SELECT verification_status FROM drivers WHERE id=?");
+            $stOld->execute([$driverId]);
+            $oldStatus = (int)($stOld->fetchColumn() ?: 0);
+
             $st = $pdo->prepare("
                 UPDATE drivers 
                 SET full_name = ?, national_code = ?, smart_card_number = ?, 
@@ -483,7 +490,7 @@ function save_driver_info(int $userId, array $data): array
                     issued_from = ?, address = ?, home_phone = ?, postal_code = ?, 
                     license_serial = ?, license_base = ?, vin_number = ?, 
                     insurance_number = ?, insurance_expiry = ?, engine_number = ?, 
-                    verification_status = ?, verified_at = ?, verified_by_user_id = ?,
+                    verification_status = ?, verified_at = ?, verified_by_user_id = ?, reject_reason = ?,
                     chassis_number = ?, extra_phones = ?, updated_at = NOW(3) 
                 WHERE id = ? AND user_id = ? AND deleted_at IS NULL
             ");
@@ -511,11 +518,18 @@ function save_driver_info(int $userId, array $data): array
                 $verificationStatus,
                 $verifiedAt,
                 $verifiedBy,
+                ($verificationStatus === 2 ? $rejectReason : null),
                 $chassisNumber ?: null,
                 $extraPhonesJson ?: null,
                 $driverId,
                 $userId
             ]);
+
+            // لاگ‌گیری در صورت تغییر وضعیت
+            if ($oldStatus !== $verificationStatus && $adminId) {
+                $pdo->prepare("INSERT INTO driver_verification_events (driver_id, old_status, new_status, actor_user_id, note, created_at) VALUES (?, ?, ?, ?, ?, NOW(3))")
+                    ->execute([$driverId, $oldStatus, $verificationStatus, $adminId, $rejectReason]);
+            }
         } else {
             // ایجاد راننده جدید
             $st = $pdo->prepare("
@@ -579,13 +593,14 @@ function save_driver_files(int $userId, int $driverId, array $files): void
         'license_image' => 3,
         'vehicle_card_image' => 4,
         'green_card_image' => 5,
-        'insurance_image' => 7,
         'verification_video' => 6,
+        'insurance_image' => 7,
     ];
 
     foreach ($fileTypes as $fieldName => $fileType) {
         if (isset($files[$fieldName]) && $files[$fieldName]['error'] === UPLOAD_ERR_OK) {
-            save_user_file($userId, $fileType, $files[$fieldName], $driverId);
+            $key = save_user_file($userId, $fileType, $files[$fieldName], $driverId);
+            if ($key && $driverId > 0) save_driver_document($driverId, $fileType, $key);
         }
     }
 }
@@ -607,7 +622,8 @@ function save_company_info(int $userId, array $data): array
     $address = trim((string)($data['company_address'] ?? ''));
     $postalCode = trim((string)($data['company_postal_code'] ?? ''));
 
-    $verificationStatus = isset($data['verification_status']) ? (int)$data['verification_status'] : null;
+    $verificationStatus = isset($data['company_verification_status']) ? (int)$data['company_verification_status'] : (isset($data['verification_status']) ? (int)$data['verification_status'] : null);
+    $rejectReason = trim((string)($data['company_reject_reason'] ?? ''));
     $adminId = admin_id() ?: null;
     $verifiedAt = ($verificationStatus === 1) ? date('Y-m-d H:i:s') : null;
     $verifiedBy = ($verificationStatus === 1) ? $adminId : null;
@@ -630,7 +646,7 @@ function save_company_info(int $userId, array $data): array
                     registration_no = ?, registration_date = ?, economic_code = ?, 
                     province_id = ?, city_id = ?, address = ?, postal_code = ?, 
                     verification_status = ?, verified_at = ?, verified_by_user_id = ?,
-                    updated_at = NOW(3) 
+                    reject_reason = ?, updated_at = NOW(3) 
                 WHERE id = ? AND user_id = ? AND deleted_at IS NULL
             ");
             $st->execute([
@@ -647,6 +663,7 @@ function save_company_info(int $userId, array $data): array
                 $verificationStatus,
                 $verifiedAt,
                 $verifiedBy,
+                $rejectReason,
                 $companyId,
                 $userId
             ]);
@@ -688,7 +705,7 @@ function save_company_info(int $userId, array $data): array
 
 // تابع عمومی برای ذخیره فایل کاربر
 // تابع عمومی برای ذخیره فایل کاربر
-function save_user_file(int $userId, int $fileType, array $file, int $relatedId = null): void
+function save_user_file(int $userId, int $fileType, array $file, int $relatedId = null): ?string
 {
     $allowedImageTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
     $allowedVideoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
@@ -697,7 +714,7 @@ function save_user_file(int $userId, int $fileType, array $file, int $relatedId 
     $maxVideoSize = 50 * 1024 * 1024; // 50MB
 
     if ($file['error'] !== UPLOAD_ERR_OK) {
-        return;
+        return "آپلود با مشکل مواجه شد (کد خطا: {$file['error']})";
     }
 
     // تعیین نوع فایل
@@ -705,12 +722,12 @@ function save_user_file(int $userId, int $fileType, array $file, int $relatedId 
     $isVideo = in_array($file['type'], $allowedVideoTypes);
 
     if (!$isImage && !$isVideo) {
-        return;
+        return "نوع فایل معتبر نیست";
     }
 
     // بررسی سایز
     if (($isImage && $file['size'] > $maxImageSize) || ($isVideo && $file['size'] > $maxVideoSize)) {
-        return;
+        return "حجم فایل از حد مجاز فراتر رفته است";
     }
 
     // ایجاد نام فایل
@@ -771,6 +788,8 @@ function save_user_file(int $userId, int $fileType, array $file, int $relatedId 
                 $metadata,
                 $existing['id']
             ]);
+
+            return $dbFileKey;
         } else {
             // ایجاد رکورد کاملاً جدید در دیتابیس
             $stInsert = $pdo->prepare("
@@ -787,5 +806,20 @@ function save_user_file(int $userId, int $fileType, array $file, int $relatedId 
                 $metadata
             ]);
         }
+        return null;
+    }
+}
+
+function save_driver_document(int $driverId, int $docType, string $fileKey): void
+{
+    $pdo = db();
+    $st = $pdo->prepare("SELECT id FROM driver_documents WHERE driver_id=? AND doc_type=? LIMIT 1");
+    $st->execute([$driverId, $docType]);
+    $id = $st->fetchColumn();
+
+    if ($id) {
+        $pdo->prepare("UPDATE driver_documents SET file_key=?, status=0, updated_at=NOW(3) WHERE id=?")->execute([$fileKey, $id]);
+    } else {
+        $pdo->prepare("INSERT INTO driver_documents (driver_id, doc_type, file_key, status, created_at, updated_at) VALUES (?, ?, ?, 0, NOW(3), NOW(3))")->execute([$driverId, $docType, $fileKey]);
     }
 }
