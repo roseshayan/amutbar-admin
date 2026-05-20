@@ -1109,4 +1109,226 @@ if ($method === 'GET' && $path === '/loads') {
     api_ok(['items' => $items]);
 }
 
+// =========================================================
+// سیستم هوشمند فیلترینگ، امتیازدهی و گزارش باربری رانندگان
+// =========================================================
+
+// تابع محاسبه فاصله جغرافیایی بین دو نقطه با احتساب انحنای زمین (فرمول هاورسین) + ۳۰٪ ضریب جاده
+function amut_haversine_distance($lat1, $lon1, $lat2, $lon2)
+{
+    if (!$lat1 || !$lon1 || !$lat2 || !$lon2) return null;
+    $earth_radius = 6371; // کیلومتر
+    $dLat = deg2rad((float)$lat2 - (float)$lat1);
+    $dLon = deg2rad((float)$lon2 - (float)$lon1);
+    $a = sin($dLat / 2) * sin($dLat / 2) + cos(deg2rad((float)$lat1)) * cos(deg2rad((float)$lat2)) * sin($dLon / 2) * sin($dLon / 2);
+    $c = 2 * asin(sqrt($a));
+    $d = $earth_radius * $c;
+    return round($d * 1.3); // 30 درصد اضافه برای پیچ و خم جاده
+}
+
+// ۱. لیست بارهای هوشمند رانندگان (با احتساب تاخیر بر اساس امتیاز راننده)
+if ($method === 'GET' && $path === '/driver/loads') {
+    $u = api_require_auth();
+    $pdo = db();
+
+    $stDriver = $pdo->prepare("SELECT rating_avg FROM drivers WHERE user_id=? AND deleted_at IS NULL LIMIT 1");
+    $stDriver->execute([$u['id']]);
+    $rating = (float)($stDriver->fetchColumn() ?: 0.0);
+
+    $timeCondition = "NOW(3)";
+    $infoMessage = "بارهای اعلام شده به صورت آنی به شما نمایش داده می‌شوند. (امتیاز بالا)";
+    if ($rating < 4.0) {
+        $timeCondition = "DATE_SUB(NOW(3), INTERVAL 5 MINUTE)";
+        $infoMessage = "رانندگان با امتیاز بالاتر بارها را سریع‌تر مشاهده می‌کنند. بارهای جاری با ۵ دقیقه تاخیر برای شما لود شده است.";
+    }
+
+    // --- اصلاح این بخش برای جلوگیری از اعمال فیلترهای پوچ یا صفر ---
+    $originCityId = (isset($_GET['origin_city_id']) && trim($_GET['origin_city_id']) !== '') ? (int)$_GET['origin_city_id'] : null;
+    $destCityId   = (isset($_GET['dest_city_id']) && trim($_GET['dest_city_id']) !== '') ? (int)$_GET['dest_city_id'] : null;
+
+    $queryStr = "
+        SELECT l.*, 
+               c1.name as origin_city, p1.name as origin_province, c1.lat as o_lat, c1.lng as o_lng,
+               c2.name as dest_city, p2.name as dest_province, c2.lat as d_lat, c2.lng as d_lng,
+               vt.title as vehicle_title, cl.title as cargo_title
+        FROM loads l
+        LEFT JOIN cities c1 ON l.origin_city_id = c1.id
+        LEFT JOIN provinces p1 ON c1.province_id = p1.id
+        LEFT JOIN cities c2 ON l.dest_city_id = c2.id
+        LEFT JOIN provinces p2 ON c2.province_id = p2.id
+        LEFT JOIN vehicle_types vt ON l.primary_vehicle_type_id = vt.id
+        LEFT JOIN cargos_list cl ON l.cargo_type_id = cl.id
+        WHERE l.load_status = 1 
+          AND l.deleted_at IS NULL 
+          AND l.published_at <= $timeCondition
+    ";
+
+    $params = [];
+    // شرط بزرگتر از صفر بودن اضافه شد تا ایدی‌های نامعتبر یا صفر فیلتر را خراب نکنند
+    if ($originCityId && $originCityId > 0) {
+        $queryStr .= " AND l.origin_city_id = ?";
+        $params[] = $originCityId;
+    }
+    if ($destCityId && $destCityId > 0) {
+        $queryStr .= " AND l.dest_city_id = ?";
+        $params[] = $destCityId;
+    }
+    $queryStr .= " ORDER BY l.id DESC LIMIT 30";
+
+    $st = $pdo->prepare($queryStr);
+    $st->execute($params);
+    $loads = $st->fetchAll();
+
+    $items = [];
+    foreach ($loads as $r) {
+        $stAvg = $pdo->prepare("SELECT AVG(proposed_price) FROM loads WHERE cargo_type_id=? AND origin_city_id=? AND dest_city_id=? AND created_at >= DATE_SUB(NOW(), INTERVAL 15 DAY) AND id != ?");
+        $stAvg->execute([$r['cargo_type_id'], $r['origin_city_id'], $r['dest_city_id'], $r['id']]);
+        $marketAvg = $stAvg->fetchColumn();
+
+        $evaluation = "منصفانه";
+        if ($marketAvg > 0) {
+            $currentPrice = (float)$r['proposed_price'];
+            if ($currentPrice < $marketAvg * 0.9) $evaluation = "ارزان";
+            elseif ($currentPrice > $marketAvg * 1.1) $evaluation = "گران";
+        }
+
+        $items[] = [
+            'id' => $r['id'],
+            'public_code' => $r['public_code'],
+            'origin' => $r['origin_city'] . ' (' . $r['origin_province'] . ')',
+            'destination' => $r['dest_city'] . ' (' . $r['dest_province'] . ')',
+            'cargo_title' => $r['cargo_title'] ?? 'کالا عمومی',
+            'price' => number_format((float)$r['proposed_price']),
+            'price_evaluation' => $evaluation,
+            'distance_km' => amut_haversine_distance($r['o_lat'], $r['o_lng'], $r['d_lat'], $r['d_lng']),
+        ];
+    }
+
+    api_ok(['items' => $items, 'info_message' => $infoMessage]);
+}
+
+// ۲. سرچ زنده شهرها
+if ($method === 'GET' && $path === '/meta/cities/search') {
+    $pdo = db();
+    $q = trim($_GET['q'] ?? '');
+    $st = $pdo->prepare("
+        SELECT c.id, c.name as city_name, p.name as province_name 
+        FROM cities c 
+        JOIN provinces p ON c.province_id = p.id 
+        WHERE c.name LIKE ? OR p.name LIKE ? LIMIT 15
+    ");
+    $st->execute(["%$q%", "%$q%"]);
+    $items = array_map(fn($r) => [
+        'id' => $r['id'],
+        'text' => $r['city_name'] . ' (' . $r['province_name'] . ')'
+    ], $st->fetchAll());
+
+    api_ok(['items' => $items]);
+}
+
+// ۳. دریافت مشخصات تکمیلی یک بار خاص (ارسال اطلاعات برای نمایش روی مپ)
+if ($method === 'GET' && preg_match('~^/driver/loads/(\d+)$~', $path, $matches)) {
+    $loadId = (int)$matches[1];
+    $pdo = db();
+
+    $st = $pdo->prepare("
+        SELECT l.*, comp.company_name, vt.title as vehicle_title, cl.title as cargo_title,
+               c1.name as origin_city, c1.lat as o_lat, c1.lng as o_lng,
+               c2.name as dest_city, c2.lat as d_lat, c2.lng as d_lng
+        FROM loads l
+        LEFT JOIN cities c1 ON l.origin_city_id = c1.id
+        LEFT JOIN cities c2 ON l.dest_city_id = c2.id
+        LEFT JOIN companies comp ON l.company_id = comp.id
+        LEFT JOIN vehicle_types vt ON l.primary_vehicle_type_id = vt.id
+        LEFT JOIN cargos_list cl ON l.cargo_type_id = cl.id
+        WHERE l.id = ? AND l.deleted_at IS NULL LIMIT 1
+    ");
+    $st->execute([$loadId]);
+    $load = $st->fetch();
+
+    if (!$load) api_err('بار یافت نشد', 404);
+
+    $weightText = $load['is_tonnage_free'] == 1 ? 'تناژ آزاد' : ($load['weight_kg'] . ((int)$load['load_type'] == 1 ? ' تن' : ' کیلوگرم'));
+
+    api_ok(['data' => [
+        'id' => $load['id'],
+        'public_code' => $load['public_code'],
+        'company_id' => $load['company_id'],
+        'company_name' => $load['company_name'],
+        'vehicle_title' => $load['vehicle_title'] ?? 'نامشخص',
+        'load_type_text' => (int)$load['load_type'] === 1 ? 'دربستی' : 'روباری',
+        'weight_text' => $weightText,
+        'price_type_text' => (int)$load['price_type'] === 1 ? 'صافی سرویسی' : 'صافی تنی',
+        'phone_coordination' => $load['phone_coordination'],
+        'description' => $load['description'],
+        'origin_city' => $load['origin_city'],
+        'dest_city' => $load['dest_city'],
+        'o_lat' => $load['o_lat'],
+        'o_lng' => $load['o_lng'],
+        'd_lat' => $load['d_lat'],
+        'd_lng' => $load['d_lng'],
+    ]]);
+}
+
+// ۴. دریافت بارهای فعال دیگر یک شرکت خاص
+if ($method === 'GET' && $path === '/companies/active-loads') {
+    $companyId = (int)($_GET['company_id'] ?? 0);
+    $excludeId = (int)($_GET['exclude_id'] ?? 0);
+    $pdo = db();
+
+    $st = $pdo->prepare("
+        SELECT l.id, cl.title as cargo_title, c1.name as origin_city, c2.name as dest_city, l.proposed_price
+        FROM loads l
+        LEFT JOIN cargos_list cl ON l.cargo_type_id = cl.id
+        LEFT JOIN cities c1 ON l.origin_city_id = c1.id
+        LEFT JOIN cities c2 ON l.dest_city_id = c2.id
+        WHERE l.company_id = ? AND l.id != ? AND l.load_status = 1 AND l.deleted_at IS NULL LIMIT 5
+    ");
+    $st->execute([$companyId, $excludeId]);
+
+    $items = array_map(fn($r) => [
+        'origin' => $r['origin_city'],
+        'destination' => $r['dest_city'],
+        'cargo_title' => $r['cargo_title'] ?? 'کالا عمومی',
+        'price' => number_format((float)$r['proposed_price'])
+    ], $st->fetchAll());
+
+    api_ok(['items' => $items]);
+}
+
+// ۵. لاگ کردن سابقه تماس راننده و ذخیره در جدول گزارشات دیتابیس (call_logs)
+if ($method === 'POST' && $path === '/driver/calls/log') {
+    $u = api_require_auth();
+    $in = api_input();
+    $pdo = db();
+
+    $loadId = (int)($in['load_id'] ?? 0);
+    $companyId = (int)($in['company_id'] ?? 0);
+
+    // دریافت اطلاعات کلاینت از سمت ریکوست فلاتر
+    $clientPlatformStr = strtolower(api_str($in, 'client_platform', 32));
+    $clientPlatform = ($clientPlatformStr === 'ios') ? 2 : 1; // 1=Android, 2=iOS
+    $clientVersion = (int)($in['client_version'] ?? 0);
+
+    // دریافت IP و یوزر ایجنت
+    $ip = $_SERVER['REMOTE_ADDR'] ?? null;
+    $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
+
+    $stDr = $pdo->prepare("SELECT id FROM drivers WHERE user_id=? LIMIT 1");
+    $stDr->execute([$u['id']]);
+    $driverId = (int)$stDr->fetchColumn();
+
+    if ($loadId > 0 && $driverId > 0) {
+        $st = $pdo->prepare("
+            INSERT INTO call_logs (load_id, driver_id, company_id, event_type, result_code, client_platform, client_version_code, ip_address, user_agent, created_at)
+            VALUES (?, ?, ?, 1, 'DIALED', ?, ?, INET6_ATON(?), ?, NOW(3))
+        ");
+        $st->execute([$loadId, $driverId, $companyId, $clientPlatform, $clientVersion, $ip, $userAgent]);
+        api_ok(['logged' => true]);
+    }
+    api_err('اطلاعات نامعتبر', 400);
+}
+
+api_err('Not found', 404, ['path' => $path]);
+
 api_err('Not found', 404, ['path' => $path]);
