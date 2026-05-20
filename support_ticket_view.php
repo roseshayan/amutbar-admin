@@ -51,18 +51,52 @@ require_once "includes/jdf.php";
                             <?php $isAdmin = $m['user_type'] == 3; ?>
                             <div class="d-flex w-100 <?= $isAdmin ? 'justify-content-start' : 'justify-content-end' ?> mb-3">
                                 <div class="p-3 rounded-3 <?= $isAdmin ? 'bg-light text-dark' : 'bg-primary text-white' ?>" style="max-width: 75%;">
-                                    <div class="fw-bold mb-1" style="font-size: 11px; opacity: 0.8;"><?= $isAdmin ? 'پشتیبانی' : htmlspecialchars($m['full_name']) ?> - <?= jdate('Y/m/d - H:i', strtotime($m['created_at'])) ?></div>
-                                    <div><?= nl2br(htmlspecialchars($m['message'])) ?></div>
+                                    <div class="fw-bold mb-1" style="font-size: 11px; opacity: 0.8;">
+                                        <?= $isAdmin ? 'پشتیبانی' : htmlspecialchars($m['full_name']) ?> - <?= jdate('Y/m/d - H:i', strtotime($m['created_at'])) ?>
+                                    </div>
+
+                                    <?php if ((int)$m['message_type'] === 1): ?>
+                                        <div><?= nl2br(htmlspecialchars($m['message'])) ?></div>
+                                    <?php elseif ((int)$m['message_type'] === 2): // تصویر 
+                                    ?>
+                                        <div>
+                                            <?php if (!empty($m['message'])): ?>
+                                                <p><?= nl2br(htmlspecialchars($m['message'])) ?></p>
+                                            <?php endif; ?>
+                                            <img src="<?= base_url() . '/storage/' . $m['attachment_key'] ?>"
+                                                alt="پیوست" class="img-fluid rounded" style="max-width: 250px;">
+                                        </div>
+                                    <?php elseif ((int)$m['message_type'] === 3): // PDF 
+                                    ?>
+                                        <div>
+                                            <?php if (!empty($m['message'])): ?>
+                                                <p><?= nl2br(htmlspecialchars($m['message'])) ?></p>
+                                            <?php endif; ?>
+                                            <a href="<?= base_url() . '/storage/' . $m['attachment_key'] ?>"
+                                                target="_blank" class="btn btn-sm btn-light">
+                                                <i class="ri-file-pdf-line"></i> دانلود فایل: <?= htmlspecialchars($m['attachment_name']) ?>
+                                            </a>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         <?php endforeach; ?>
                     </div>
                     <?php if ($ticket['status'] != 3): ?>
                         <div class="card-footer">
-                            <form id="replyForm" class="d-flex gap-2">
+                            <form id="replyForm" enctype="multipart/form-data">
                                 <input type="hidden" name="ticket_id" value="<?= $id ?>">
-                                <textarea class="form-control" name="message" rows="2" placeholder="پاسخ خود را بنویسید..." required></textarea>
-                                <button type="submit" class="btn btn-success"><i class="ri-send-plane-fill"></i> ارسال</button>
+                                <div class="mb-2">
+                                    <textarea class="form-control" name="message" rows="2" placeholder="پاسخ خود را بنویسید..."></textarea>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <button type="submit" class="btn btn-success"><i class="ri-send-plane-fill"></i> ارسال</button>
+                                    <label class="btn btn-outline-secondary mb-0">
+                                        <i class="ri-attachment-2"></i> پیوست
+                                        <input type="file" name="attachment" id="attachmentInput" accept="image/*,.pdf" style="display:none" onchange="showFileName(this)">
+                                    </label>
+                                    <small id="fileLabel" class="text-muted"></small>
+                                </div>
                             </form>
                         </div>
                     <?php endif; ?>
@@ -75,16 +109,37 @@ require_once "includes/jdf.php";
 <script>
     const BASE_URL = "<?= base_url() ?>";
 
-    // اسکرول به پایین
+    function showFileName(input) {
+        const label = document.getElementById('fileLabel');
+        if (input.files && input.files.length > 0) {
+            label.textContent = 'فایل انتخاب‌شده: ' + input.files[0].name;
+        } else {
+            label.textContent = '';
+        }
+    }
+
     const cb = document.getElementById('chatBox');
     cb.scrollTop = cb.scrollHeight;
 
     $('#replyForm').submit(function(e) {
         e.preventDefault();
-        $.post(`${BASE_URL}/ajax/tickets.php?action=reply`, $(this).serialize(), function(res) {
-            if (res.ok) location.reload();
-            else alert(res.message);
-        }, 'json');
+        var formData = new FormData(this);
+
+        $.ajax({
+            url: `${BASE_URL}/ajax/tickets.php?action=reply`,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            dataType: 'json',
+            success: function(res) {
+                if (res.ok) location.reload();
+                else alert(res.message);
+            },
+            error: function() {
+                alert('خطا در ارسال درخواست');
+            }
+        });
     });
 
     function closeTicket() {

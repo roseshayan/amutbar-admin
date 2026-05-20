@@ -100,22 +100,58 @@ $path = api_path();
 // Endpoint key (برای کنترل از پنل)
 // -----------------------------
 $endpointKey = 'api.unknown';
-if ($path === '/meta/app-config') $endpointKey = 'api.meta.app_config';
-if ($path === '/meta/vehicle-types') $endpointKey = 'api.meta.vehicle_types';
-if ($path === '/auth/request-otp') $endpointKey = 'api.auth.request_otp';
-if ($path === '/auth/verify-otp') $endpointKey = 'api.auth.verify_otp';
-if ($path === '/auth/verify-identity') $endpointKey = 'api.auth.verify_identity';
-if ($path === '/auth/refresh') $endpointKey = 'api.auth.refresh';
-if ($path === '/auth/logout') $endpointKey = 'api.auth.logout';
-if ($path === '/me') $endpointKey = 'api.me.get';
-if ($path === '/me/avatar') $endpointKey = 'api.me.avatar';
-if ($path === '/driver/profile') $endpointKey = 'api.driver.upsert';
-if ($path === '/company/profile') $endpointKey = 'api.company.upsert';
-if ($path === '/driver/verification-video') $endpointKey = 'api.driver.verification_video';
+
+// System & Meta
+if ($path === '/health') $endpointKey = 'api.system.health';
+elseif ($path === '/meta/app-config') $endpointKey = 'api.meta.app_config';
+elseif ($path === '/meta/provinces') $endpointKey = 'api.meta.provinces';
+elseif ($path === '/meta/cities') $endpointKey = 'api.meta.cities';
+elseif ($path === '/meta/cities/search') $endpointKey = 'api.meta.cities_search';
+elseif ($path === '/meta/vehicle-types') $endpointKey = 'api.meta.vehicle_types';
+
+// Auth
+elseif ($path === '/auth/request-otp') $endpointKey = 'api.auth.request_otp';
+elseif ($path === '/auth/verify-otp') $endpointKey = 'api.auth.verify_otp';
+elseif ($path === '/auth/verify-identity') $endpointKey = 'api.auth.verify_identity';
+elseif ($path === '/auth/refresh') $endpointKey = 'api.auth.refresh';
+elseif ($path === '/auth/logout') $endpointKey = 'api.auth.logout';
+
+// Profile & Notifications
+elseif ($path === '/me') $endpointKey = 'api.me.get';
+elseif ($path === '/me/avatar') $endpointKey = 'api.me.avatar';
+elseif ($path === '/me/notifications/unread-count') $endpointKey = 'api.me.notifications_count';
+elseif ($path === '/me/notifications') $endpointKey = 'api.me.notifications';
+
+// Onboarding
+elseif ($path === '/driver/profile') $endpointKey = 'api.driver.upsert';
+elseif ($path === '/company/profile') $endpointKey = 'api.company.upsert';
+elseif ($path === '/driver/docs') $endpointKey = 'api.driver.docs';
+elseif ($path === '/driver/verification-video') $endpointKey = 'api.driver.verification_video';
+
+// Content
+elseif ($path === '/banners') $endpointKey = 'api.content.banners';
+
+// Support
+elseif ($path === '/support/tickets') {
+    $endpointKey = ($method === 'POST') ? 'api.support.tickets_create' : 'api.support.tickets_list';
+} elseif (preg_match('~^/support/tickets/(\d+)/messages$~', $path)) {
+    $endpointKey = ($method === 'POST') ? 'api.support.tickets_reply' : 'api.support.tickets_messages';
+}
+
+// Loads
+elseif ($path === '/loads') $endpointKey = 'api.loads.all';
+elseif ($path === '/driver/loads') $endpointKey = 'api.loads.driver_search';
+elseif (preg_match('~^/driver/loads/(\d+)$~', $path)) $endpointKey = 'api.loads.driver_single';
+elseif ($path === '/companies/active-loads') $endpointKey = 'api.loads.company_active';
+
+// Logs
+elseif ($path === '/driver/calls/log') $endpointKey = 'api.calls.log';
 
 // Maintenance + enable/disable
 api_guard_global($endpointKey);
-if ($endpointKey !== 'api.unknown') api_guard_endpoint($endpointKey);
+if ($endpointKey !== 'api.unknown') {
+    api_guard_endpoint($endpointKey);
+}
 
 // Health
 if ($method === 'GET' && $path === '/health') {
@@ -942,22 +978,87 @@ if ($method === 'GET' && preg_match('~^/support/tickets/(\d+)/messages$~', $path
     $ticket = $stCheck->fetch();
     if (!$ticket) api_err('تیکت یافت نشد', 404);
 
-    $stMsg = $pdo->prepare("SELECT id, sender_user_id, message, created_at FROM support_ticket_messages WHERE ticket_id=? ORDER BY created_at ASC");
+    $stMsg = $pdo->prepare("SELECT id, sender_user_id, message, message_type, attachment_key, attachment_name, created_at FROM support_ticket_messages WHERE ticket_id=? ORDER BY created_at ASC");
     $stMsg->execute([$ticketId]);
+    $messages = $stMsg->fetchAll();
+
+    // اضافه کردن URL کامل برای هر پیام دارای پیوست
+    $siteUrl = rtrim((string)settings_get('site.url', ''), '/');
+    foreach ($messages as &$msg) {
+        if (!empty($msg['attachment_key'])) {
+            $msg['attachment_url'] = $siteUrl . '/storage/' . $msg['attachment_key'];
+        }
+    }
 
     api_ok([
         'ticket' => $ticket,
-        'messages' => $stMsg->fetchAll()
+        'messages' => $messages
     ]);
 }
 
-// 4. ارسال پیام جدید در تیکت (Reply)
+// 4. ارسال پیام جدید در تیکت (Reply) - پشتیبانی از فایل
 if ($method === 'POST' && preg_match('~^/support/tickets/(\d+)/messages$~', $path, $m)) {
     $u = api_require_auth();
     $ticketId = (int)$m[1];
-    $in = api_input();
-    $message = trim((string)($in['message'] ?? ''));
-    if (!$message) api_err('متن پیام الزامی است', 422);
+
+    // تشخیص ارسال فایل
+    $hasFile = !empty($_FILES['attachment']) && $_FILES['attachment']['error'] === UPLOAD_ERR_OK;
+
+    $message = '';
+    $messageType = 1;
+    $attachmentKey = null;
+    $attachmentName = null;
+
+    if ($hasFile) {
+        $file = $_FILES['attachment'];
+        $allowedImages = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $allowedFiles = ['application/pdf'];
+        $maxSize = 5 * 1024 * 1024;
+
+        if ($file['size'] > $maxSize) api_err('حجم فایل بیش از حد مجاز (حداکثر ۵ مگابایت)', 422);
+
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+
+        if (in_array($mime, $allowedImages)) {
+            $messageType = 2;
+            $ext = ($mime === 'image/png') ? 'png' : (($mime === 'image/gif') ? 'gif' : (($mime === 'image/webp') ? 'webp' : 'jpg'));
+        } elseif (in_array($mime, $allowedFiles)) {
+            $messageType = 3;
+            $ext = 'pdf';
+        } else {
+            api_err('فرمت فایل مجاز نیست', 422);
+        }
+
+        $uploadDir = BASE_PATH . '/storage/uploads/tickets';
+        if (!is_dir($uploadDir)) mkdir($uploadDir, 0775, true);
+        $filename = 'ticket_' . $ticketId . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+        $dest = $uploadDir . '/' . $filename;
+
+        if (!move_uploaded_file($file['tmp_name'], $dest)) {
+            api_err('خطا در ذخیره فایل', 500);
+        }
+
+        $attachmentKey = 'uploads/tickets/' . $filename;
+        $attachmentName = $file['name'];
+    }
+
+    // متن پیام (می‌تواند از فیلد message بیاید، چه JSON چه multipart)
+    if ($_SERVER['CONTENT_TYPE'] === 'application/json' || !$hasFile) {
+        $in = api_input();  // JSON
+        $message = trim((string)($in['message'] ?? ''));
+    } else {
+        // multipart
+        $message = trim((string)($_POST['message'] ?? ''));
+    }
+
+    // اگر نه فایل باشد و نه متن، خطا
+    if (!$hasFile && $message === '') api_err('متن پیام یا فایل الزامی است', 422);
+
+    if ($message === '' && $hasFile) {
+        $message = ($messageType === 2) ? 'تصویر ارسال شد' : 'فایل PDF ارسال شد';
+    }
 
     $pdo = db();
     $stCheck = $pdo->prepare("SELECT id, status FROM support_tickets WHERE id=? AND user_id=? LIMIT 1");
@@ -968,15 +1069,26 @@ if ($method === 'POST' && preg_match('~^/support/tickets/(\d+)/messages$~', $pat
 
     $pdo->beginTransaction();
     try {
-        $pdo->prepare("INSERT INTO support_ticket_messages (ticket_id, sender_user_id, message, created_at) VALUES (?, ?, ?, NOW(3))")
-            ->execute([$ticketId, $u['id'], $message]);
+        $pdo->prepare("INSERT INTO support_ticket_messages 
+            (ticket_id, sender_user_id, message, message_type, attachment_key, attachment_name, created_at) 
+            VALUES (?, ?, ?, ?, ?, ?, NOW(3))")
+            ->execute([$ticketId, $u['id'], $message, $messageType, $attachmentKey, $attachmentName]);
 
-        // تغییر وضعیت به "باز" (چون کاربر پیام داده)
         $pdo->prepare("UPDATE support_tickets SET status=1, updated_at=NOW(3) WHERE id=?")
             ->execute([$ticketId]);
 
         $pdo->commit();
-        api_ok(['message' => 'پیام ارسال شد']);
+
+        // ساخت URL کامل فایل برای اپ
+        $siteUrl = rtrim((string)settings_get('site.url', ''), '/');
+        $fileUrl = $attachmentKey ? ($siteUrl . '/storage/' . $attachmentKey) : null;
+
+        api_ok([
+            'message' => 'پیام ارسال شد',
+            'message_type' => $messageType,
+            'attachment_url' => $fileUrl,
+            'attachment_name' => $attachmentName
+        ]);
     } catch (Throwable $e) {
         $pdo->rollBack();
         api_err('خطا در ارسال پیام', 500);
@@ -1113,20 +1225,13 @@ if ($method === 'GET' && $path === '/loads') {
 // سیستم هوشمند فیلترینگ، امتیازدهی و گزارش باربری رانندگان
 // =========================================================
 
-// تابع محاسبه فاصله جغرافیایی بین دو نقطه با احتساب انحنای زمین (فرمول هاورسین) + ۳۰٪ ضریب جاده
+// تابع محاسبه فاصله - غیرفعال شد تا ستون های دیتابیس اضافه شوند
 function amut_haversine_distance($lat1, $lon1, $lat2, $lon2)
 {
-    if (!$lat1 || !$lon1 || !$lat2 || !$lon2) return null;
-    $earth_radius = 6371; // کیلومتر
-    $dLat = deg2rad((float)$lat2 - (float)$lat1);
-    $dLon = deg2rad((float)$lon2 - (float)$lon1);
-    $a = sin($dLat / 2) * sin($dLat / 2) + cos(deg2rad((float)$lat1)) * cos(deg2rad((float)$lat2)) * sin($dLon / 2) * sin($dLon / 2);
-    $c = 2 * asin(sqrt($a));
-    $d = $earth_radius * $c;
-    return round($d * 1.3); // 30 درصد اضافه برای پیچ و خم جاده
+    return null;
 }
 
-// ۱. لیست بارهای هوشمند رانندگان (با احتساب تاخیر بر اساس امتیاز راننده)
+// ۱. لیست بارهای هوشمند رانندگان (با حذف ستون های مختصات جغرافیایی)
 if ($method === 'GET' && $path === '/driver/loads') {
     $u = api_require_auth();
     $pdo = db();
@@ -1142,14 +1247,14 @@ if ($method === 'GET' && $path === '/driver/loads') {
         $infoMessage = "رانندگان با امتیاز بالاتر بارها را سریع‌تر مشاهده می‌کنند. بارهای جاری با ۵ دقیقه تاخیر برای شما لود شده است.";
     }
 
-    // --- اصلاح این بخش برای جلوگیری از اعمال فیلترهای پوچ یا صفر ---
     $originCityId = (isset($_GET['origin_city_id']) && trim($_GET['origin_city_id']) !== '') ? (int)$_GET['origin_city_id'] : null;
     $destCityId   = (isset($_GET['dest_city_id']) && trim($_GET['dest_city_id']) !== '') ? (int)$_GET['dest_city_id'] : null;
 
+    // 🔥 ستون‌های c1.lat و c2.lat و lng حذف شدند
     $queryStr = "
         SELECT l.*, 
-               c1.name as origin_city, p1.name as origin_province, c1.lat as o_lat, c1.lng as o_lng,
-               c2.name as dest_city, p2.name as dest_province, c2.lat as d_lat, c2.lng as d_lng,
+               c1.name as origin_city, p1.name as origin_province,
+               c2.name as dest_city, p2.name as dest_province,
                vt.title as vehicle_title, cl.title as cargo_title
         FROM loads l
         LEFT JOIN cities c1 ON l.origin_city_id = c1.id
@@ -1164,7 +1269,6 @@ if ($method === 'GET' && $path === '/driver/loads') {
     ";
 
     $params = [];
-    // شرط بزرگتر از صفر بودن اضافه شد تا ایدی‌های نامعتبر یا صفر فیلتر را خراب نکنند
     if ($originCityId && $originCityId > 0) {
         $queryStr .= " AND l.origin_city_id = ?";
         $params[] = $originCityId;
@@ -1200,7 +1304,7 @@ if ($method === 'GET' && $path === '/driver/loads') {
             'cargo_title' => $r['cargo_title'] ?? 'کالا عمومی',
             'price' => number_format((float)$r['proposed_price']),
             'price_evaluation' => $evaluation,
-            'distance_km' => amut_haversine_distance($r['o_lat'], $r['o_lng'], $r['d_lat'], $r['d_lng']),
+            'distance_km' => null, // موقتا نال فرستاده می‌شود
         ];
     }
 
@@ -1226,15 +1330,16 @@ if ($method === 'GET' && $path === '/meta/cities/search') {
     api_ok(['items' => $items]);
 }
 
-// ۳. دریافت مشخصات تکمیلی یک بار خاص (ارسال اطلاعات برای نمایش روی مپ)
+// ۳. دریافت مشخصات تکمیلی یک بار خاص
 if ($method === 'GET' && preg_match('~^/driver/loads/(\d+)$~', $path, $matches)) {
     $loadId = (int)$matches[1];
     $pdo = db();
 
+    // 🔥 ستون‌های c1.lat و c2.lat و lng حذف شدند
     $st = $pdo->prepare("
         SELECT l.*, comp.company_name, vt.title as vehicle_title, cl.title as cargo_title,
-               c1.name as origin_city, c1.lat as o_lat, c1.lng as o_lng,
-               c2.name as dest_city, c2.lat as d_lat, c2.lng as d_lng
+               c1.name as origin_city,
+               c2.name as dest_city
         FROM loads l
         LEFT JOIN cities c1 ON l.origin_city_id = c1.id
         LEFT JOIN cities c2 ON l.dest_city_id = c2.id
@@ -1263,10 +1368,10 @@ if ($method === 'GET' && preg_match('~^/driver/loads/(\d+)$~', $path, $matches))
         'description' => $load['description'],
         'origin_city' => $load['origin_city'],
         'dest_city' => $load['dest_city'],
-        'o_lat' => $load['o_lat'],
-        'o_lng' => $load['o_lng'],
-        'd_lat' => $load['d_lat'],
-        'd_lng' => $load['d_lng'],
+        'o_lat' => null,
+        'o_lng' => null,
+        'd_lat' => null,
+        'd_lng' => null,
     ]]);
 }
 
@@ -1296,7 +1401,7 @@ if ($method === 'GET' && $path === '/companies/active-loads') {
     api_ok(['items' => $items]);
 }
 
-// ۵. لاگ کردن سابقه تماس راننده و ذخیره در جدول گزارشات دیتابیس (call_logs)
+// ۵. لاگ کردن سابقه تماس راننده
 if ($method === 'POST' && $path === '/driver/calls/log') {
     $u = api_require_auth();
     $in = api_input();
@@ -1305,12 +1410,10 @@ if ($method === 'POST' && $path === '/driver/calls/log') {
     $loadId = (int)($in['load_id'] ?? 0);
     $companyId = (int)($in['company_id'] ?? 0);
 
-    // دریافت اطلاعات کلاینت از سمت ریکوست فلاتر
     $clientPlatformStr = strtolower(api_str($in, 'client_platform', 32));
-    $clientPlatform = ($clientPlatformStr === 'ios') ? 2 : 1; // 1=Android, 2=iOS
+    $clientPlatform = ($clientPlatformStr === 'ios') ? 2 : 1;
     $clientVersion = (int)($in['client_version'] ?? 0);
 
-    // دریافت IP و یوزر ایجنت
     $ip = $_SERVER['REMOTE_ADDR'] ?? null;
     $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
 
@@ -1328,7 +1431,5 @@ if ($method === 'POST' && $path === '/driver/calls/log') {
     }
     api_err('اطلاعات نامعتبر', 400);
 }
-
-api_err('Not found', 404, ['path' => $path]);
 
 api_err('Not found', 404, ['path' => $path]);

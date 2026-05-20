@@ -25,17 +25,14 @@ $logoToggleDark = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-lo
 
 <head>
 
-    <!-- Meta Data -->
     <meta charset="UTF-8">
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="Description" content="پنل مدیریت آموت اپ">
     <meta name="Author" content="Shayan Namayandeh - namayandeshayan@gmail.com - KFMY Company">
 
-    <!-- TITLE -->
     <title>پنل مدیریت آموت اپ</title>
 
-    <!-- FAVICON -->
     <?php
     $faviconPath = (string)settings_get('site.favicon_path', '');
     $faviconHref = $faviconPath !== '' ? $faviconPath : 'assets/images/brand-logos/favicon.ico';
@@ -45,53 +42,37 @@ $logoToggleDark = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-lo
     ?>
     <link rel="icon" href="<?= htmlspecialchars($faviconHref, ENT_QUOTES, 'UTF-8') ?>" type="image/x-icon">
 
-    <!-- BOOTSTRAP CSS -->
     <link id="style" href="assets/vendor/bootstrap/bootstrap.rtl.min.css" rel="stylesheet">
 
-    <!-- STYLES CSS -->
     <link href="assets/css/styles.min.css" rel="stylesheet">
 
-    <!-- ICONS CSS -->
     <link href="assets/icon-fonts/icons.css" rel="stylesheet">
 
-    <!-- NODE WAVES CSS -->
     <link href="assets/libs/node-waves/waves.min.css" rel="stylesheet">
 
-    <!-- SIMPLEBAR CSS -->
     <link rel="stylesheet" href="assets/libs/simplebar/simplebar.min.css">
 
-    <!-- PICKER CSS -->
     <link rel="stylesheet" href="assets/libs/flatpickr/flatpickr.min.css">
     <link rel="stylesheet" href="assets/libs/%40simonwep/pickr/themes/nano.min.css">
 
-    <!-- AUTO COMPLETE CSS -->
     <link rel="stylesheet" href="assets/libs/%40tarekraafat/autocomplete.js/css/autoComplete.css">
 
-    <!-- CHOICES CSS -->
     <link rel="stylesheet" href="assets/libs/choices.js/public/assets/styles/choices.min.css">
 
-    <!-- Datatable -->
     <link rel="stylesheet" href="assets/vendor/datatables/dataTables.bootstrap5.min.css">
 
-    <!-- SweetAlert2 -->
     <link rel="stylesheet" href="assets/vendor/sweetalert2/sweetalert2.min.css">
 
-    <!-- Toastify CSS -->
     <link rel="stylesheet" href="assets/vendor/toastify-js/toastify.css">
 
-    <!-- jQuery -->
     <script src="assets/vendor/jquery/jquery.min.js"></script>
 
-    <!-- CHOICES JS -->
     <script src="assets/libs/choices.js/public/assets/scripts/choices.min.js"></script>
 
-    <!-- SweetAlert2 -->
     <script src="assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
 
-    <!-- Toastify JS -->
     <script src="assets/vendor/toastify-js/toastify.js"></script>
 
-    <!-- MAIN JS -->
     <script src="assets/js/main.js"></script>
 
     <audio id="notifSound" src="assets/audio/ding.mp3" preload="auto"></audio>
@@ -99,21 +80,13 @@ $logoToggleDark = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-lo
 
 <body>
 
-    <!-- LOADER -->
     <div id="loader">
         <img src="assets/images/media/loader.svg" alt="">
     </div>
-    <!-- END LOADER -->
-
-    <!-- PAGE -->
     <div class="page">
-        <!-- HEADER -->
         <header class="app-header sticky" id="header">
-            <!-- Start::main-header-container -->
             <div class="main-header-container container-fluid">
-                <!-- Start::header-content-left -->
                 <div class="header-content-left">
-                    <!-- Start::header-element -->
                     <div class="header-element">
                         <div class="horizontal-logo">
                             <a href="dashboard.php" class="header-logo">
@@ -124,10 +97,7 @@ $logoToggleDark = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-lo
                             </a>
                         </div>
                     </div>
-                    <!-- End::header-element -->
-                    <!-- Start::header-element -->
                     <div class="header-element">
-                        <!-- Start::header-link -->
                         <a aria-label="Hide Sidebar" class="sidemenu-toggle header-link" data-bs-toggle="sidebar"
                             href="javascript:void(0);">
                             <svg xmlns="http://www.w3.org/2000/svg" class="header-link-icon menu-btn" width="32" height="32"
@@ -141,27 +111,16 @@ $logoToggleDark = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-lo
                                 </path>
                             </svg>
                         </a>
-                        <!-- End::header-link -->
                     </div>
-                    <!-- End::header-element -->
                 </div>
-                <!-- End::header-content-left -->
-
-                <!-- Start::header-content-right -->
                 <ul class="header-content-right">
-                    <!-- Start::header-element -->
                     <li class="header-element d-md-none d-block">
                         <a href="javascript:void(0);" class="header-link" data-bs-toggle="modal"
                             data-bs-target="#header-responsive-search">
-                            <!-- Start::header-link-icon -->
                             <i class="bi bi-search header-link-icon"></i>
-                            <!-- End::header-link-icon -->
                         </a>
                     </li>
-                    <!-- End::header-element -->
-                    <!-- Start::header-element -->
                     <li class="header-element search-dropdown dropdown d-md-block d-none">
-                        <!-- Start::header-link|dropdown-toggle -->
                         <a href="javascript:void(0);" class="header-link dropdown-toggle" data-bs-auto-close="outside"
                             data-bs-toggle="dropdown">
                             <svg xmlns="http://www.w3.org/2000/svg" class="header-link-icon" width="32" height="32"
@@ -172,27 +131,22 @@ $logoToggleDark = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-lo
                         </a>
                         <ul class="main-header-dropdown dropdown-menu dropdown-menu-end overflow-visible"
                             data-popper-placement="none">
-                            <li class="px-3 py-2">
+                            <li class="px-3 py-2 position-relative">
                                 <div class="header-element header-search d-md-block d-none my-auto">
-                                    <!-- Start::header-link -->
                                     <input type="text" class="header-search-bar form-control" id="header-search"
-                                        placeholder="جستجو" spellcheck="false" autocomplete="off" autocapitalize="off">
+                                        placeholder="جستجو در منوها..." spellcheck="false" autocomplete="off" autocapitalize="off">
                                     <a href="javascript:void(0);" class="header-search-icon border-0">
                                         <i class="bi bi-search"></i>
                                     </a>
-                                    <!-- End::header-link -->
                                 </div>
+                                <div id="desktop-search-results" class="position-absolute bg-white shadow-sm border rounded mt-2 overflow-auto"
+                                    style="max-height: 300px; z-index: 9999; display: none; top: 100%; right: 1rem; left: 1rem;"></div>
                             </li>
                         </ul>
                     </li>
-                    <!-- End::header-element -->
-
-                    <!-- Start::header-element -->
                     <li class="header-element header-theme-mode">
-                        <!-- Start::header-link|layout-setting -->
                         <a href="javascript:void(0);" class="header-link layout-setting">
                             <span class="light-layout">
-                                <!-- Start::header-link-icon -->
                                 <svg xmlns="http://www.w3.org/2000/svg" class="header-link-icon"
                                     viewbox="0 0 256 256">
                                     <rect width="256" height="256" fill="none"></rect>
@@ -200,10 +154,8 @@ $logoToggleDark = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-lo
                                         fill="none" stroke="currentColor" stroke-linecap="round"
                                         stroke-linejoin="round" stroke-width="16"></path>
                                 </svg>
-                                <!-- End::header-link-icon -->
                             </span>
                             <span class="dark-layout">
-                                <!-- Start::header-link-icon -->
                                 <svg xmlns="http://www.w3.org/2000/svg" class="header-link-icon"
                                     viewbox="0 0 256 256">
                                     <rect width="256" height="256" fill="none"></rect>
@@ -227,25 +179,16 @@ $logoToggleDark = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-lo
                                     <line x1="216" y1="128" x2="224" y2="128" fill="none" stroke="currentColor"
                                         stroke-linecap="round" stroke-linejoin="round" stroke-width="16"></line>
                                 </svg>
-                                <!-- End::header-link-icon -->
                             </span>
                         </a>
-                        <!-- End::header-link|layout-setting -->
                     </li>
-                    <!-- End::header-element -->
-
-                    <!-- Start::header-element -->
                     <li class="header-element notifications-dropdown d-xl-block d-none dropdown">
                         <a href="support_tickets.php" class="header-link">
                             <i class="ri-customer-service-2-line header-link-icon"></i>
                             <span id="ticket-badge" class="badge bg-danger rounded-pill header-icon-badge pulse pulse-secondary">0</span>
                         </a>
                     </li>
-                    <!-- End::header-element -->
-
-                    <!-- Start::header-element -->
                     <li class="header-element header-fullscreen">
-                        <!-- Start::header-link -->
                         <a onclick="openFullscreen();" href="javascript:void(0);" class="header-link">
                             <svg xmlns="http://www.w3.org/2000/svg" class="full-screen-open header-link-icon"
                                 viewbox="0 0 256 256">
@@ -272,13 +215,8 @@ $logoToggleDark = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-lo
                                     stroke-linecap="round" stroke-linejoin="round" stroke-width="16"></line>
                             </svg>
                         </a>
-                        <!-- End::header-link -->
                     </li>
-                    <!-- End::header-element -->
-
-                    <!-- Start::header-element -->
                     <li class="header-element dropdown">
-                        <!-- Start::header-link|dropdown-toggle -->
                         <a href="javascript:void(0);" class="header-link dropdown-toggle" id="mainHeaderProfile"
                             data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                             <div class="d-flex align-items-center">
@@ -290,7 +228,6 @@ $logoToggleDark = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-lo
                                 </div>
                             </div>
                         </a>
-                        <!-- End::header-link|dropdown-toggle -->
                         <ul class="main-header-dropdown dropdown-menu pt-0 overflow-hidden header-profile-dropdown dropdown-menu-end"
                             aria-labelledby="mainHeaderProfile">
                             <li>
@@ -310,11 +247,8 @@ $logoToggleDark = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-lo
                             </li>
                         </ul>
                     </li>
-                    <!-- End::header-element -->
                 </ul>
-                <!-- End::header-content-right -->
             </div>
-            <!-- End::main-header-container -->
         </header>
 
         <div class="modal fade" id="header-responsive-search" tabindex="-1" aria-labelledby="header-responsive-search"
@@ -323,13 +257,85 @@ $logoToggleDark = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-lo
                 <div class="modal-content">
                     <div class="modal-body">
                         <div class="input-group">
-                            <input type="text" class="form-control border-end-0" placeholder="جستجو" aria-label="جستجو"
-                                aria-describedby="button-addon2">
-                            <button class="btn btn-primary" type="button" id="button-addon2"><i class="bi bi-search"></i>
+                            <input type="text" class="form-control border-end-0" id="mobile-search" placeholder="جستجو در منوها..." aria-label="جستجو">
+                            <button class="btn btn-primary" type="button"><i class="bi bi-search"></i>
                             </button>
                         </div>
+                        <div id="mobile-search-results" class="bg-white shadow-sm border rounded mt-2 overflow-auto w-100" style="max-height: 250px; display: none;"></div>
                     </div>
                 </div>
             </div>
         </div>
-        <!-- END HEADER -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // ۱. استخراج خودکار تمام لینک‌های منو از سایدبار
+                const menuItems = [];
+                document.querySelectorAll('.app-sidebar .side-menu__item').forEach(item => {
+                    const url = item.getAttribute('href');
+                    // نادیده گرفتن لینک‌های توخالی (آکاردئون‌ها)
+                    if (url && url !== 'javascript:void(0);' && url !== '#') {
+                        const labelEl = item.querySelector('.side-menu__label');
+                        const label = labelEl ? labelEl.innerText.trim() : item.innerText.trim();
+                        if (label) {
+                            menuItems.push({
+                                label: label,
+                                url: url
+                            });
+                        }
+                    }
+                });
+
+                // ۲. تابع اصلی پردازش جستجو
+                function setupLiveSearch(inputId, resultsBoxId) {
+                    const input = document.getElementById(inputId);
+                    const resultsBox = document.getElementById(resultsBoxId);
+
+                    if (!input || !resultsBox) return;
+
+                    input.addEventListener('input', function() {
+                        const query = this.value.trim().toLowerCase();
+                        resultsBox.innerHTML = '';
+
+                        // اگر کادر خالی بود نتایج را مخفی کن
+                        if (query.length === 0) {
+                            resultsBox.style.display = 'none';
+                            return;
+                        }
+
+                        // پیدا کردن منوهای مرتبط بر اساس متن
+                        const filtered = menuItems.filter(item => item.label.toLowerCase().includes(query));
+
+                        if (filtered.length > 0) {
+                            let html = '<div class="list-group list-group-flush">';
+                            filtered.forEach(item => {
+                                html += `<a href="${item.url}" class="list-group-item list-group-item-action d-flex align-items-center text-dark"><i class="ri-arrow-left-s-line me-2 text-primary"></i> ${item.label}</a>`;
+                            });
+                            html += '</div>';
+                            resultsBox.innerHTML = html;
+                            resultsBox.style.display = 'block';
+                        } else {
+                            resultsBox.innerHTML = '<div class="p-3 text-muted text-center fs-13">هیچ بخشی با این نام یافت نشد.</div>';
+                            resultsBox.style.display = 'block';
+                        }
+                    });
+
+                    // مخفی کردن نتایج با کلیک کردن بیرون کادر
+                    document.addEventListener('click', function(e) {
+                        if (!input.contains(e.target) && !resultsBox.contains(e.target)) {
+                            resultsBox.style.display = 'none';
+                        }
+                    });
+
+                    // باز شدن مجدد نتایج در صورت فوکوس دوباره روی کادر
+                    input.addEventListener('focus', function() {
+                        if (this.value.trim().length > 0) {
+                            resultsBox.style.display = 'block';
+                        }
+                    });
+                }
+
+                // ۳. فعال‌سازی جستجو برای هدر (دسکتاپ) و مودال (موبایل)
+                setupLiveSearch('header-search', 'desktop-search-results');
+                setupLiveSearch('mobile-search', 'mobile-search-results');
+            });
+        </script>

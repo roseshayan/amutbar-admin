@@ -13,21 +13,52 @@ require_once __DIR__ . '/settings.php';
 
 function internal_api_endpoints_catalog(): array
 {
-    // key => [title, group, default_enabled, maintenance_allow]
+    // ساختار: key => [title, group, default_enabled, maintenance_allow]
     return [
+        // ---------- System & Meta ----------
+        'api.system.health' => ['وضعیت سلامت سرویس (health)', 'System', true, true],
         'api.meta.app_config' => ['پیکربندی اپ (app-config)', 'Meta', true, true],
-        'api.meta.vehicle_types' => ['لیست وسیله نقلیه (vehicle-types)', 'Meta', true, true],
+        'api.meta.provinces' => ['لیست استان‌ها', 'Meta', true, true],
+        'api.meta.cities' => ['لیست شهرها (بر اساس استان)', 'Meta', true, true],
+        'api.meta.cities_search' => ['جستجوی زنده شهرها', 'Meta', true, true],
+        'api.meta.vehicle_types' => ['لیست وسایل نقلیه', 'Meta', true, true],
 
+        // ---------- Auth ----------
         'api.auth.request_otp' => ['ارسال کد OTP', 'Auth', true, true],
         'api.auth.verify_otp' => ['تأیید کد OTP', 'Auth', true, true],
+        'api.auth.verify_identity' => ['احراز هویت API.ir', 'Auth', true, true],
         'api.auth.refresh' => ['رفرش توکن', 'Auth', true, true],
         'api.auth.logout' => ['خروج', 'Auth', true, true],
 
-        'api.me.get' => ['پروفایل من', 'Profile', true, true],
+        // ---------- Profile & Notifications ----------
+        'api.me.get' => ['دریافت پروفایل من', 'Profile', true, true],
         'api.me.avatar' => ['آپلود آواتار', 'Profile', true, true],
+        'api.me.notifications_count' => ['تعداد اعلان‌های نخوانده', 'Notifications', true, true],
+        'api.me.notifications' => ['لیست کامل اعلان‌ها', 'Notifications', true, true],
 
+        // ---------- Onboarding ----------
         'api.driver.upsert' => ['ثبت/ویرایش پروفایل راننده', 'Onboarding', true, false],
+        'api.driver.docs' => ['آپلود مدارک راننده', 'Onboarding', true, false],
+        'api.driver.verification_video' => ['احراز هویت ویدیویی راننده', 'Onboarding', true, false],
         'api.company.upsert' => ['ثبت/ویرایش پروفایل باربری', 'Onboarding', true, false],
+
+        // ---------- Content ----------
+        'api.content.banners' => ['دریافت بنرهای تبلیغاتی', 'Content', true, true],
+
+        // ---------- Support ----------
+        'api.support.tickets_list' => ['لیست تیکت‌های کاربر', 'Support', true, true],
+        'api.support.tickets_create' => ['ایجاد تیکت جدید', 'Support', true, true],
+        'api.support.tickets_messages' => ['دریافت پیام‌های تیکت', 'Support', true, true],
+        'api.support.tickets_reply' => ['ارسال پاسخ/فایل در تیکت', 'Support', true, true],
+
+        // ---------- Loads (باربری) ----------
+        'api.loads.all' => ['لیست کل بارهای فعال (خام)', 'Loads', true, false],
+        'api.loads.driver_search' => ['جستجوی هوشمند بارهای راننده', 'Loads', true, false],
+        'api.loads.driver_single' => ['جزئیات کامل یک بار مشخص', 'Loads', true, false],
+        'api.loads.company_active' => ['لیست بارهای فعال یک باربری', 'Loads', true, false],
+
+        // ---------- Logs ----------
+        'api.calls.log' => ['ثبت تاریخچه تماس راننده', 'Logs', true, true],
     ];
 }
 
