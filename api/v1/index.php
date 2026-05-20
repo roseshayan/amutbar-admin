@@ -1225,13 +1225,20 @@ if ($method === 'GET' && $path === '/loads') {
 // سیستم هوشمند فیلترینگ، امتیازدهی و گزارش باربری رانندگان
 // =========================================================
 
-// تابع محاسبه فاصله - غیرفعال شد تا ستون های دیتابیس اضافه شوند
+// تابع محاسبه فاصله با در نظر گرفتن انحنای زمین (اضافه کردن ۲۰ درصد ضریب جاده‌ای)
 function amut_haversine_distance($lat1, $lon1, $lat2, $lon2)
 {
-    return null;
+    if (!$lat1 || !$lon1 || !$lat2 || !$lon2) return null;
+    $earth_radius = 6371; // کیلومتر
+    $dLat = deg2rad((float)$lat2 - (float)$lat1);
+    $dLon = deg2rad((float)$lon2 - (float)$lon1);
+    $a = sin($dLat / 2) * sin($dLat / 2) + cos(deg2rad((float)$lat1)) * cos(deg2rad((float)$lat2)) * sin($dLon / 2) * sin($dLon / 2);
+    $c = 2 * asin(sqrt($a));
+    $d = $earth_radius * $c;
+    return round($d * 1.2);
 }
 
-// ۱. لیست بارهای هوشمند رانندگان (با حذف ستون های مختصات جغرافیایی)
+// ۱. لیست بارهای هوشمند رانندگان
 if ($method === 'GET' && $path === '/driver/loads') {
     $u = api_require_auth();
     $pdo = db();
@@ -1250,7 +1257,6 @@ if ($method === 'GET' && $path === '/driver/loads') {
     $originCityId = (isset($_GET['origin_city_id']) && trim($_GET['origin_city_id']) !== '') ? (int)$_GET['origin_city_id'] : null;
     $destCityId   = (isset($_GET['dest_city_id']) && trim($_GET['dest_city_id']) !== '') ? (int)$_GET['dest_city_id'] : null;
 
-    // 🔥 ستون‌های c1.lat و c2.lat و lng حذف شدند
     $queryStr = "
         SELECT l.*, 
                c1.name as origin_city, p1.name as origin_province,
@@ -1304,7 +1310,7 @@ if ($method === 'GET' && $path === '/driver/loads') {
             'cargo_title' => $r['cargo_title'] ?? 'کالا عمومی',
             'price' => number_format((float)$r['proposed_price']),
             'price_evaluation' => $evaluation,
-            'distance_km' => null, // موقتا نال فرستاده می‌شود
+            'distance_km' => amut_haversine_distance($r['origin_lat'], $r['origin_lng'], $r['dest_lat'], $r['dest_lng']),
         ];
     }
 
@@ -1335,7 +1341,6 @@ if ($method === 'GET' && preg_match('~^/driver/loads/(\d+)$~', $path, $matches))
     $loadId = (int)$matches[1];
     $pdo = db();
 
-    // 🔥 ستون‌های c1.lat و c2.lat و lng حذف شدند
     $st = $pdo->prepare("
         SELECT l.*, comp.company_name, vt.title as vehicle_title, cl.title as cargo_title,
                c1.name as origin_city,
@@ -1368,10 +1373,10 @@ if ($method === 'GET' && preg_match('~^/driver/loads/(\d+)$~', $path, $matches))
         'description' => $load['description'],
         'origin_city' => $load['origin_city'],
         'dest_city' => $load['dest_city'],
-        'o_lat' => null,
-        'o_lng' => null,
-        'd_lat' => null,
-        'd_lng' => null,
+        'o_lat' => $load['origin_lat'],
+        'o_lng' => $load['origin_lng'],
+        'd_lat' => $load['dest_lat'],
+        'd_lng' => $load['dest_lng'],
     ]]);
 }
 

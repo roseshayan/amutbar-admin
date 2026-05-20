@@ -9,22 +9,16 @@ $pdo = db();
 
 function normalize_money($value): ?float
 {
-    if ($value === null) {
-        return null;
-    }
-
+    if ($value === null) return null;
     $value = str_replace(
         ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'],
         ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
         $value
     );
-
     $value = preg_replace('/[^\d.]/', '', $value);
-
     return $value === '' ? null : (float)$value;
 }
 
-// جستجوی کالا
 if ($action === 'search_cargo') {
     $q = trim($_GET['q'] ?? '');
     $st = $pdo->prepare("SELECT id, title FROM cargos_list WHERE title LIKE ? LIMIT 15");
@@ -34,7 +28,6 @@ if ($action === 'search_cargo') {
     exit;
 }
 
-// جستجوی شرکت‌های باربری
 if ($action === 'search_company') {
     $q = trim($_GET['q'] ?? '');
     $st = $pdo->prepare("SELECT id, company_name FROM companies WHERE company_name LIKE ? AND deleted_at IS NULL LIMIT 20");
@@ -44,7 +37,6 @@ if ($action === 'search_company') {
     exit;
 }
 
-// جستجوی هوشمند شهر (هم نام شهر هم استان)
 if ($action === 'search_city') {
     $q = trim($_GET['q'] ?? '');
     $st = $pdo->prepare("
@@ -55,23 +47,18 @@ if ($action === 'search_city') {
         LIMIT 20
     ");
     $st->execute(["%$q%", "%$q%"]);
-    $rows = $st->fetchAll();
-
     $items = array_map(fn($r) => [
         'id' => $r['id'],
         'text' => $r['city_name'] . ' (' . $r['province_name'] . ')'
-    ], $rows);
-
+    ], $st->fetchAll());
     echo json_encode(['items' => $items]);
     exit;
 }
 
-// تخمین قیمت میانگین
 if ($action === 'get_avg_price') {
     $st = $pdo->prepare("SELECT AVG(proposed_price) FROM loads WHERE origin_city_id=? AND dest_city_id=? AND load_status=1 AND deleted_at IS NULL");
     $st->execute([$_POST['origin_city_id'], $_POST['dest_city_id']]);
     $avg = $st->fetchColumn();
-
     $roundedPrice = $avg ? round((float)$avg / 50000) * 50000 : 0;
     echo json_encode(['ok' => true, 'avg_price' => $roundedPrice]);
     exit;
@@ -87,7 +74,6 @@ if ($action === 'create') {
             throw new Exception('شهر مبدا یا مقصد به درستی انتخاب نشده است.');
         }
 
-        // گرفتن استان مبدا و مقصد
         $st = $pdo->prepare("SELECT province_id FROM cities WHERE id=? LIMIT 1");
         $st->execute([$originCityId]);
         $originProvinceId = $st->fetchColumn();
@@ -96,29 +82,33 @@ if ($action === 'create') {
         $st->execute([$destCityId]);
         $destProvinceId = $st->fetchColumn();
 
-        if (!$originProvinceId || !$destProvinceId) {
-            throw new Exception('استان مبدا یا مقصد در سیستم پیدا نشد.');
-        }
+        if (!$originProvinceId || !$destProvinceId) throw new Exception('استان مبدا یا مقصد پیدا نشد.');
 
         $companyId = (int)($_POST['company_id'] ?? 0);
-        if ($companyId <= 0) {
-            throw new Exception('لطفا شرکت باربری را انتخاب کنید.');
-        }
+        if ($companyId <= 0) throw new Exception('لطفا شرکت باربری را انتخاب کنید.');
 
         $publicCode = (string)rand(10000000, 99999999) . (string)rand(1000, 9999);
         $proposedPrice = normalize_money($_POST['proposed_price'] ?? null);
         $insuranceValue = normalize_money($_POST['insurance_value'] ?? null);
+
+        // مختصات نقشه
+        $oLat = !empty($_POST['origin_lat']) ? (float)$_POST['origin_lat'] : null;
+        $oLng = !empty($_POST['origin_lng']) ? (float)$_POST['origin_lng'] : null;
+        $dLat = !empty($_POST['dest_lat']) ? (float)$_POST['dest_lat'] : null;
+        $dLng = !empty($_POST['dest_lng']) ? (float)$_POST['dest_lng'] : null;
 
         $sql = "
             INSERT INTO loads (
                 public_code, company_id, created_by_user_id, phone_coordination, load_status, load_type,
                 cargo_type_id, description, weight_kg, is_tonnage_free, origin_province_id, origin_city_id,
                 origin_address, dest_province_id, dest_city_id, dest_address, price_type, proposed_price,
-                primary_vehicle_type_id, published_at, created_at, updated_at, has_insurance, insurance_value
+                primary_vehicle_type_id, published_at, created_at, updated_at, has_insurance, insurance_value,
+                origin_lat, origin_lng, dest_lat, dest_lng
             ) VALUES (
                 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                NOW(3), NOW(3), NOW(3), ?, ?
+                NOW(3), NOW(3), NOW(3), ?, ?,
+                ?, ?, ?, ?
             )
         ";
 
@@ -144,18 +134,17 @@ if ($action === 'create') {
             $proposedPrice,
             $_POST['primary_vehicle_type_id'] ?? 1,
             $_POST['has_insurance'] ?? 0,
-            $insuranceValue
+            $insuranceValue,
+            $oLat,
+            $oLng,
+            $dLat,
+            $dLng
         ]);
 
         echo json_encode(['ok' => $ok]);
     } catch (Throwable $e) {
         http_response_code(500);
-        echo json_encode([
-            'ok' => false,
-            'message' => $e->getMessage(),
-            'line' => $e->getLine(),
-            'file' => basename($e->getFile())
-        ]);
+        echo json_encode(['ok' => false, 'message' => $e->getMessage()]);
     }
     exit;
 }
@@ -165,11 +154,14 @@ if ($action === 'update') {
     try {
         $id = (int)($_POST['id'] ?? 0);
         $companyId = (int)($_POST['company_id'] ?? 0);
-        if ($companyId <= 0) {
-            throw new Exception('لطفا شرکت باربری را انتخاب کنید.');
-        }
+        if ($companyId <= 0) throw new Exception('لطفا شرکت باربری را انتخاب کنید.');
 
-        $sql = "UPDATE loads SET company_id=?, phone_coordination=?, load_status=?, origin_city_id=?, dest_city_id=?, load_type=?, primary_vehicle_type_id=?, cargo_type_id=?, weight_kg=?, is_tonnage_free=?, price_type=?, proposed_price=?, description=?, has_insurance=?, insurance_value=?, origin_address=?, dest_address=?, updated_at=NOW(3) WHERE id=?";
+        $oLat = !empty($_POST['origin_lat']) ? (float)$_POST['origin_lat'] : null;
+        $oLng = !empty($_POST['origin_lng']) ? (float)$_POST['origin_lng'] : null;
+        $dLat = !empty($_POST['dest_lat']) ? (float)$_POST['dest_lat'] : null;
+        $dLng = !empty($_POST['dest_lng']) ? (float)$_POST['dest_lng'] : null;
+
+        $sql = "UPDATE loads SET company_id=?, phone_coordination=?, load_status=?, origin_city_id=?, dest_city_id=?, load_type=?, primary_vehicle_type_id=?, cargo_type_id=?, weight_kg=?, is_tonnage_free=?, price_type=?, proposed_price=?, description=?, has_insurance=?, insurance_value=?, origin_address=?, dest_address=?, origin_lat=?, origin_lng=?, dest_lat=?, dest_lng=?, updated_at=NOW(3) WHERE id=?";
         $st = $pdo->prepare($sql);
         $ok = $st->execute([
             $companyId,
@@ -189,6 +181,10 @@ if ($action === 'update') {
             $_POST['insurance_value'] ?? null,
             $_POST['origin_address'] ?? null,
             $_POST['dest_address'] ?? null,
+            $oLat,
+            $oLng,
+            $dLat,
+            $dLng,
             $id
         ]);
         echo json_encode(['ok' => $ok]);
@@ -199,7 +195,6 @@ if ($action === 'update') {
     exit;
 }
 
-// --- بخش لیست دیتاتیبل ---
 if ($action === 'list') {
     require_once __DIR__ . '/../includes/jdf.php';
 
@@ -253,25 +248,20 @@ if ($action === 'list') {
     exit;
 }
 
-// --- عملیات حذف گروهی ---
 if ($action === 'bulk_delete') {
     $ids = $_POST['ids'] ?? [];
     if (!is_array($ids) || empty($ids)) {
         echo json_encode(['ok' => false, 'message' => 'هیچ موردی انتخاب نشده است']);
         exit;
     }
-
     $cleanIds = array_map('intval', $ids);
     $placeholders = implode(',', array_fill(0, count($cleanIds), '?'));
-
     $st = $pdo->prepare("UPDATE loads SET deleted_at = NOW(3) WHERE id IN ($placeholders)");
     $ok = $st->execute($cleanIds);
-
     echo json_encode(['ok' => $ok]);
     exit;
 }
 
-// --- حذف تکی ---
 if ($action === 'delete') {
     $id = (int)$_POST['id'];
     $ok = $pdo->prepare("UPDATE loads SET deleted_at = NOW(3) WHERE id = ?")->execute([$id]);

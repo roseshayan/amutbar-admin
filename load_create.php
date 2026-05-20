@@ -11,6 +11,9 @@ $vehicles = $pdo->query("SELECT id, title FROM vehicle_types WHERE is_active=1 O
 <link rel="stylesheet" href="assets/vendor/select2/css/select2.min.css">
 <script src="assets/vendor/select2/js/select2.full.min.js"></script>
 
+<link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css" />
+<script src="assets/vendor/leaflet/leaflet.js"></script>
+
 <div class="main-content app-content">
     <div class="container-fluid">
         <div class="my-4 page-header-breadcrumb d-flex align-items-center justify-content-between flex-wrap gap-2">
@@ -95,6 +98,13 @@ $vehicles = $pdo->query("SELECT id, title FROM vehicle_types WHERE is_active=1 O
                                         <label class="form-check-label fw-bold text-primary" for="insurance_check">نیاز به صدور بیمه‌نامه و بارنامه رسمی شرکت دارد</label>
                                     </div>
                                 </div>
+
+                                <div class="col-md-12">
+                                    <div class="form-check form-switch mt-2">
+                                        <input class="form-check-input" type="checkbox" id="map_check" value="1" onchange="toggleMapFields(this)">
+                                        <label class="form-check-label fw-bold text-success" for="map_check">ثبت مختصات دقیق روی نقشه برای مسیریابی (اختیاری)</label>
+                                    </div>
+                                </div>
                             </div>
 
                             <div id="insurance_fields" style="display:none;">
@@ -117,6 +127,35 @@ $vehicles = $pdo->query("SELECT id, title FROM vehicle_types WHERE is_active=1 O
                                 </div>
                             </div>
 
+                            <div id="map_fields" style="display:none;">
+                                <hr class="my-4">
+                                <h5 class="fs-14 fw-bold text-info mb-3">انتخاب مختصات مبدا و مقصد روی نقشه</h5>
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <label class="form-label">مبدا بارگیری</label>
+                                        <div class="input-group mb-2">
+                                            <input type="text" id="map_search_origin" class="form-control" placeholder="جستجوی شهر یا خیابان...">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="searchMap(mapOrigin, markerOrigin, 'map_search_origin', 'origin_lat', 'origin_lng')"><i class="ri-search-line"></i></button>
+                                        </div>
+                                        <div id="map_origin" style="height: 300px; border-radius: 8px; z-index: 1;"></div>
+                                        <input type="hidden" name="origin_lat" id="origin_lat">
+                                        <input type="hidden" name="origin_lng" id="origin_lng">
+                                        <small class="text-muted mt-1 d-block">نشانگر را جابجا کنید یا روی نقشه کلیک کنید.</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">مقصد تخلیه</label>
+                                        <div class="input-group mb-2">
+                                            <input type="text" id="map_search_dest" class="form-control" placeholder="جستجوی شهر یا خیابان...">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="searchMap(mapDest, markerDest, 'map_search_dest', 'dest_lat', 'dest_lng')"><i class="ri-search-line"></i></button>
+                                        </div>
+                                        <div id="map_dest" style="height: 300px; border-radius: 8px; z-index: 1;"></div>
+                                        <input type="hidden" name="dest_lat" id="dest_lat">
+                                        <input type="hidden" name="dest_lng" id="dest_lng">
+                                        <small class="text-muted mt-1 d-block">نشانگر را جابجا کنید یا روی نقشه کلیک کنید.</small>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="mt-4">
                                 <button type="button" class="btn btn-primary" onclick="submitLoadForm()">ثبت نهایی و اعلام بار</button>
                             </div>
@@ -129,7 +168,7 @@ $vehicles = $pdo->query("SELECT id, title FROM vehicle_types WHERE is_active=1 O
 </div>
 
 <script>
-    // توابع فرمت قیمت (جداکننده ۳ رقم ۳ رقم)
+    // توابع فرمت قیمت
     function formatPrice(val) {
         if (!val) return '';
         val = val.toString().replace(/,/g, '');
@@ -142,11 +181,9 @@ $vehicles = $pdo->query("SELECT id, title FROM vehicle_types WHERE is_active=1 O
     }
 
     $(document).ready(function() {
-        // اعمال کاما در لحظه تایپ
         $('.price-format').on('input', function() {
             let val = unformatPrice($(this).val());
             $(this).val(formatPrice(val));
-            // آپدیت کردن فیلد مخفی
             let hiddenId = $(this).attr('id') + '_hidden';
             $('#' + hiddenId).val(val);
         });
@@ -172,7 +209,6 @@ $vehicles = $pdo->query("SELECT id, title FROM vehicle_types WHERE is_active=1 O
         });
 
         function initCitySearch(selector, placeholderText) {
-
             $(selector).select2({
                 ajax: {
                     url: '<?= base_url() ?>/ajax/loads.php?action=search_city',
@@ -190,10 +226,8 @@ $vehicles = $pdo->query("SELECT id, title FROM vehicle_types WHERE is_active=1 O
                     },
                     cache: true
                 },
-
                 placeholder: placeholderText,
                 minimumInputLength: 2,
-
                 language: {
                     inputTooShort: function() {
                         return "حداقل 2 حرف وارد کنید";
@@ -201,15 +235,10 @@ $vehicles = $pdo->query("SELECT id, title FROM vehicle_types WHERE is_active=1 O
                 }
             });
 
-            // فیکس serialize
             $(selector).on('select2:select', function(e) {
-
                 let data = e.params.data;
-
                 if ($(this).find("option[value='" + data.id + "']").length === 0) {
-
                     let option = new Option(data.text, data.id, true, true);
-
                     $(this).append(option).trigger('change');
                 }
             });
@@ -242,7 +271,6 @@ $vehicles = $pdo->query("SELECT id, title FROM vehicle_types WHERE is_active=1 O
     function checkLoadType() {
         let type = $('#load_type').val();
         if (type === '2') {
-            // در حالت روباری ماشین مخفی نمیشه، فقط لیبل تغییر میکنه
             $('#weight_label').text('وزن بار (کیلوگرم) *');
         } else {
             $('#weight_label').text('وزن بار (تن) *');
@@ -308,8 +336,87 @@ $vehicles = $pdo->query("SELECT id, title FROM vehicle_types WHERE is_active=1 O
         }, 'json');
     }
 
+    // --- اسکریپت نقشه (Leaflet) ---
+    let mapOrigin, mapDest, markerOrigin, markerDest;
+
+    function toggleMapFields(chk) {
+        if (chk.checked) {
+            $('#map_fields').slideDown('fast', function() {
+                if (!mapOrigin) initMaps();
+                // آپدیت سایز نقشه در صورت نمایش اولیه
+                setTimeout(() => {
+                    mapOrigin.invalidateSize();
+                    mapDest.invalidateSize();
+                }, 300);
+            });
+        } else {
+            $('#map_fields').slideUp('fast');
+            $('#origin_lat, #origin_lng, #dest_lat, #dest_lng').val('');
+        }
+    }
+
+    function initMaps() {
+        // نقطه پیش‌فرض: تهران
+        let defaultLat = 35.6892;
+        let defaultLng = 51.3890;
+
+        // مبدا
+        mapOrigin = L.map('map_origin').setView([defaultLat, defaultLng], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapOrigin);
+        markerOrigin = L.marker([defaultLat, defaultLng], {
+            draggable: true
+        }).addTo(mapOrigin);
+
+        markerOrigin.on('dragend', function() {
+            let p = markerOrigin.getLatLng();
+            $('#origin_lat').val(p.lat);
+            $('#origin_lng').val(p.lng);
+        });
+        mapOrigin.on('click', function(e) {
+            markerOrigin.setLatLng(e.latlng);
+            $('#origin_lat').val(e.latlng.lat);
+            $('#origin_lng').val(e.latlng.lng);
+        });
+
+        // مقصد
+        mapDest = L.map('map_dest').setView([defaultLat, defaultLng], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapDest);
+        markerDest = L.marker([defaultLat, defaultLng], {
+            draggable: true
+        }).addTo(mapDest);
+
+        markerDest.on('dragend', function() {
+            let p = markerDest.getLatLng();
+            $('#dest_lat').val(p.lat);
+            $('#dest_lng').val(p.lng);
+        });
+        mapDest.on('click', function(e) {
+            markerDest.setLatLng(e.latlng);
+            $('#dest_lat').val(e.latlng.lat);
+            $('#dest_lng').val(e.latlng.lng);
+        });
+    }
+
+    function searchMap(mapObj, markerObj, inputId, latId, lngId) {
+        let q = $('#' + inputId).val();
+        if (!q) return;
+        // استفاده از nominatim با محدودیت کشور ایران
+        $.getJSON(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=ir`, function(data) {
+            if (data && data.length > 0) {
+                let lat = data[0].lat;
+                let lon = data[0].lon;
+                mapObj.setView([lat, lon], 14);
+                markerObj.setLatLng([lat, lon]);
+                $('#' + latId).val(lat);
+                $('#' + lngId).val(lon);
+            } else {
+                Swal.fire('یافت نشد', 'لطفا نام شهر یا محله را دقیق‌تر بنویسید.', 'info');
+            }
+        });
+    }
+    // ---------------------------------
+
     function submitLoadForm() {
-        // اعتبارسنجی دستی (برای دور زدن باگ Select2 مخفی)
         if (!$('#company_search').val()) return Swal.fire('خطا', 'انتخاب شرکت باربری الزامی است', 'warning');
         if (!$('#phone_coordination').val()) return Swal.fire('خطا', 'شماره تلفن هماهنگی الزامی است', 'warning');
         if (!$('#origin_city_search').val()) return Swal.fire('خطا', 'شهر مبدا الزامی است', 'warning');
