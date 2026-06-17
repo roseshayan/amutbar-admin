@@ -142,6 +142,7 @@ elseif ($path === '/support/tickets') {
 elseif ($path === '/loads') $endpointKey = 'api.loads.all';
 elseif ($path === '/driver/loads') $endpointKey = 'api.loads.driver_search';
 elseif (preg_match('~^/driver/loads/(\d+)$~', $path)) $endpointKey = 'api.loads.driver_single';
+if ($path === '/driver/calls/history')         $endpointKey = 'api.driver.calls.history';
 elseif ($path === '/companies/active-loads') $endpointKey = 'api.loads.company_active';
 
 // Logs
@@ -1343,11 +1344,13 @@ if ($method === 'GET' && preg_match('~^/driver/loads/(\d+)$~', $path, $matches))
 
     $st = $pdo->prepare("
         SELECT l.*, comp.company_name, vt.title as vehicle_title, cl.title as cargo_title,
-               c1.name as origin_city,
-               c2.name as dest_city
+               c1.name as origin_city, p1.name as origin_province,
+               c2.name as dest_city, p2.name as dest_province
         FROM loads l
         LEFT JOIN cities c1 ON l.origin_city_id = c1.id
+        LEFT JOIN provinces p1 ON c1.province_id = p1.id
         LEFT JOIN cities c2 ON l.dest_city_id = c2.id
+        LEFT JOIN provinces p2 ON c2.province_id = p2.id
         LEFT JOIN companies comp ON l.company_id = comp.id
         LEFT JOIN vehicle_types vt ON l.primary_vehicle_type_id = vt.id
         LEFT JOIN cargos_list cl ON l.cargo_type_id = cl.id
@@ -1358,7 +1361,13 @@ if ($method === 'GET' && preg_match('~^/driver/loads/(\d+)$~', $path, $matches))
 
     if (!$load) api_err('بار یافت نشد', 404);
 
-    $weightText = $load['is_tonnage_free'] == 1 ? 'تناژ آزاد' : ($load['weight_kg'] . ((int)$load['load_type'] == 1 ? ' تن' : ' کیلوگرم'));
+    $weightText = $load['is_tonnage_free'] == 1
+        ? 'تناژ آزاد'
+        : ($load['weight_kg'] . ((int)$load['load_type'] == 1 ? ' تن' : ' کیلوگرم'));
+
+    // ترکیب شهر و استان برای نمایش
+    $originFull = $load['origin_city'] . ' (' . $load['origin_province'] . ')';
+    $destFull = $load['dest_city'] . ' (' . $load['dest_province'] . ')';
 
     api_ok(['data' => [
         'id' => $load['id'],
@@ -1371,34 +1380,63 @@ if ($method === 'GET' && preg_match('~^/driver/loads/(\d+)$~', $path, $matches))
         'price_type_text' => (int)$load['price_type'] === 1 ? 'صافی سرویسی' : 'صافی تنی',
         'phone_coordination' => $load['phone_coordination'],
         'description' => $load['description'],
+        'cargo_title' => $load['cargo_title'] ?? 'کالا عمومی',   // عنوان کالا
         'origin_city' => $load['origin_city'],
+        'origin_province' => $load['origin_province'],
+        'origin_full' => $originFull,       // مبدأ کامل با استان
         'dest_city' => $load['dest_city'],
+        'dest_province' => $load['dest_province'],
+        'dest_full' => $destFull,           // مقصد کامل با استان
         'o_lat' => $load['origin_lat'],
         'o_lng' => $load['origin_lng'],
         'd_lat' => $load['dest_lat'],
         'd_lng' => $load['dest_lng'],
+        'proposed_price' => $load['proposed_price'],   // ممکن است null باشد
     ]]);
 }
 
 // ۴. دریافت بارهای فعال دیگر یک شرکت خاص
 if ($method === 'GET' && $path === '/companies/active-loads') {
+    $u = api_require_auth();  // 👈 احراز هویت کاربر برای گرفتن امتیاز
     $companyId = (int)($_GET['company_id'] ?? 0);
     $excludeId = (int)($_GET['exclude_id'] ?? 0);
     $pdo = db();
 
+    // 👇 دریافت امتیاز راننده (دقیقاً مثل /driver/loads)
+    $stDriver = $pdo->prepare("SELECT rating_avg FROM drivers WHERE user_id=? AND deleted_at IS NULL LIMIT 1");
+    $stDriver->execute([$u['id']]);
+    $rating = (float)($stDriver->fetchColumn() ?: 0.0);
+
+    // 👇 شرط زمانی بر اساس امتیاز
+    $timeCondition = "NOW(3)";
+    if ($rating < 4.0) {
+        $timeCondition = "DATE_SUB(NOW(3), INTERVAL 5 MINUTE)";
+    }
+
     $st = $pdo->prepare("
-        SELECT l.id, cl.title as cargo_title, c1.name as origin_city, c2.name as dest_city, l.proposed_price
+        SELECT l.id, cl.title as cargo_title, 
+               CONCAT(c1.name, ' (', p1.name, ')') as origin,
+               CONCAT(c2.name, ' (', p2.name, ')') as destination,
+               l.proposed_price
         FROM loads l
         LEFT JOIN cargos_list cl ON l.cargo_type_id = cl.id
         LEFT JOIN cities c1 ON l.origin_city_id = c1.id
+        LEFT JOIN provinces p1 ON c1.province_id = p1.id
         LEFT JOIN cities c2 ON l.dest_city_id = c2.id
-        WHERE l.company_id = ? AND l.id != ? AND l.load_status = 1 AND l.deleted_at IS NULL LIMIT 5
+        LEFT JOIN provinces p2 ON c2.province_id = p2.id
+        WHERE l.company_id = ? 
+          AND l.id != ? 
+          AND l.load_status = 1 
+          AND l.deleted_at IS NULL 
+          AND l.published_at <= $timeCondition  -- 👈 فیلتر زمانی
+        LIMIT 5
     ");
     $st->execute([$companyId, $excludeId]);
 
     $items = array_map(fn($r) => [
-        'origin' => $r['origin_city'],
-        'destination' => $r['dest_city'],
+        'id' => (int)$r['id'],
+        'origin' => $r['origin'],
+        'destination' => $r['destination'],
         'cargo_title' => $r['cargo_title'] ?? 'کالا عمومی',
         'price' => number_format((float)$r['proposed_price'])
     ], $st->fetchAll());
@@ -1435,6 +1473,61 @@ if ($method === 'POST' && $path === '/driver/calls/log') {
         api_ok(['logged' => true]);
     }
     api_err('اطلاعات نامعتبر', 400);
+}
+
+// ۶. دریافت تاریخچه تماس‌های راننده
+if ($method === 'GET' && $path === '/driver/calls/history') {
+    $u = api_require_auth();
+    $pdo = db();
+
+    // دریافت driver_id راننده فعلی
+    $stDr = $pdo->prepare("SELECT id FROM drivers WHERE user_id=? AND deleted_at IS NULL LIMIT 1");
+    $stDr->execute([$u['id']]);
+    $driverId = (int)$stDr->fetchColumn();
+    if ($driverId <= 0) {
+        api_err('راننده یافت نشد', 404);
+    }
+
+    $st = $pdo->prepare("
+        SELECT cl.id as call_id, cl.load_id, cl.created_at as call_time,
+               l.public_code, l.load_status, l.deleted_at as load_deleted,
+               comp.company_name,
+               CONCAT(c1.name, ' (', p1.name, ')') as origin_full,
+               CONCAT(c2.name, ' (', p2.name, ')') as dest_full,
+               cg.title as cargo_title,
+               l.proposed_price
+        FROM call_logs cl
+        LEFT JOIN loads l ON cl.load_id = l.id
+        LEFT JOIN companies comp ON cl.company_id = comp.id
+        LEFT JOIN cities c1 ON l.origin_city_id = c1.id
+        LEFT JOIN provinces p1 ON c1.province_id = p1.id
+        LEFT JOIN cities c2 ON l.dest_city_id = c2.id
+        LEFT JOIN provinces p2 ON c2.province_id = p2.id
+        LEFT JOIN cargos_list cg ON l.cargo_type_id = cg.id
+        WHERE cl.driver_id = ? AND cl.event_type = 1
+        ORDER BY cl.created_at DESC
+        LIMIT 50
+    ");
+    $st->execute([$driverId]);
+    $rows = $st->fetchAll();
+
+    $items = array_map(function ($r) {
+        $isDeleted = ($r['load_deleted'] !== null);
+        return [
+            'call_id' => (int)$r['call_id'],
+            'load_id' => $isDeleted ? null : (int)$r['load_id'],
+            'public_code' => $isDeleted ? 'بار حذف شده' : $r['public_code'],
+            'company_name' => $r['company_name'] ?? 'نامشخص',
+            'origin' => $isDeleted ? '---' : ($r['origin_full'] ?? 'نامشخص'),
+            'destination' => $isDeleted ? '---' : ($r['dest_full'] ?? 'نامشخص'),
+            'cargo_title' => $isDeleted ? '---' : ($r['cargo_title'] ?? 'کالا عمومی'),
+            'proposed_price' => $isDeleted ? null : $r['proposed_price'],
+            'call_time' => $r['call_time'],
+            'is_available' => !$isDeleted && ($r['load_status'] == 1), // بار هنوز فعال است
+        ];
+    }, $rows);
+
+    api_ok(['items' => $items]);
 }
 
 api_err('Not found', 404, ['path' => $path]);

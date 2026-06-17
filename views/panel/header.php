@@ -221,7 +221,7 @@ $logoToggleDark = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-lo
                             data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                             <div class="d-flex align-items-center">
                                 <div class="me-xl-2 me-0">
-                                    <img src="<?= $admin_avatar; ?>" alt="<?= $admin_name; ?>" class="avatar avatar-sm avatar-rounded">
+                                    <img src="<?= base_url() . $admin_avatar; ?>" alt="<?= $admin_name; ?>" class="avatar avatar-sm avatar-rounded">
                                 </div>
                                 <div class="d-xl-block d-none lh-1">
                                     <span class="fw-medium lh-1"><?= $admin_name; ?></span>

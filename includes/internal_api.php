@@ -56,6 +56,7 @@ function internal_api_endpoints_catalog(): array
         'api.loads.driver_search' => ['جستجوی هوشمند بارهای راننده', 'Loads', true, false],
         'api.loads.driver_single' => ['جزئیات کامل یک بار مشخص', 'Loads', true, false],
         'api.loads.company_active' => ['لیست بارهای فعال یک باربری', 'Loads', true, false],
+        'api.driver.calls.history' => ['تاریخچه تماس‌ها', 'Driver Calls', true, false],
 
         // ---------- Logs ----------
         'api.calls.log' => ['ثبت تاریخچه تماس راننده', 'Logs', true, true],

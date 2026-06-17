@@ -39,7 +39,12 @@ function user_gender_label(int $s): string
 function users_get(int $id): ?array
 {
     $pdo = db();
-    $st = $pdo->prepare("\n        SELECT *\n        FROM users\n        WHERE id = ? AND deleted_at IS NULL\n        LIMIT 1\n    ");
+    $st = $pdo->prepare("
+        SELECT *
+        FROM users
+        WHERE id = ? AND deleted_at IS NULL
+        LIMIT 1
+    ");
     $st->execute([$id]);
     $r = $st->fetch();
     return $r ?: null;
@@ -59,7 +64,7 @@ function users_save(array $in): array
 
     $id = (int)($in['id'] ?? 0);
     $full_name = sanitize_input((string)($in['full_name'] ?? ''));
-    $phone = preg_replace('/\\D+/', '', (string)($in['phone'] ?? ''));
+    $phone = preg_replace('/\D+/', '', (string)($in['phone'] ?? ''));
     $email = trim((string)($in['email'] ?? ''));
     $user_type = (int)($in['user_type'] ?? 0);
     $status = (int)($in['status'] ?? 3);
@@ -74,12 +79,12 @@ function users_save(array $in): array
     $display_name = sanitize_input((string)($in['display_name'] ?? ''));
 
     if ($full_name === '') return ['ok' => false, 'message' => 'نام و نام خانوادگی الزامی است'];
-    if (!preg_match('/^09\\d{9}$/', $phone)) return ['ok' => false, 'message' => 'شماره موبایل نامعتبر است'];
+    if (!preg_match('/^09\d{9}$/', $phone)) return ['ok' => false, 'message' => 'شماره موبایل نامعتبر است'];
     if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) return ['ok' => false, 'message' => 'ایمیل نامعتبر است'];
     if (!in_array($user_type, [1, 2, 3], true)) return ['ok' => false, 'message' => 'نوع کاربر نامعتبر است'];
     if (!in_array($status, [1, 2, 3, 4], true)) return ['ok' => false, 'message' => 'وضعیت نامعتبر است'];
 
-    // اعتبارسنجی کد ملی
+    // اعتبارسنجی کد ملی با تابع داخلی موجود در همین فایل
     if ($code_meli !== '' && (!preg_match('/^\d{10}$/', $code_meli) || !validate_meli_code($code_meli))) {
         return ['ok' => false, 'message' => 'کد ملی نامعتبر است'];
     }
@@ -213,7 +218,11 @@ function users_datatable(array $req): array
     $st->execute($params);
     $filtered = (int)$st->fetchColumn();
 
-    $sql = "SELECT id, full_name, phone, email, user_type, status, created_at, code_meli, display_name\n            FROM users\n            WHERE {$where}\n            ORDER BY {$orderCol} {$orderDir}\n            LIMIT {$length} OFFSET {$start}";
+    $sql = "SELECT id, full_name, phone, email, user_type, status, created_at, code_meli, display_name
+            FROM users
+            WHERE {$where}
+            ORDER BY {$orderCol} {$orderDir}
+            LIMIT {$length} OFFSET {$start}";
 
     $st = $pdo->prepare($sql);
     $st->execute($params);
@@ -222,16 +231,16 @@ function users_datatable(array $req): array
     $data = array_map(static function (array $r): array {
         return [
             'id' => (int)$r['id'],
-            'full_name' => (string)$r['full_name'],
-            'phone' => (string)$r['phone'],
-            'email' => (string)($r['email'] ?? ''),
+            'full_name' => htmlspecialchars((string)$r['full_name'], ENT_QUOTES, 'UTF-8'),
+            'phone' => htmlspecialchars((string)$r['phone'], ENT_QUOTES, 'UTF-8'),
+            'email' => htmlspecialchars((string)($r['email'] ?? ''), ENT_QUOTES, 'UTF-8'),
             'user_type' => (int)$r['user_type'],
             'user_type_label' => user_type_label((int)$r['user_type']),
             'status' => (int)$r['status'],
             'status_label' => user_status_label((int)$r['status']),
             'created_at' => (string)$r['created_at'],
-            'code_meli' => (string)($r['code_meli'] ?? ''),
-            'display_name' => (string)($r['display_name'] ?? ''),
+            'code_meli' => htmlspecialchars((string)($r['code_meli'] ?? ''), ENT_QUOTES, 'UTF-8'),
+            'display_name' => htmlspecialchars((string)($r['display_name'] ?? ''), ENT_QUOTES, 'UTF-8'),
         ];
     }, $rows);
 
@@ -270,8 +279,6 @@ function users_complete_save(array $data): array
 {
     $pdo = db();
 
-    // نکته: اگر اعتبارسنجی راننده/باربری fail شود، نباید کاربر ساخته شود.
-    // برای همین همه عملیات در یک تراکنش انجام می‌شود.
     $pdo->beginTransaction();
 
     // ذخیره‌سازی اطلاعات پایه کاربر
@@ -324,7 +331,6 @@ function save_avatar(int $userId, ?array $avatarFile): void
 
     $extension = strtolower(pathinfo($avatarFile['name'], PATHINFO_EXTENSION));
     if ($extension === '') {
-        // fallback by MIME
         $extension = match ($avatarFile['type']) {
             'image/png' => 'png',
             'image/webp' => 'webp',
@@ -342,7 +348,6 @@ function save_avatar(int $userId, ?array $avatarFile): void
 
     if (move_uploaded_file($avatarFile['tmp_name'], $uploadPath)) {
         $pdo = db();
-        // delete old avatar if it is a local file
         $stOld = $pdo->prepare("SELECT avatar_key FROM users WHERE id=? LIMIT 1");
         $stOld->execute([$userId]);
         $old = (string)($stOld->fetchColumn() ?: '');
@@ -383,7 +388,6 @@ function user_update_avatar(int $userId, array $avatarFile): array
     $oldKey = $st->fetchColumn();
     if ($oldKey === false) return ['ok' => false, 'message' => 'کاربر یافت نشد', 'status' => 404];
 
-    // Use the same storage strategy as save_avatar()
     $extension = strtolower(pathinfo((string)$avatarFile['name'], PATHINFO_EXTENSION));
     if ($extension === '') {
         $extension = match ((string)$avatarFile['type']) {
@@ -409,7 +413,6 @@ function user_update_avatar(int $userId, array $avatarFile): array
     $pdo->prepare("UPDATE users SET avatar_key=?, updated_at=NOW(3) WHERE id=? LIMIT 1")
         ->execute([$newKey, $userId]);
 
-    // Clean old file if it was local
     if (is_string($oldKey) && $oldKey !== '' && !preg_match('~^https?://~i', $oldKey)) {
         $oldPath = BASE_PATH . '/' . ltrim($oldKey, '/');
         if (str_contains($oldPath, '/storage/uploads/avatars/') && is_file($oldPath)) {
@@ -431,10 +434,6 @@ function save_driver_info(int $userId, array $data): array
     $smartCardNumber = trim((string)($data['smart_card_number'] ?? ''));
     $vehicleTypeId = (int)($data['vehicle_type_id'] ?? 0);
     $modelYear = ($data['model_year'] ?? '') !== '' ? (int)$data['model_year'] : null;
-    if ($modelYear !== null) {
-        // تبدیل سال شمسی به میلادی (تقریبی)
-        $modelYearGregorian = $modelYear + 621;
-    }
     $color = trim((string)($data['color'] ?? ''));
     $capacityKg = ($data['capacity_kg'] ?? '') !== '' ? (float)$data['capacity_kg'] : null;
     $provinceId = ($data['province_id'] ?? '') !== '' ? (int)$data['province_id'] : null;
@@ -454,30 +453,24 @@ function save_driver_info(int $userId, array $data): array
     $chassisNumber = trim((string)($data['chassis_number'] ?? ''));
     $extraPhonesJson = json_encode($data['extra_phones'] ?? []);
 
-    // خواندن کلیدهای تفکیک‌شده جدید
     $verificationStatus = isset($data['driver_verification_status']) ? (int)$data['driver_verification_status'] : (isset($data['verification_status']) ? (int)$data['verification_status'] : null);
     $rejectReason = trim((string)($data['driver_reject_reason'] ?? ($data['reject_reason'] ?? '')));
     $adminId = admin_id() ?: null;
     $verifiedAt = ($verificationStatus === 1) ? date('Y-m-d H:i:s') : null;
     $verifiedBy = ($verificationStatus === 1) ? $adminId : null;
 
-    // اعتبارسنجی فیلدهای الزامی راننده
     if (empty($nationalCode)) {
         return ['ok' => false, 'message' => 'کد ملی برای راننده الزامی است'];
     }
-
     if (empty($plateNumber)) {
         return ['ok' => false, 'message' => 'پلاک ماشین الزامی است'];
     }
-
     if ($vehicleTypeId <= 0) {
         return ['ok' => false, 'message' => 'نوع وسیله نقلیه الزامی است'];
     }
 
     try {
         if ($driverId > 0) {
-
-            // قبل از آپدیت، وضعیت قبلی را می‌گیریم
             $stOld = $pdo->prepare("SELECT verification_status FROM drivers WHERE id=?");
             $stOld->execute([$driverId]);
             $oldStatus = (int)($stOld->fetchColumn() ?: 0);
@@ -525,13 +518,11 @@ function save_driver_info(int $userId, array $data): array
                 $userId
             ]);
 
-            // لاگ‌گیری در صورت تغییر وضعیت
             if ($oldStatus !== $verificationStatus && $adminId) {
                 $pdo->prepare("INSERT INTO driver_verification_events (driver_id, old_status, new_status, actor_user_id, note, created_at) VALUES (?, ?, ?, ?, ?, NOW(3))")
                     ->execute([$driverId, $oldStatus, $verificationStatus, $adminId, $rejectReason]);
             }
         } else {
-            // ایجاد راننده جدید
             $st = $pdo->prepare("
                 INSERT INTO drivers 
                 (user_id, full_name, national_code, smart_card_number, vehicle_type_id, 
@@ -568,18 +559,14 @@ function save_driver_info(int $userId, array $data): array
             ]);
         }
 
-        // ذخیره فایل‌های آپلود شده برای راننده
-        // lastInsertId() در PDO رشته برمی‌گرداند؛ با strict_types باید cast شود
         $did = $driverId > 0 ? $driverId : (int)$pdo->lastInsertId();
         save_driver_files($userId, $did, $_FILES);
 
         return ['ok' => true];
     } catch (Throwable $e) {
-        // بررسی خطای تکراری بودن پلاک
         if (str_contains($e->getMessage(), 'uq_drivers_plate_active')) {
             return ['ok' => false, 'message' => 'این پلاک قبلاً ثبت شده است'];
         }
-
         $msg = ((string)env('APP_DEBUG', '0') === '1') ? $e->getMessage() : 'خطا در ذخیره اطلاعات راننده';
         return ['ok' => false, 'message' => $msg];
     }
@@ -600,7 +587,9 @@ function save_driver_files(int $userId, int $driverId, array $files): void
     foreach ($fileTypes as $fieldName => $fileType) {
         if (isset($files[$fieldName]) && $files[$fieldName]['error'] === UPLOAD_ERR_OK) {
             $key = save_user_file($userId, $fileType, $files[$fieldName], $driverId);
-            if ($key && $driverId > 0) save_driver_document($driverId, $fileType, $key);
+            if ($key && $driverId > 0) {
+                save_driver_document($driverId, $fileType, $key);
+            }
         }
     }
 }
@@ -628,18 +617,15 @@ function save_company_info(int $userId, array $data): array
     $verifiedAt = ($verificationStatus === 1) ? date('Y-m-d H:i:s') : null;
     $verifiedBy = ($verificationStatus === 1) ? $adminId : null;
 
-    // اعتبارسنجی فیلدهای الزامی باربری
     if (empty($companyName)) {
         return ['ok' => false, 'message' => 'نام باربری الزامی است'];
     }
-
     if (empty($ownerNationalCode)) {
         return ['ok' => false, 'message' => 'کد ملی صاحب باربری الزامی است'];
     }
 
     try {
         if ($companyId > 0) {
-            // بروزرسانی باربری موجود
             $st = $pdo->prepare("
                 UPDATE companies 
                 SET company_name = ?, owner_full_name = ?, owner_national_code = ?, 
@@ -668,7 +654,6 @@ function save_company_info(int $userId, array $data): array
                 $userId
             ]);
         } else {
-            // ایجاد باربری جدید
             $st = $pdo->prepare("
                 INSERT INTO companies 
                 (user_id, company_name, owner_full_name, owner_national_code, 
@@ -691,9 +676,8 @@ function save_company_info(int $userId, array $data): array
             ]);
         }
 
-        // ذخیره عکس کارت ملی برای باربری
         if (isset($_FILES['company_national_card_image']) && $_FILES['company_national_card_image']['error'] === UPLOAD_ERR_OK) {
-            save_user_file($userId, 2, $_FILES['company_national_card_image'], $companyId ?: $pdo->lastInsertId());
+            save_user_file($userId, 2, $_FILES['company_national_card_image'], $companyId ?: (int)$pdo->lastInsertId());
         }
 
         return ['ok' => true];
@@ -703,9 +687,8 @@ function save_company_info(int $userId, array $data): array
     }
 }
 
-// تابع عمومی برای ذخیره فایل کاربر
-// تابع عمومی برای ذخیره فایل کاربر
-function save_user_file(int $userId, int $fileType, array $file, int $relatedId = null): ?string
+// تابع عمومی اصلاح‌شده برای ذخیره فایل کاربر (کاملاً هماهنگ با PHP 8.1+ Nullable)
+function save_user_file(int $userId, int $fileType, array $file, ?int $relatedId = null): ?string
 {
     $allowedImageTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
     $allowedVideoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
@@ -714,38 +697,31 @@ function save_user_file(int $userId, int $fileType, array $file, int $relatedId 
     $maxVideoSize = 50 * 1024 * 1024; // 50MB
 
     if ($file['error'] !== UPLOAD_ERR_OK) {
-        return "آپلود با مشکل مواجه شد (کد خطا: {$file['error']})";
+        return null;
     }
 
-    // تعیین نوع فایل
-    $isImage = in_array($file['type'], $allowedImageTypes);
-    $isVideo = in_array($file['type'], $allowedVideoTypes);
+    $isImage = in_array($file['type'], $allowedImageTypes, true);
+    $isVideo = in_array($file['type'], $allowedVideoTypes, true);
 
     if (!$isImage && !$isVideo) {
-        return "نوع فایل معتبر نیست";
+        return null;
     }
 
-    // بررسی سایز
     if (($isImage && $file['size'] > $maxImageSize) || ($isVideo && $file['size'] > $maxVideoSize)) {
-        return "حجم فایل از حد مجاز فراتر رفته است";
+        return null;
     }
 
-    // ایجاد نام فایل
     $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
     if (empty($extension)) {
         $extension = $isImage ? 'jpg' : 'mp4';
     }
     $filename = "user_{$userId}_" . uniqid() . ".{$extension}";
 
-    // پوشه‌های ذخیره‌سازی
     $uploadDir = __DIR__ . '/../storage/uploads/';
     $relativePath = ($isImage ? 'images/' : 'videos/') . $filename;
     $uploadPath = $uploadDir . $relativePath;
-
-    // مسیر کامل برای ذخیره در دیتابیس تا در نمایشِ پنل مشکلی نباشد
     $dbFileKey = 'storage/uploads/' . $relativePath;
 
-    // اطمینان از وجود پوشه
     if (!is_dir(dirname($uploadPath))) {
         @mkdir(dirname($uploadPath), 0777, true);
     }
@@ -753,20 +729,17 @@ function save_user_file(int $userId, int $fileType, array $file, int $relatedId 
     if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
         $pdo = db();
 
-        // ایمن‌سازی دیتای متادیتا برای جلوگیری از خطای نام فایل‌های فارسی
         $metadata = json_encode([
             'related_id' => $relatedId,
             'original_name' => $file['name'],
             'uploaded_at' => date('Y-m-d H:i:s')
         ], JSON_UNESCAPED_UNICODE) ?: '{}';
 
-        // بررسی اینکه آیا قبلاً فایلی از این نوع برای این کاربر آپلود شده است یا نه
         $stCheck = $pdo->prepare("SELECT id, file_key FROM user_files WHERE user_id = ? AND file_type = ? LIMIT 1");
         $stCheck->execute([$userId, $fileType]);
         $existing = $stCheck->fetch();
 
         if ($existing) {
-            // حذف هوشمندانه فایل قدیمی از هاست (جلوگیری از پر شدن بی‌دلیل سرور)
             $oldKey = $existing['file_key'];
             if (!empty($oldKey)) {
                 $oldPath = __DIR__ . '/../' . ltrim(str_replace('storage/uploads/', '', $oldKey), '/');
@@ -775,7 +748,6 @@ function save_user_file(int $userId, int $fileType, array $file, int $relatedId 
                 }
             }
 
-            // آپدیت رکورد قبلی در دیتابیس (بدون ساخت رکورد اضافه)
             $stUpdate = $pdo->prepare("
                 UPDATE user_files 
                 SET file_key = ?, mime_type = ?, file_size = ?, metadata = ?, updated_at = NOW(3)
@@ -791,7 +763,6 @@ function save_user_file(int $userId, int $fileType, array $file, int $relatedId 
 
             return $dbFileKey;
         } else {
-            // ایجاد رکورد کاملاً جدید در دیتابیس
             $stInsert = $pdo->prepare("
                 INSERT INTO user_files 
                 (user_id, file_type, file_key, mime_type, file_size, metadata, created_at, updated_at) 
@@ -805,9 +776,12 @@ function save_user_file(int $userId, int $fileType, array $file, int $relatedId 
                 $file['size'],
                 $metadata
             ]);
+            
+            // باگ منطقی برطرف شد: مقدار ریترن در ایجاد سابقه جدید درست ست شد.
+            return $dbFileKey; 
         }
-        return null;
     }
+    return null;
 }
 
 function save_driver_document(int $driverId, int $docType, string $fileKey): void

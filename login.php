@@ -57,37 +57,51 @@ if (admin_id()) {
         const phone = document.querySelector('input[name="phone"]').value.trim();
         const pass = document.querySelector('input[name="password"]').value;
         if (!phone || !pass) {
-            showError('شماره موبایل و رمز عبور الزامی است');
+            swalError('شماره موبایل و رمز عبور الزامی است');
             return;
         }
 
-        const res = await fetch('/ajax/auth_login.php', {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            credentials: 'same-origin',
-            body: fd
-        });
+        // با استفاده از تابع url_path، آدرس در لوکال و هاست همیشه داینامیک و درست ساخته می‌شود
+        const loginUrl = '<?= url_path("ajax/auth_login.php") ?>';
 
-        let data;
         try {
-            data = await res.json();
-        } catch (e) {
-            const t = await res.text();
-            Swal.fire({
-                icon: 'error',
-                title: 'خطای سرور',
-                text: 'پاسخ سرور JSON نیست. (Console را ببین)'
+            const res = await fetch(loginUrl, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin',
+                body: fd
             });
-            console.error(t);
-            return;
+
+            // مشکل body stream already read هم با قرار گرفتن تکست خام در یک متغیر مجزا حل شد
+            const textResponse = await res.text();
+            
+            let data;
+            try {
+                data = JSON.parse(textResponse);
+            } catch (e) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'خطای سرور',
+                    text: 'پاسخ سرور JSON نیست. احتمالاً به خاطر نمایش هشدار یا خطای PHP است.'
+                });
+                console.error("پاسخ دریافتی غیر مجاز:", textResponse);
+                return;
+            }
+
+            if (!data.ok) {
+                swalError(data.message);
+                return;
+            }
+
+            // هدایت به داشبورد با آدرس‌دهی صحیح داینامیک
+            location.href = data.redirect || 'index.php?page=dashboard';
+
+        } catch (error) {
+            swalError('ارتباط با سرور برقرار نشد. شبکه را بررسی کنید.');
+            console.error(error);
         }
-        if (!data.ok) {
-            swalError(data.message);
-            return;
-        }
-        location.href = data.redirect || 'dashboard.php';
     }
 
     function togglePassword(btn) {
@@ -100,7 +114,6 @@ if (admin_id()) {
         const show = (input.type === 'password');
         input.type = show ? 'text' : 'password';
 
-        // اگر مرورگر/قالب ماسک اعمال کند، این خط کمک می‌کند
         input.style.webkitTextSecurity = show ? 'none' : 'disc';
 
         if (icon) {
