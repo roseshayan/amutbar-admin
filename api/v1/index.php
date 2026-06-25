@@ -96,6 +96,10 @@ function api_user_with_profile(array $u): array
 $method = api_method();
 $path = api_path();
 
+// --- مسیرهای اپلیکیشن اعلام بار (باربری). اگر مسیر مربوط نباشد، عبور می‌کند. ---
+require_once __DIR__ . '/_company_routes.php';
+company_routes($method, $path);
+
 // -----------------------------
 // Endpoint key (برای کنترل از پنل)
 // -----------------------------
