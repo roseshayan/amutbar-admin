@@ -151,11 +151,51 @@ elseif ($path === '/companies/active-loads') $endpointKey = 'api.loads.company_a
 
 // Logs
 elseif ($path === '/driver/calls/log') $endpointKey = 'api.calls.log';
+elseif ($path === '/driver/activity') $endpointKey = 'api.driver.activity_log';
 
 // Maintenance + enable/disable
 api_guard_global($endpointKey);
 if ($endpointKey !== 'api.unknown') {
     api_guard_endpoint($endpointKey);
+}
+
+// Driver app activity log (batch or single event)
+if ($method === 'POST' && $path === '/driver/activity') {
+    $u = api_require_auth();
+    if ((int)($u['user_type'] ?? 0) !== 1) api_err('Forbidden', 403);
+
+    $in = api_input();
+    $events = [];
+    if (isset($in['events']) && is_array($in['events'])) {
+        $events = $in['events'];
+    } elseif (isset($in['event_key']) || isset($in['event'])) {
+        $events = [$in];
+    }
+
+    if (empty($events)) {
+        api_ok(['logged' => 0]);
+    }
+
+    $context = [
+        'client_platform' => $in['client_platform'] ?? null,
+        'client_version_code' => $in['client_version_code'] ?? ($in['client_version'] ?? null),
+        'app_version_name' => $in['app_version_name'] ?? null,
+        'device_id' => $in['device_id'] ?? null,
+    ];
+
+    $logged = 0;
+    foreach ($events as $event) {
+        if (!is_array($event)) continue;
+        driver_activity_log($u, $event, $context);
+        $logged++;
+        if ($logged >= 50) break; // جلوگیری از ارسال batch غیرمنطقی
+    }
+
+    if ($logged > 0 && random_int(1, 100) === 1) {
+        driver_activity_cleanup(1000);
+    }
+
+    api_ok(['logged' => $logged]);
 }
 
 // Health

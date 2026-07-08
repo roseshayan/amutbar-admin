@@ -59,6 +59,7 @@ require_once __DIR__ . '/ExternalApiHelper.php';
 
 require_once __DIR__ . '/audit.php';
 require_once __DIR__ . '/auth_log.php';
+require_once __DIR__ . '/driver_activity.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/sms.php';
 require_once __DIR__ . '/otp.php';

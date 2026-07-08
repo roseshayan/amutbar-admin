@@ -60,6 +60,7 @@ function internal_api_endpoints_catalog(): array
 
         // ---------- Logs ----------
         'api.calls.log' => ['ثبت تاریخچه تماس راننده', 'Logs', true, true],
+        'api.driver.activity_log' => ['ثبت فعالیت جزئی راننده در اپ', 'Logs', true, true],
     ];
 }
 

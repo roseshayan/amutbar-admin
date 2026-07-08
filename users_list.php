@@ -141,6 +141,7 @@ require_once "views/panel/sidebar.php";
 
                         return `
                             <a class="btn btn-sm btn-outline-primary" href="user_edit.php?id=${row.id}">ویرایش</a>
+                            <a class="btn btn-sm btn-outline-info ms-1" href="driver-activities.php?user_id=${row.id}">فعالیت‌ها</a>
                             ${statusBtn}
                             <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteUser(${row.id})">حذف دائم</button>
                         `;

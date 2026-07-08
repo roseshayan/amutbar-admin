@@ -137,6 +137,12 @@ $sidebarLogoHref = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-l
                         <span class="side-menu__label">گزارش ورود و خروج</span>
                     </a>
                 </li>
+                <li class="slide">
+                    <a href="driver-activities.php" class="side-menu__item">
+                        <i class="ri-route-line side-menu__icon"></i>
+                        <span class="side-menu__label">فعالیت رانندگان</span>
+                    </a>
+                </li>
 
             </ul>
             <div class="slide-right" id="slide-right">
