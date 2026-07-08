@@ -1259,8 +1259,12 @@ if ($method === 'GET' && $path === '/driver/loads') {
         $infoMessage = "رانندگان با امتیاز بالاتر بارها را سریع‌تر مشاهده می‌کنند. بارهای جاری با ۵ دقیقه تاخیر برای شما لود شده است.";
     }
 
+    // فیلترهای قبلی بر اساس شهر برای سازگاری باقی می‌مانند؛
+    // فیلتر اصلی صفحه جستجوی جدید بر اساس استان است.
     $originCityId = (isset($_GET['origin_city_id']) && trim($_GET['origin_city_id']) !== '') ? (int)$_GET['origin_city_id'] : null;
     $destCityId   = (isset($_GET['dest_city_id']) && trim($_GET['dest_city_id']) !== '') ? (int)$_GET['dest_city_id'] : null;
+    $originProvinceId = (isset($_GET['origin_province_id']) && trim($_GET['origin_province_id']) !== '') ? (int)$_GET['origin_province_id'] : null;
+    $destProvinceId   = (isset($_GET['dest_province_id']) && trim($_GET['dest_province_id']) !== '') ? (int)$_GET['dest_province_id'] : null;
 
     $queryStr = "
         SELECT l.*, 
@@ -1280,11 +1284,18 @@ if ($method === 'GET' && $path === '/driver/loads') {
     ";
 
     $params = [];
-    if ($originCityId && $originCityId > 0) {
+    if ($originProvinceId && $originProvinceId > 0) {
+        $queryStr .= " AND c1.province_id = ?";
+        $params[] = $originProvinceId;
+    } elseif ($originCityId && $originCityId > 0) {
         $queryStr .= " AND l.origin_city_id = ?";
         $params[] = $originCityId;
     }
-    if ($destCityId && $destCityId > 0) {
+
+    if ($destProvinceId && $destProvinceId > 0) {
+        $queryStr .= " AND c2.province_id = ?";
+        $params[] = $destProvinceId;
+    } elseif ($destCityId && $destCityId > 0) {
         $queryStr .= " AND l.dest_city_id = ?";
         $params[] = $destCityId;
     }
