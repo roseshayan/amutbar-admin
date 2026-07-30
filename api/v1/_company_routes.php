@@ -6,22 +6,8 @@ declare(strict_types=1);
  * --------------------------------------------------------------------------
  *  مسیرهای API مخصوص «اپلیکیشن اعلام بار / صاحبان بار» (user_type = 2)
  * --------------------------------------------------------------------------
- *  این فایل کاملاً ماژولار است و به منطق رانندگان دست نمی‌زند.
- *
- *  نحوه‌ی نصب (فقط یک خط):
- *  در فایل  api/v1/index.php  بلافاصله بعد از این خط‌ها:
- *
- *      $method = api_method();
- *      $path   = api_path();
- *
- *  این خط را اضافه کنید:
- *
- *      require_once __DIR__ . '/_company_routes.php';
- *      company_routes($method, $path);
- *
- *  چون توابع api_ok()/api_err() در انتهای کار exit می‌کنند، اگر مسیر مربوط به
- *  باربری بود همین‌جا پاسخ داده و خارج می‌شود؛ در غیر این صورت تابع return می‌کند
- *  و روتر اصلی (رانندگان) مثل قبل ادامه می‌دهد.
+ *  این فایل ماژولار است و از روتر اصلی، پس از guardهای نگهداری و فعال‌بودن
+ *  endpoint، فراخوانی می‌شود. جابه‌جا کردن dispatch به قبل از guardها ممنوع است.
  * --------------------------------------------------------------------------
  */
 
@@ -49,7 +35,7 @@ if (!function_exists('company_profile_payload')) {
         }
 
         return [
-            'user'    => $u,
+            'user'    => api_public_user_payload($u),
             'company' => $company,
             'onboarding' => [
                 'identity_verified'   => ($company !== null) && ((int)($company['verification_status'] ?? 0) === 1),
@@ -58,6 +44,19 @@ if (!function_exists('company_profile_payload')) {
                 'needs_company_profile' => $needsProfile,
             ],
         ];
+    }
+}
+
+if (!function_exists('company_public_load_code')) {
+    function company_public_load_code(PDO $pdo): string
+    {
+        for ($attempt = 0; $attempt < 8; $attempt++) {
+            $code = (string)random_int(100000000000, 999999999999);
+            $st = $pdo->prepare("SELECT 1 FROM loads WHERE public_code=? LIMIT 1");
+            $st->execute([$code]);
+            if (!$st->fetchColumn()) return $code;
+        }
+        throw new RuntimeException('load_code_generation_failed');
     }
 }
 
@@ -117,6 +116,11 @@ if (!function_exists('company_routes')) {
             if (!$fullName)     api_err('full_name الزامی است', 422);
             if (!$nationalCode) api_err('national_code الزامی است', 422);
             if (!$birthDate)    api_err('birth_date الزامی است', 422);
+            $nationalError = validate_national_code($nationalCode);
+            if ($nationalError !== null) api_err($nationalError, 422);
+            if (!preg_match('~^1[34]\d{2}/(?:0[1-9]|1[0-2])/(?:0[1-9]|[12]\d|3[01])$~', $birthDate)) {
+                api_err('فرمت تاریخ تولد نامعتبر است', 422);
+            }
 
             require_once __DIR__ . '/../../includes/settings.php';
             $requireSerial = (settings_get('auth.require_national_serial') === '1');
@@ -136,7 +140,7 @@ if (!function_exists('company_routes')) {
                     'nationalCode' => $nationalCode,
                 ]);
             } catch (Throwable $e) {
-                api_err('خطا در ارتباط با سرویس شاهکار: ' . $e->getMessage(), 502);
+                api_err('در حال حاضر ارتباط با سرویس احراز هویت ممکن نیست', 502);
             }
             if (empty($shahkarRes['success']) || $shahkarRes['success'] !== true) {
                 api_err('استعلام شاهکار ناموفق: ' . (string)($shahkarRes['message'] ?? 'خطای ناشناخته'), 400);
@@ -155,7 +159,7 @@ if (!function_exists('company_routes')) {
                         'serialNumber' => $cardSerial,
                     ]);
                 } catch (Throwable $e) {
-                    api_err('خطا در ارتباط با سرویس عکس: ' . $e->getMessage(), 502);
+                    api_err('در حال حاضر ارتباط با سرویس تصویر هویتی ممکن نیست', 502);
                 }
                 if (empty($photoRes['success']) || $photoRes['success'] !== true) {
                     api_err('استعلام عکس تایید نشد: ' . (string)($photoRes['message'] ?? 'اطلاعات هویتی صحیح نیست.'), 400);
@@ -163,11 +167,17 @@ if (!function_exists('company_routes')) {
                 $imageBase64 = $photoRes['data']['imageBase64'] ?? null;
                 if (is_string($imageBase64) && $imageBase64 !== '') {
                     $bin = base64_decode($imageBase64, true);
-                    if ($bin !== false && strlen($bin) > 0) {
+                    if (
+                        $bin !== false
+                        && strlen($bin) > 0
+                        && strlen($bin) <= 5 * 1024 * 1024
+                        && @getimagesizefromstring($bin) !== false
+                    ) {
                         $dir = __DIR__ . '/../../storage/uploads/avatars';
                         if (!is_dir($dir)) @mkdir($dir, 0775, true);
                         $filename = 'avatar_' . (int)$u['id'] . '_' . time() . '.jpg';
                         if (@file_put_contents($dir . '/' . $filename, $bin) !== false) {
+                            @chmod($dir . '/' . $filename, 0640);
                             $avatarKey = 'storage/uploads/avatars/' . $filename;
                             $pdo->prepare("UPDATE users SET avatar_key=?, updated_at=NOW(3) WHERE id=? LIMIT 1")
                                 ->execute([$avatarKey, (int)$u['id']]);
@@ -187,8 +197,8 @@ if (!function_exists('company_routes')) {
                     $pdo->prepare("UPDATE companies SET owner_full_name=?, owner_national_code=?, verification_status=1, verified_at=NOW(3), reject_reason=NULL, updated_at=NOW(3) WHERE id=? LIMIT 1")
                         ->execute([$fullName, $nationalCode, $companyId]);
                 } else {
-                    // ردیف اولیه؛ province/city با مقدار 0 (چون NOT NULL هستند) تا کاربر در مرحله‌ی پروفایل تکمیل کند
-                    $pdo->prepare("INSERT INTO companies (user_id, company_name, owner_full_name, owner_national_code, province_id, city_id, verification_status, verified_at, created_at, updated_at) VALUES (?, ?, ?, ?, 0, 0, 1, NOW(3), NOW(3), NOW(3))")
+                    // ردیف اولیه؛ موقعیت در مرحله‌ی بعدی آنبوردینگ تکمیل می‌شود.
+                    $pdo->prepare("INSERT INTO companies (user_id, company_name, owner_full_name, owner_national_code, province_id, city_id, verification_status, verified_at, created_at, updated_at) VALUES (?, ?, ?, ?, NULL, NULL, 1, NOW(3), NOW(3), NOW(3))")
                         ->execute([(int)$u['id'], $fullName, $fullName, $nationalCode]);
                 }
 
@@ -198,7 +208,8 @@ if (!function_exists('company_routes')) {
                 $pdo->commit();
             } catch (Throwable $e) {
                 $pdo->rollBack();
-                api_err('خطا در ذخیره‌سازی اطلاعات: ' . $e->getMessage(), 500);
+                $msg = ((string)env('APP_DEBUG', '0') === '1') ? $e->getMessage() : 'خطا در ذخیره‌سازی اطلاعات';
+                api_err($msg, 500);
             }
 
             $st = db()->prepare("SELECT * FROM users WHERE id=? LIMIT 1");
@@ -240,26 +251,26 @@ if (!function_exists('company_routes')) {
             if (!$provinceId || $provinceId <= 0) api_err('استان الزامی است', 422);
             if (!$cityId || $cityId <= 0) api_err('شهر الزامی است', 422);
             if ($entityType === 2 && !$registrationNo) api_err('شماره ثبت برای شخص حقوقی الزامی است', 422);
+            if ($postalCode !== null && !preg_match('/^\d{10}$/', $postalCode)) {
+                api_err('کد پستی باید ۱۰ رقم باشد', 422);
+            }
+
+            $st = $pdo->prepare("SELECT id, verification_status, province_id, city_id FROM companies WHERE user_id=? AND deleted_at IS NULL LIMIT 1");
+            $st->execute([(int)$u['id']]);
+            $existingCompany = $st->fetch();
+            if (!$existingCompany || (int)$existingCompany['verification_status'] !== 1) {
+                api_err('ابتدا احراز هویت صاحب بار را تکمیل کنید', 403);
+            }
+
+            $st = $pdo->prepare("SELECT 1 FROM cities WHERE id=? AND province_id=? LIMIT 1");
+            $st->execute([$cityId, $provinceId]);
+            if (!$st->fetchColumn()) api_err('شهر انتخاب‌شده متعلق به استان انتخاب‌شده نیست', 422);
 
             $pdo->beginTransaction();
             try {
-                $st = $pdo->prepare("SELECT id FROM companies WHERE user_id=? AND deleted_at IS NULL LIMIT 1");
-                $st->execute([(int)$u['id']]);
-                $companyId = (int)($st->fetchColumn() ?: 0);
-
-                if ($companyId > 0) {
-                    $pdo->prepare("UPDATE companies SET company_name=?, registration_no=?, registration_date=?, economic_code=?, province_id=?, city_id=?, address=?, postal_code=?, updated_at=NOW(3) WHERE id=? LIMIT 1")
-                        ->execute([$companyName, $registrationNo, $registrationDate, $economicCode, $provinceId, $cityId, $address, $postalCode, $companyId]);
-                } else {
-                    // حالت لبه‌ای (در جریان عادی، ابتدا احراز هویت ردیف را می‌سازد).
-                    // owner_full_name/owner_national_code چون NOT NULL هستند مقداردهی می‌شوند.
-                    $pdo->prepare("INSERT INTO companies (user_id, company_name, owner_full_name, owner_national_code, registration_no, registration_date, economic_code, province_id, city_id, address, postal_code, verification_status, created_at, updated_at) VALUES (?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, 0, NOW(3), NOW(3))")
-                        ->execute([(int)$u['id'], $companyName, $companyName, $registrationNo, $registrationDate, $economicCode, $provinceId, $cityId, $address, $postalCode]);
-                }
-
-                // همگام‌سازی نام نمایشی کاربر
-                $pdo->prepare("UPDATE users SET company_name=?, updated_at=NOW(3) WHERE id=? LIMIT 1")
-                    ->execute([$companyName, (int)$u['id']]);
+                $companyId = (int)$existingCompany['id'];
+                $pdo->prepare("UPDATE companies SET company_name=?, registration_no=?, registration_date=?, economic_code=?, province_id=?, city_id=?, address=?, postal_code=?, updated_at=NOW(3) WHERE id=? LIMIT 1")
+                    ->execute([$companyName, $registrationNo, $registrationDate, $economicCode, $provinceId, $cityId, $address, $postalCode, $companyId]);
 
                 $pdo->commit();
             } catch (Throwable $e) {
@@ -276,7 +287,7 @@ if (!function_exists('company_routes')) {
 
         // -------------------------------------------------------------
         // POST /company/docs   (آپلود مدارک: کارت ملی صاحب بار / مجوز)
-        //  file_type: 2 = کارت ملی شرکت/صاحب بار
+        // company_documents.doc_type: 1 = کارت ملی صاحب بار، 2 = مجوز فعالیت
         // -------------------------------------------------------------
         if ($method === 'POST' && $path === '/company/docs') {
             $u = api_require_auth();
@@ -286,19 +297,26 @@ if (!function_exists('company_routes')) {
             $st = $pdo->prepare("SELECT id FROM companies WHERE user_id=? AND deleted_at IS NULL LIMIT 1");
             $st->execute([(int)$u['id']]);
             $companyId = (int)($st->fetchColumn() ?: 0);
+            if ($companyId <= 0) api_err('ابتدا پروفایل باربری را تکمیل کنید', 403);
 
             $hasAny = false;
             if (!empty($_FILES['national_card_image']) && is_array($_FILES['national_card_image'])) {
-                $hasAny = true;
-                save_user_file((int)$u['id'], 2, $_FILES['national_card_image'], $companyId ?: null);
+                $fileKey = save_user_file((int)$u['id'], 2, $_FILES['national_card_image'], $companyId);
+                if ($fileKey !== null) {
+                    save_company_document($companyId, 1, $fileKey);
+                    $hasAny = true;
+                }
             }
             if (!empty($_FILES['business_license_image']) && is_array($_FILES['business_license_image'])) {
-                $hasAny = true;
-                // 5 = مجوز کسب/پروانه (اگر در enum شما کد دیگری است تغییر دهید)
-                save_user_file((int)$u['id'], 5, $_FILES['business_license_image'], $companyId ?: null);
+                // 8 is reserved for a company business licence; 5 belongs to a driver's green card.
+                $fileKey = save_user_file((int)$u['id'], 8, $_FILES['business_license_image'], $companyId);
+                if ($fileKey !== null) {
+                    save_company_document($companyId, 2, $fileKey);
+                    $hasAny = true;
+                }
             }
 
-            if (!$hasAny) api_err('هیچ فایلی ارسال نشده است', 422);
+            if (!$hasAny) api_err('فایل معتبر ارسال نشده است', 422);
             api_ok(['uploaded' => true]);
         }
 
@@ -311,13 +329,16 @@ if (!function_exists('company_routes')) {
             if ((int)$u['user_type'] !== 2) api_err('Forbidden', 403);
 
             $pdo = db();
-            $st = $pdo->prepare("SELECT id, verification_status FROM companies WHERE user_id=? AND deleted_at IS NULL LIMIT 1");
+            $st = $pdo->prepare("SELECT id, verification_status, province_id, city_id FROM companies WHERE user_id=? AND deleted_at IS NULL LIMIT 1");
             $st->execute([(int)$u['id']]);
             $company = $st->fetch();
             if (!$company) api_err('ابتدا پروفایل باربری را تکمیل کنید', 403);
             $companyId = (int)$company['id'];
             if ((int)$company['verification_status'] !== 1) {
                 api_err('حساب شما هنوز تایید نشده است. پس از تایید می‌توانید بار اعلام کنید.', 403);
+            }
+            if ((int)($company['province_id'] ?? 0) <= 0 || (int)($company['city_id'] ?? 0) <= 0) {
+                api_err('ابتدا پروفایل صاحب بار/باربری را تکمیل کنید.', 403);
             }
 
             $in = api_input();
@@ -335,9 +356,12 @@ if (!function_exists('company_routes')) {
 
             $loadType    = api_int($in, 'load_type') ?: 1;       // 1 دربستی / 2 روباری
             $priceType   = api_int($in, 'price_type') ?: 1;      // 1 سرویسی / 2 تنی
+            if (!in_array($loadType, [1, 2], true)) api_err('نوع بار نامعتبر است', 422);
+            if (!in_array($priceType, [1, 2], true)) api_err('نوع کرایه نامعتبر است', 422);
             $vehicleType = api_int($in, 'primary_vehicle_type_id');
             if (!$vehicleType || $vehicleType <= 0) api_err('نوع بارگیر الزامی است', 422);
-            $cargoTypeId = api_int($in, 'cargo_type_id') ?: null;
+            $cargoTypeId = api_int($in, 'cargo_type_id');
+            if (!$cargoTypeId || $cargoTypeId <= 0) api_err('نوع کالا الزامی است', 422);
             $isTonnageFree = ((string)($in['is_tonnage_free'] ?? '0') === '1') ? 1 : 0;
             $weightKg    = $isTonnageFree ? null : api_decimal($in, 'weight');
             $proposed    = api_decimal($in, 'proposed_price');
@@ -348,9 +372,23 @@ if (!function_exists('company_routes')) {
             $originAddress = api_str($in, 'origin_address', 200);
             $destAddress   = api_str($in, 'dest_address', 200);
 
-            if (!$phone) api_err('شماره تلفن هماهنگی الزامی است', 422);
+            if (!$phone || !preg_match('/^09\d{9}$/', $phone)) api_err('شماره تلفن هماهنگی نامعتبر است', 422);
+            if (!$isTonnageFree && ($weightKg === null || (float)$weightKg <= 0)) {
+                api_err('وزن بار باید بیشتر از صفر باشد', 422);
+            }
+            if ($proposed === null || (float)$proposed <= 0) api_err('کرایه پیشنهادی الزامی است', 422);
+            if ($hasInsurance && ($insuranceValue === null || (float)$insuranceValue <= 0)) {
+                api_err('ارزش واقعی کالا برای بیمه الزامی است', 422);
+            }
 
-            $publicCode = (string)rand(10000000, 99999999) . (string)rand(1000, 9999);
+            $st = $pdo->prepare("SELECT 1 FROM vehicle_types WHERE id=? AND is_active=1 LIMIT 1");
+            $st->execute([$vehicleType]);
+            if (!$st->fetchColumn()) api_err('نوع بارگیر نامعتبر است', 422);
+            $st = $pdo->prepare("SELECT 1 FROM cargos_list WHERE id=? LIMIT 1");
+            $st->execute([$cargoTypeId]);
+            if (!$st->fetchColumn()) api_err('نوع کالا نامعتبر است', 422);
+
+            $publicCode = company_public_load_code($pdo);
 
             try {
                 $sql = "INSERT INTO loads (
@@ -450,9 +488,9 @@ if (!function_exists('company_routes')) {
             $companyId = (int)($st->fetchColumn() ?: 0);
 
             // فقط بار متعلق به همین باربری قابل بستن است
-            $st = $pdo->prepare("UPDATE loads SET load_status=3, updated_at=NOW(3) WHERE id=? AND company_id=? AND deleted_at IS NULL LIMIT 1");
+            $st = $pdo->prepare("UPDATE loads SET load_status=3, updated_at=NOW(3) WHERE id=? AND company_id=? AND load_status=1 AND deleted_at IS NULL LIMIT 1");
             $st->execute([$loadId, $companyId]);
-            if ($st->rowCount() <= 0) api_err('بار یافت نشد یا دسترسی ندارید', 404);
+            if ($st->rowCount() <= 0) api_err('فقط بار فعال و متعلق به شما قابل بستن است', 409);
 
             api_ok(['message' => 'بار بسته شد', 'load_id' => $loadId]);
         }

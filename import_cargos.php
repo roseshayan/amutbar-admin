@@ -13,6 +13,19 @@ $txtFile = __DIR__ . '/cargos.txt';
 
 echo "<html dir='rtl'><body style='font-family: Tahoma, sans-serif; padding: 20px;'>";
 
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    $csrf = htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8');
+    echo "<h2>واردسازی فهرست کالاها</h2>";
+    echo "<p>این عملیات محتوای فایل cargos.txt را به پایگاه داده اضافه می‌کند.</p>";
+    echo "<form method='post'>";
+    echo "<input type='hidden' name='_csrf_token' value='{$csrf}'>";
+    echo "<button type='submit' style='padding:10px 15px'>شروع واردسازی</button>";
+    echo "</form></body></html>";
+    exit;
+}
+
+csrf_require_valid();
+
 if (!file_exists($txtFile)) {
     die("<h3 style='color: red;'>خطا: فایل cargos.txt پیدا نشد! لطفا فایل را در کنار این اسکریپت قرار دهید.</h3></body></html>");
 }
@@ -61,7 +74,10 @@ try {
 } catch (Throwable $e) {
     $pdo->rollBack();
     echo "<h3 style='color: red;'>خطا در ثبت اطلاعات در دیتابیس:</h3>";
-    echo "<p>" . $e->getMessage() . "</p>";
+    $message = ((string)env('APP_DEBUG', '0') === '1')
+        ? htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8')
+        : 'عملیات واردسازی ناموفق بود.';
+    echo "<p>{$message}</p>";
 }
 
 echo "</body></html>";

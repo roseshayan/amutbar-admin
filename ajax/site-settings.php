@@ -40,6 +40,12 @@ try {
             'app.ios.latest_version_code',
             'app.ios.min_supported_code',
             'app.ios.update_url',
+            'cargo.app.android.latest_version_code',
+            'cargo.app.android.min_supported_code',
+            'cargo.app.android.update_url',
+            'cargo.app.ios.latest_version_code',
+            'cargo.app.ios.min_supported_code',
+            'cargo.app.ios.update_url',
             'maintenance.enabled',
             'maintenance.message',
 
@@ -89,6 +95,12 @@ try {
             'app.ios.latest_version_code',
             'app.ios.min_supported_code',
             'app.ios.update_url',
+            'cargo.app.android.latest_version_code',
+            'cargo.app.android.min_supported_code',
+            'cargo.app.android.update_url',
+            'cargo.app.ios.latest_version_code',
+            'cargo.app.ios.min_supported_code',
+            'cargo.app.ios.update_url',
             'maintenance.enabled',
             'maintenance.message',
 
@@ -208,8 +220,11 @@ try {
 
         $f = $_FILES['logo'];
         $tmp = $f['tmp_name'];
-        $mime = mime_content_type($tmp);
-        if (!in_array($mime, ['image/png', 'image/jpeg', 'image/webp'], true)) {
+        $mime = (new finfo(FILEINFO_MIME_TYPE))->file($tmp);
+        if ((int)($f['size'] ?? 0) <= 0 || (int)$f['size'] > 5 * 1024 * 1024) {
+            throw new RuntimeException('حجم فایل باید حداکثر ۵ مگابایت باشد');
+        }
+        if (!in_array($mime, ['image/png', 'image/jpeg', 'image/webp'], true) || @getimagesize($tmp) === false) {
             throw new RuntimeException('فرمت فایل نامعتبر است (png/jpg/webp)');
         }
 
@@ -227,6 +242,7 @@ try {
         if (!move_uploaded_file($tmp, $dest)) {
             throw new RuntimeException('ذخیره فایل ناموفق بود');
         }
+        @chmod($dest, 0640);
 
         $publicPath = 'storage/uploads/system/' . $filename;
         settings_set('site.logo_path', $publicPath, $adminId);
@@ -242,19 +258,21 @@ try {
 
         $f = $_FILES['favicon'];
         $tmp = $f['tmp_name'];
-        $mime = mime_content_type($tmp);
+        $mime = (new finfo(FILEINFO_MIME_TYPE))->file($tmp);
 
-        // Favicon can be png/jpg/webp/ico/svg
-        $allowedMimes = ['image/png', 'image/jpeg', 'image/webp', 'image/x-icon', 'image/vnd.microsoft.icon', 'image/svg+xml'];
+        if ((int)($f['size'] ?? 0) <= 0 || (int)$f['size'] > 1024 * 1024) {
+            throw new RuntimeException('حجم نمادک باید حداکثر ۱ مگابایت باشد');
+        }
+        // SVG برای جلوگیری از اجرای اسکریپت آپلودی پذیرفته نمی‌شود.
+        $allowedMimes = ['image/png', 'image/jpeg', 'image/webp', 'image/x-icon', 'image/vnd.microsoft.icon'];
         if (!in_array($mime, $allowedMimes, true)) {
-            throw new RuntimeException('فرمت فایل نامعتبر است (png/jpg/webp/ico/svg)');
+            throw new RuntimeException('فرمت فایل نامعتبر است (png/jpg/webp/ico)');
         }
 
         $ext = match ($mime) {
             'image/jpeg' => 'jpg',
             'image/webp' => 'webp',
             'image/x-icon', 'image/vnd.microsoft.icon' => 'ico',
-            'image/svg+xml' => 'svg',
             default => 'png'
         };
 
@@ -266,6 +284,7 @@ try {
         if (!move_uploaded_file($tmp, $dest)) {
             throw new RuntimeException('ذخیره فایل ناموفق بود');
         }
+        @chmod($dest, 0640);
 
         $publicPath = 'storage/uploads/system/' . $filename;
         settings_set('site.favicon_path', $publicPath, $adminId);

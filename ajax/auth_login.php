@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../includes/init.php';
 require_post();
+csrf_require_valid();
 
 if (!is_ajax()) {
     json_out(['ok' => false, 'message' => 'Bad request'], 400);

@@ -21,6 +21,7 @@ function internal_api_endpoints_catalog(): array
         'api.meta.provinces' => ['لیست استان‌ها', 'Meta', true, true],
         'api.meta.cities' => ['لیست شهرها (بر اساس استان)', 'Meta', true, true],
         'api.meta.cities_search' => ['جستجوی زنده شهرها', 'Meta', true, true],
+        'api.meta.cargos_search' => ['جستجوی زنده نوع کالا', 'Meta', true, true],
         'api.meta.vehicle_types' => ['لیست وسایل نقلیه', 'Meta', true, true],
 
         // ---------- Auth ----------
@@ -41,6 +42,9 @@ function internal_api_endpoints_catalog(): array
         'api.driver.docs' => ['آپلود مدارک راننده', 'Onboarding', true, false],
         'api.driver.verification_video' => ['احراز هویت ویدیویی راننده', 'Onboarding', true, false],
         'api.company.upsert' => ['ثبت/ویرایش پروفایل باربری', 'Onboarding', true, false],
+        'api.company.me' => ['دریافت پروفایل باربری', 'Onboarding', true, false],
+        'api.company.verify_identity' => ['احراز هویت صاحب بار', 'Onboarding', true, false],
+        'api.company.docs' => ['آپلود مدارک صاحب بار', 'Onboarding', true, false],
 
         // ---------- Content ----------
         'api.content.banners' => ['دریافت بنرهای تبلیغاتی', 'Content', true, true],
@@ -56,6 +60,9 @@ function internal_api_endpoints_catalog(): array
         'api.loads.driver_search' => ['جستجوی هوشمند بارهای راننده', 'Loads', true, false],
         'api.loads.driver_single' => ['جزئیات کامل یک بار مشخص', 'Loads', true, false],
         'api.loads.company_active' => ['لیست بارهای فعال یک باربری', 'Loads', true, false],
+        'api.company.loads_create' => ['اعلام بار توسط صاحب بار', 'Loads', true, false],
+        'api.company.loads_list' => ['لیست بارهای صاحب بار', 'Loads', true, false],
+        'api.company.loads_close' => ['بستن بار توسط صاحب بار', 'Loads', true, false],
         'api.driver.calls.history' => ['تاریخچه تماس‌ها', 'Driver Calls', true, false],
 
         // ---------- Logs ----------

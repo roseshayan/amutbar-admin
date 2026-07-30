@@ -13,7 +13,11 @@ declare(strict_types=1);
 
 function otp_pepper(): string
 {
-    return (string)env('OTP_PEPPER', env('CSRF_SECRET', ''));
+    $pepper = (string)env('OTP_PEPPER', env('CSRF_SECRET', ''));
+    if (strlen($pepper) < 16 && strtolower((string)env('APP_ENV', 'local')) === 'production') {
+        throw new RuntimeException('OTP_PEPPER is required in production');
+    }
+    return $pepper;
 }
 
 function otp_hash(string $phone, int $purpose, string $code): string
@@ -40,6 +44,7 @@ function otp_issue(string $phone, int $purpose, int $expiresSec = 300, int $cool
     if ($maxIpHour <= 0) $maxIpHour = 30;
 
     $ip = $_SERVER['REMOTE_ADDR'] ?? null;
+    $ipBin = $ip ? @inet_pton($ip) : null;
 
     $stHour = $pdo->prepare("SELECT COUNT(*) FROM otp_codes WHERE phone=? AND purpose=? AND created_at >= DATE_SUB(NOW(3), INTERVAL 1 HOUR)");
     $stHour->execute([$phone, $purpose]);
@@ -53,9 +58,9 @@ function otp_issue(string $phone, int $purpose, int $expiresSec = 300, int $cool
         return ['ok' => false, 'status' => 429, 'message' => 'تعداد درخواست امروز زیاد است. فردا دوباره تلاش کنید'];
     }
 
-    if ($ip) {
+    if ($ipBin !== null && $ipBin !== false) {
         $stIp = $pdo->prepare("SELECT COUNT(*) FROM otp_codes WHERE ip_address=? AND created_at >= DATE_SUB(NOW(3), INTERVAL 1 HOUR)");
-        $stIp->execute([$ip]);
+        $stIp->execute([$ipBin]);
         if ((int)$stIp->fetchColumn() >= $maxIpHour) {
             return ['ok' => false, 'status' => 429, 'message' => 'تعداد درخواست زیاد است. کمی بعد تلاش کنید'];
         }
@@ -87,7 +92,7 @@ function otp_issue(string $phone, int $purpose, int $expiresSec = 300, int $cool
         INSERT INTO otp_codes (phone, purpose, code_hash, expires_at, attempt_count, ip_address, created_at)
         VALUES (?, ?, ?, DATE_ADD(NOW(3), INTERVAL ? SECOND), 0, ?, NOW(3))
     ");
-    $ins->execute([$phone, $purpose, $hash, $expiresSec, $ip]);
+    $ins->execute([$phone, $purpose, $hash, $expiresSec, $ipBin ?: null]);
     $otpId = (int)$pdo->lastInsertId();
 
     $sms = payamak_send_otp($phone, $code);

@@ -154,7 +154,7 @@ if (!$admin_data) {
                             <div class="card-body p-0">
                                 <ul class="list-group list-group-flush">
                                     <li class="list-group-item">
-                                        <a href="users.php" class="text-dark d-block py-2">
+                                        <a href="users_list.php" class="text-dark d-block py-2">
                                             <i class="ri-user-line me-2 text-primary"></i>
                                             مدیریت کاربران
                                         </a>

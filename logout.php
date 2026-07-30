@@ -2,4 +2,4 @@
 
 require_once __DIR__ . '/includes/init.php';
 admin_logout();
-redirect('/index.php');
+redirect(url_path('login.php'));

@@ -1,6 +1,10 @@
 <?php
+require_once __DIR__ . '/includes/init.php';
+require_admin();
+
 $id = (int)($_GET["id"] ?? 0);
 if ($id <= 0) redirect("users_list.php");
+
 require_once "views/panel/header.php";
 require_once "views/panel/sidebar.php";
 
@@ -118,7 +122,7 @@ function jdate_str_to_gdate(string $jdate): ?string
                             <input type="hidden" name="company_id" value="<?php echo $companyInfo['id'] ?? 0; ?>">
 
                             <?php
-                            $avatarBg = !empty($user['avatar_key']) ? (string)$user['avatar_key'] : '/assets/images/faces/default-avatar.png';
+                            $avatarBg = !empty($user['avatar_key']) ? (string)$user['avatar_key'] : asset('images/faces/default-avatar.png');
                             if ($avatarBg !== '' && !preg_match('~^https?://~i', $avatarBg) && $avatarBg[0] !== '/') {
                                 $avatarBg = '/' . ltrim($avatarBg, '/');
                             }

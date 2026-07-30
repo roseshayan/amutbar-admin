@@ -18,6 +18,11 @@ $logoDesktop = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-logos
 $logoToggle  = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-logos/toggle-logo.png';
 $logoDark    = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-logos/desktop-dark.png';
 $logoToggleDark = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-logos/toggle-dark.png';
+$supportPhone = preg_replace('/[^0-9+]/', '', (string)settings_get('support.phone', ''));
+$supportHref = $supportPhone;
+if (preg_match('/^09\d{9}$/', $supportHref)) {
+    $supportHref = '+98' . substr($supportHref, 1);
+}
 ?>
 <!DOCTYPE html>
 <html lang="fa" data-nav-layout="vertical" data-theme-mode="<?= $themeMode ?>" data-header-styles="<?= $themeMode ?>" data-width="fullwidth"
@@ -30,6 +35,7 @@ $logoToggleDark = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-lo
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="Description" content="پنل مدیریت آموت اپ">
     <meta name="Author" content="Shayan Namayandeh - namayandeshayan@gmail.com - KFMY Company">
+    <meta name="csrf-token" content="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
 
     <title>پنل مدیریت آموت اپ</title>
 
@@ -66,6 +72,36 @@ $logoToggleDark = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-lo
     <link rel="stylesheet" href="assets/vendor/toastify-js/toastify.css">
 
     <script src="assets/vendor/jquery/jquery.min.js"></script>
+    <script>
+        (() => {
+            const token = document.querySelector('meta[name="csrf-token"]')?.content || '';
+            window.AMUT_CSRF_TOKEN = token;
+
+            if (window.jQuery) {
+                window.jQuery.ajaxSetup({
+                    beforeSend(xhr, settings) {
+                        const method = String(settings.type || 'GET').toUpperCase();
+                        if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+                            xhr.setRequestHeader('X-CSRF-Token', token);
+                        }
+                    }
+                });
+            }
+
+            const nativeFetch = window.fetch.bind(window);
+            window.fetch = (input, init = {}) => {
+                const requestUrl = typeof input === 'string' ? input : input.url;
+                const target = new URL(requestUrl, window.location.href);
+                const method = String(init.method || (typeof input !== 'string' ? input.method : 'GET')).toUpperCase();
+                if (target.origin === window.location.origin && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+                    const headers = new Headers(init.headers || (typeof input !== 'string' ? input.headers : undefined));
+                    headers.set('X-CSRF-Token', token);
+                    init = {...init, headers};
+                }
+                return nativeFetch(input, init);
+            };
+        })();
+    </script>
 
     <script src="assets/libs/choices.js/public/assets/scripts/choices.min.js"></script>
 
@@ -221,28 +257,30 @@ $logoToggleDark = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-lo
                             data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                             <div class="d-flex align-items-center">
                                 <div class="me-xl-2 me-0">
-                                    <img src="<?= base_url() . $admin_avatar; ?>" alt="<?= $admin_name; ?>" class="avatar avatar-sm avatar-rounded">
+                                    <img src="<?= htmlspecialchars(base_url() . $admin_avatar, ENT_QUOTES, 'UTF-8'); ?>" alt="<?= htmlspecialchars($admin_name, ENT_QUOTES, 'UTF-8'); ?>" class="avatar avatar-sm avatar-rounded">
                                 </div>
                                 <div class="d-xl-block d-none lh-1">
-                                    <span class="fw-medium lh-1"><?= $admin_name; ?></span>
+                                    <span class="fw-medium lh-1"><?= htmlspecialchars($admin_name, ENT_QUOTES, 'UTF-8'); ?></span>
                                 </div>
                             </div>
                         </a>
                         <ul class="main-header-dropdown dropdown-menu pt-0 overflow-hidden header-profile-dropdown dropdown-menu-end"
                             aria-labelledby="mainHeaderProfile">
                             <li>
-                                <div class="py-2 px-3 text-center"><span class="fw-semibold"> <?= $admin_name; ?> </span> <span
+                                <div class="py-2 px-3 text-center"><span class="fw-semibold"> <?= htmlspecialchars($admin_name, ENT_QUOTES, 'UTF-8'); ?> </span> <span
                                         class="d-block fs-12 text-muted"> <?= user_type_label($admin_info['user_type']); ?> </span></div>
                             </li>
                             <li><a class="dropdown-item d-flex align-items-center" href="profile.php"><i
                                         class="ti ti-user text-primary me-2 fs-16"></i>حساب کاربری</a>
                             </li>
-                            <li><a class="dropdown-item d-flex align-items-center" href="settings.php"><i
+                            <li><a class="dropdown-item d-flex align-items-center" href="site-settings.php"><i
                                         class="ti ti-settings text-info me-2 fs-16"></i>تنظیمات</a>
                             </li>
-                            <li><a class="dropdown-item d-flex align-items-center" href="tel:+989351794610"><i
-                                        class="ti ti-headset text-warning me-2 fs-16"></i>پشتیبانی</a>
-                            </li>
+                            <?php if ($supportHref !== ''): ?>
+                                <li><a class="dropdown-item d-flex align-items-center" href="tel:<?= htmlspecialchars($supportHref, ENT_QUOTES, 'UTF-8') ?>"><i
+                                            class="ti ti-headset text-warning me-2 fs-16"></i>پشتیبانی</a>
+                                </li>
+                            <?php endif; ?>
                             <li class="py-2 px-3"><a class="btn btn-primary btn-sm w-100" href="logout.php">خروج</a>
                             </li>
                         </ul>

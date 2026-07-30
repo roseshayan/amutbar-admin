@@ -3,7 +3,7 @@ $page_title = 'فراموشی رمز عبور';
 require __DIR__ . '/views/auth/header.php';
 
 if (admin_id()) {
-    redirect('/dashboard.php');
+    redirect(url_path('dashboard.php'));
 }
 ?>
 
@@ -11,6 +11,7 @@ if (admin_id()) {
 <div id="forgotOk" class="alert alert-success d-none"></div>
 
 <form id="forgotForm" class="row gy-3" onsubmit="return false;">
+    <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
     <div class="col-xl-12">
         <label for="fp-phone" class="form-label text-default">شماره موبایل</label>
         <div class="position-relative">
@@ -40,7 +41,7 @@ if (admin_id()) {
             <label for="fp-newpass" class="form-label text-default">رمز عبور جدید</label>
             <div class="position-relative">
                 <input type="password" class="form-control form-control-lg" id="fp-newpass" name="new_password"
-                    placeholder="رمز عبور جدید">
+                    placeholder="حداقل ۱۲ کاراکتر" minlength="12">
                 <a href="javascript:void(0);" class="show-password-button text-muted"
                     onclick="createpassword('fp-newpass',this)">
                     <i class="ri-eye-off-line align-middle"></i>
@@ -52,7 +53,7 @@ if (admin_id()) {
             <label for="fp-newpass2" class="form-label text-default">تکرار رمز عبور جدید</label>
             <div class="position-relative">
                 <input type="password" class="form-control form-control-lg" id="fp-newpass2" name="new_password_confirm"
-                    placeholder="تکرار رمز عبور جدید">
+                    placeholder="تکرار رمز عبور جدید" minlength="12">
                 <a href="javascript:void(0);" class="show-password-button text-muted"
                     onclick="createpassword('fp-newpass2',this)">
                     <i class="ri-eye-off-line align-middle"></i>
@@ -159,7 +160,7 @@ if (admin_id()) {
         showLoader('در حال ارسال کد تایید...');
 
         try {
-            const res = await fetch('/ajax/auth_forgot_send.php', {
+            const res = await fetch('<?= url_path("ajax/auth_forgot_send.php") ?>', {
                 method: 'POST',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 credentials: 'same-origin',
@@ -205,7 +206,7 @@ if (admin_id()) {
         showLoader('در حال تغییر رمز عبور...');
 
         try {
-            const res = await fetch('/ajax/auth_forgot_reset.php', {
+            const res = await fetch('<?= url_path("ajax/auth_forgot_reset.php") ?>', {
                 method: 'POST',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 credentials: 'same-origin',
@@ -227,7 +228,7 @@ if (admin_id()) {
             }
 
             Swal.fire({icon:'success', title:'موفق', text: data.message || 'رمز عبور تغییر کرد'});
-            setTimeout(()=> location.href='/login.php', 700);
+            setTimeout(()=> location.href='<?= url_path("login.php") ?>', 700);
 
         } catch (err) {
             console.error(err);

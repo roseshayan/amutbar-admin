@@ -318,49 +318,7 @@ function users_complete_save(array $data): array
 // ذخیره عکس پروفایل
 function save_avatar(int $userId, ?array $avatarFile): void
 {
-    if (!$avatarFile || $avatarFile['error'] !== UPLOAD_ERR_OK) {
-        return;
-    }
-
-    $allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
-    $maxSize = 3 * 1024 * 1024; // 3MB
-
-    if (!in_array($avatarFile['type'], $allowedTypes) || $avatarFile['size'] > $maxSize) {
-        return;
-    }
-
-    $extension = strtolower(pathinfo($avatarFile['name'], PATHINFO_EXTENSION));
-    if ($extension === '') {
-        $extension = match ($avatarFile['type']) {
-            'image/png' => 'png',
-            'image/webp' => 'webp',
-            default => 'jpg',
-        };
-    }
-
-    $dir = __DIR__ . '/../storage/uploads/avatars';
-    if (!is_dir($dir)) {
-        @mkdir($dir, 0775, true);
-    }
-
-    $filename = "avatar_{$userId}_" . time() . ".{$extension}";
-    $uploadPath = $dir . '/' . $filename;
-
-    if (move_uploaded_file($avatarFile['tmp_name'], $uploadPath)) {
-        $pdo = db();
-        $stOld = $pdo->prepare("SELECT avatar_key FROM users WHERE id=? LIMIT 1");
-        $stOld->execute([$userId]);
-        $old = (string)($stOld->fetchColumn() ?: '');
-        if ($old !== '' && !preg_match('~^https?://~i', $old) && str_starts_with($old, 'storage/uploads/avatars/')) {
-            $oldAbs = BASE_PATH . '/' . ltrim($old, '/');
-            if (is_file($oldAbs)) {
-                @unlink($oldAbs);
-            }
-        }
-
-        $st = $pdo->prepare("UPDATE users SET avatar_key = ? WHERE id = ?");
-        $st->execute(['storage/uploads/avatars/' . $filename, $userId]);
-    }
+    if ($avatarFile !== null) user_update_avatar($userId, $avatarFile);
 }
 
 /**
@@ -373,12 +331,23 @@ function user_update_avatar(int $userId, array $avatarFile): array
         return ['ok' => false, 'message' => 'فایل نامعتبر است', 'status' => 422];
     }
 
-    $allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+    $allowedTypes = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/webp' => 'webp',
+    ];
     $maxSize = 3 * 1024 * 1024;
-    if (!in_array((string)($avatarFile['type'] ?? ''), $allowedTypes, true)) {
+    $tmpName = (string)($avatarFile['tmp_name'] ?? '');
+    if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+        return ['ok' => false, 'message' => 'فایل نامعتبر است', 'status' => 422];
+    }
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = (string)$finfo->file($tmpName);
+    if (!isset($allowedTypes[$mime]) || @getimagesize($tmpName) === false) {
         return ['ok' => false, 'message' => 'فرمت تصویر مجاز نیست', 'status' => 422];
     }
-    if ((int)($avatarFile['size'] ?? 0) > $maxSize) {
+    $size = (int)($avatarFile['size'] ?? 0);
+    if ($size <= 0 || $size > $maxSize) {
         return ['ok' => false, 'message' => 'حجم تصویر بیش از حد مجاز است (حداکثر 3MB)', 'status' => 422];
     }
 
@@ -388,26 +357,20 @@ function user_update_avatar(int $userId, array $avatarFile): array
     $oldKey = $st->fetchColumn();
     if ($oldKey === false) return ['ok' => false, 'message' => 'کاربر یافت نشد', 'status' => 404];
 
-    $extension = strtolower(pathinfo((string)$avatarFile['name'], PATHINFO_EXTENSION));
-    if ($extension === '') {
-        $extension = match ((string)$avatarFile['type']) {
-            'image/png' => 'png',
-            'image/webp' => 'webp',
-            default => 'jpg',
-        };
-    }
+    $extension = $allowedTypes[$mime];
 
     $dir = __DIR__ . '/../storage/uploads/avatars';
     if (!is_dir($dir)) {
         @mkdir($dir, 0775, true);
     }
 
-    $filename = "avatar_{$userId}_" . time() . ".{$extension}";
+    $filename = "avatar_{$userId}_" . bin2hex(random_bytes(12)) . ".{$extension}";
     $uploadPath = $dir . '/' . $filename;
 
-    if (!move_uploaded_file($avatarFile['tmp_name'], $uploadPath)) {
+    if (!move_uploaded_file($tmpName, $uploadPath)) {
         return ['ok' => false, 'message' => 'خطا در آپلود فایل', 'status' => 500];
     }
+    @chmod($uploadPath, 0640);
 
     $newKey = 'storage/uploads/avatars/' . $filename;
     $pdo->prepare("UPDATE users SET avatar_key=?, updated_at=NOW(3) WHERE id=? LIMIT 1")
@@ -677,7 +640,11 @@ function save_company_info(int $userId, array $data): array
         }
 
         if (isset($_FILES['company_national_card_image']) && $_FILES['company_national_card_image']['error'] === UPLOAD_ERR_OK) {
-            save_user_file($userId, 2, $_FILES['company_national_card_image'], $companyId ?: (int)$pdo->lastInsertId());
+            $savedCompanyId = $companyId ?: (int)$pdo->lastInsertId();
+            $fileKey = save_user_file($userId, 2, $_FILES['company_national_card_image'], $savedCompanyId);
+            if ($fileKey !== null && $savedCompanyId > 0) {
+                save_company_document($savedCompanyId, 1, $fileKey);
+            }
         }
 
         return ['ok' => true];
@@ -690,32 +657,41 @@ function save_company_info(int $userId, array $data): array
 // تابع عمومی اصلاح‌شده برای ذخیره فایل کاربر (کاملاً هماهنگ با PHP 8.1+ Nullable)
 function save_user_file(int $userId, int $fileType, array $file, ?int $relatedId = null): ?string
 {
-    $allowedImageTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
-    $allowedVideoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
+    $allowedTypes = [
+        'image/jpeg' => ['kind' => 'image', 'extension' => 'jpg'],
+        'image/png' => ['kind' => 'image', 'extension' => 'png'],
+        'image/gif' => ['kind' => 'image', 'extension' => 'gif'],
+        'image/webp' => ['kind' => 'image', 'extension' => 'webp'],
+        'video/mp4' => ['kind' => 'video', 'extension' => 'mp4'],
+        'video/quicktime' => ['kind' => 'video', 'extension' => 'mov'],
+        'video/x-msvideo' => ['kind' => 'video', 'extension' => 'avi'],
+        'video/webm' => ['kind' => 'video', 'extension' => 'webm'],
+    ];
 
     $maxImageSize = 5 * 1024 * 1024; // 5MB
     $maxVideoSize = 50 * 1024 * 1024; // 50MB
 
-    if ($file['error'] !== UPLOAD_ERR_OK) {
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
         return null;
     }
+    $tmpName = (string)($file['tmp_name'] ?? '');
+    if ($tmpName === '' || !is_uploaded_file($tmpName)) return null;
+    $size = (int)($file['size'] ?? 0);
+    if ($size <= 0) return null;
 
-    $isImage = in_array($file['type'], $allowedImageTypes, true);
-    $isVideo = in_array($file['type'], $allowedVideoTypes, true);
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = (string)$finfo->file($tmpName);
+    $typeConfig = $allowedTypes[$mime] ?? null;
+    if ($typeConfig === null) return null;
+    $isImage = $typeConfig['kind'] === 'image';
 
-    if (!$isImage && !$isVideo) {
+    if (($isImage && $size > $maxImageSize) || (!$isImage && $size > $maxVideoSize)) {
         return null;
     }
+    if ($isImage && @getimagesize($tmpName) === false) return null;
 
-    if (($isImage && $file['size'] > $maxImageSize) || ($isVideo && $file['size'] > $maxVideoSize)) {
-        return null;
-    }
-
-    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-    if (empty($extension)) {
-        $extension = $isImage ? 'jpg' : 'mp4';
-    }
-    $filename = "user_{$userId}_" . uniqid() . ".{$extension}";
+    $extension = $typeConfig['extension'];
+    $filename = "user_{$userId}_" . bin2hex(random_bytes(12)) . ".{$extension}";
 
     $uploadDir = __DIR__ . '/../storage/uploads/';
     $relativePath = ($isImage ? 'images/' : 'videos/') . $filename;
@@ -723,15 +699,16 @@ function save_user_file(int $userId, int $fileType, array $file, ?int $relatedId
     $dbFileKey = 'storage/uploads/' . $relativePath;
 
     if (!is_dir(dirname($uploadPath))) {
-        @mkdir(dirname($uploadPath), 0777, true);
+        @mkdir(dirname($uploadPath), 0775, true);
     }
 
-    if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
+    if (move_uploaded_file($tmpName, $uploadPath)) {
+        @chmod($uploadPath, 0640);
         $pdo = db();
 
         $metadata = json_encode([
             'related_id' => $relatedId,
-            'original_name' => $file['name'],
+            'original_name' => basename((string)($file['name'] ?? '')),
             'uploaded_at' => date('Y-m-d H:i:s')
         ], JSON_UNESCAPED_UNICODE) ?: '{}';
 
@@ -742,7 +719,7 @@ function save_user_file(int $userId, int $fileType, array $file, ?int $relatedId
         if ($existing) {
             $oldKey = $existing['file_key'];
             if (!empty($oldKey)) {
-                $oldPath = __DIR__ . '/../' . ltrim(str_replace('storage/uploads/', '', $oldKey), '/');
+                $oldPath = __DIR__ . '/../' . ltrim((string)$oldKey, '/');
                 if (is_file($oldPath)) {
                     @unlink($oldPath);
                 }
@@ -755,8 +732,8 @@ function save_user_file(int $userId, int $fileType, array $file, ?int $relatedId
             ");
             $stUpdate->execute([
                 $dbFileKey,
-                $file['type'],
-                $file['size'],
+                $mime,
+                $size,
                 $metadata,
                 $existing['id']
             ]);
@@ -772,8 +749,8 @@ function save_user_file(int $userId, int $fileType, array $file, ?int $relatedId
                 $userId,
                 $fileType,
                 $dbFileKey,
-                $file['type'],
-                $file['size'],
+                $mime,
+                $size,
                 $metadata
             ]);
             
@@ -795,5 +772,33 @@ function save_driver_document(int $driverId, int $docType, string $fileKey): voi
         $pdo->prepare("UPDATE driver_documents SET file_key=?, status=0, updated_at=NOW(3) WHERE id=?")->execute([$fileKey, $id]);
     } else {
         $pdo->prepare("INSERT INTO driver_documents (driver_id, doc_type, file_key, status, created_at, updated_at) VALUES (?, ?, ?, 0, NOW(3), NOW(3))")->execute([$driverId, $docType, $fileKey]);
+    }
+}
+
+/**
+ * Company document types:
+ * 1 = national card of the company owner
+ * 2 = business/activity licence
+ */
+function save_company_document(int $companyId, int $docType, string $fileKey): void
+{
+    $pdo = db();
+    $st = $pdo->prepare("SELECT id FROM company_documents WHERE company_id=? AND doc_type=? ORDER BY id DESC LIMIT 1");
+    $st->execute([$companyId, $docType]);
+    $id = $st->fetchColumn();
+
+    if ($id) {
+        $pdo->prepare("
+            UPDATE company_documents
+            SET file_key=?, status=0, reviewed_by_user_id=NULL, reviewed_at=NULL,
+                reject_reason=NULL, updated_at=NOW(3)
+            WHERE id=?
+        ")->execute([$fileKey, $id]);
+    } else {
+        $pdo->prepare("
+            INSERT INTO company_documents
+            (company_id, doc_type, file_key, status, created_at, updated_at)
+            VALUES (?, ?, ?, 0, NOW(3), NOW(3))
+        ")->execute([$companyId, $docType, $fileKey]);
     }
 }

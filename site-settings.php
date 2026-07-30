@@ -165,6 +165,40 @@ require_once "views/panel/sidebar.php";
                                         <label for="ios_url" class="form-label">آدرس آپدیت</label>
                                         <input type="url" class="form-control" id="ios_url" dir="ltr">
                                     </div>
+
+                                    <div class="col-12 mt-5">
+                                        <hr>
+                                        <div class="fw-semibold mb-2">اپ اعلام بار صاحبان بار — Android</div>
+                                        <div class="text-muted small">اگر خالی بماند، تنظیمات اپ رانندگان به‌عنوان مقدار جایگزین استفاده می‌شود.</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="cargo_android_latest" class="form-label">آخرین ورژن (version_code)</label>
+                                        <input type="number" class="form-control" id="cargo_android_latest" min="0">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="cargo_android_min" class="form-label">حداقل ورژن مجاز</label>
+                                        <input type="number" class="form-control" id="cargo_android_min" min="0">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="cargo_android_url" class="form-label">آدرس آپدیت</label>
+                                        <input type="url" class="form-control" id="cargo_android_url" dir="ltr">
+                                    </div>
+
+                                    <div class="col-12 mt-4">
+                                        <div class="fw-semibold mb-2">اپ اعلام بار صاحبان بار — iOS</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="cargo_ios_latest" class="form-label">آخرین ورژن (build)</label>
+                                        <input type="number" class="form-control" id="cargo_ios_latest" min="0">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="cargo_ios_min" class="form-label">حداقل ورژن مجاز</label>
+                                        <input type="number" class="form-control" id="cargo_ios_min" min="0">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="cargo_ios_url" class="form-label">آدرس آپدیت</label>
+                                        <input type="url" class="form-control" id="cargo_ios_url" dir="ltr">
+                                    </div>
                                 </div>
                             </div>
 
@@ -337,6 +371,12 @@ require_once "views/panel/footer.php";
             ios_latest: document.getElementById('ios_latest'),
             ios_min: document.getElementById('ios_min'),
             ios_url: document.getElementById('ios_url'),
+            cargo_android_latest: document.getElementById('cargo_android_latest'),
+            cargo_android_min: document.getElementById('cargo_android_min'),
+            cargo_android_url: document.getElementById('cargo_android_url'),
+            cargo_ios_latest: document.getElementById('cargo_ios_latest'),
+            cargo_ios_min: document.getElementById('cargo_ios_min'),
+            cargo_ios_url: document.getElementById('cargo_ios_url'),
             maint_enabled: document.getElementById('maint_enabled'),
             maint_message: document.getElementById('maint_message'),
 
@@ -505,6 +545,12 @@ require_once "views/panel/footer.php";
             els.ios_latest.value = it['app.ios.latest_version_code'] || '';
             els.ios_min.value = it['app.ios.min_supported_code'] || '';
             els.ios_url.value = it['app.ios.update_url'] || '';
+            els.cargo_android_latest.value = it['cargo.app.android.latest_version_code'] || '';
+            els.cargo_android_min.value = it['cargo.app.android.min_supported_code'] || '';
+            els.cargo_android_url.value = it['cargo.app.android.update_url'] || '';
+            els.cargo_ios_latest.value = it['cargo.app.ios.latest_version_code'] || '';
+            els.cargo_ios_min.value = it['cargo.app.ios.min_supported_code'] || '';
+            els.cargo_ios_url.value = it['cargo.app.ios.update_url'] || '';
             els.maint_enabled.value = it['maintenance.enabled'] || '0';
             els.maint_message.value = it['maintenance.message'] || '';
 
@@ -537,6 +583,12 @@ require_once "views/panel/footer.php";
                 'app.ios.latest_version_code': els.ios_latest.value,
                 'app.ios.min_supported_code': els.ios_min.value,
                 'app.ios.update_url': els.ios_url.value,
+                'cargo.app.android.latest_version_code': els.cargo_android_latest.value,
+                'cargo.app.android.min_supported_code': els.cargo_android_min.value,
+                'cargo.app.android.update_url': els.cargo_android_url.value,
+                'cargo.app.ios.latest_version_code': els.cargo_ios_latest.value,
+                'cargo.app.ios.min_supported_code': els.cargo_ios_min.value,
+                'cargo.app.ios.update_url': els.cargo_ios_url.value,
                 'maintenance.enabled': els.maint_enabled.value,
                 'maintenance.message': els.maint_message.value,
 

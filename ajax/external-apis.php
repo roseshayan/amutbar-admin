@@ -16,14 +16,22 @@ function encrypt_data($data): ?string
     if (empty($data)) return null;
 
     $key = get_encryption_key();
-    $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length('aes-256-cbc'));
-    $encrypted = openssl_encrypt($data, 'aes-256-cbc', $key, 0, $iv);
+    $iv = random_bytes(12);
+    $tag = '';
+    $encrypted = openssl_encrypt(
+        (string)$data,
+        'aes-256-gcm',
+        $key,
+        OPENSSL_RAW_DATA,
+        $iv,
+        $tag
+    );
 
     if ($encrypted === false) {
         return null;
     }
 
-    return base64_encode($encrypted . '::' . $iv);
+    return 'v2:' . base64_encode($iv . $tag . $encrypted);
 }
 
 function decrypt_data($encryptedData): ?string
@@ -33,12 +41,27 @@ function decrypt_data($encryptedData): ?string
     $key = get_encryption_key();
 
     try {
-        $decoded = base64_decode($encryptedData);
-        if (!str_contains($decoded, '::')) {
-            return null;
+        if (str_starts_with((string)$encryptedData, 'v2:')) {
+            $decoded = base64_decode(substr((string)$encryptedData, 3), true);
+            if ($decoded === false || strlen($decoded) < 29) return null;
+            $iv = substr($decoded, 0, 12);
+            $tag = substr($decoded, 12, 16);
+            $ciphertext = substr($decoded, 28);
+            $decrypted = openssl_decrypt(
+                $ciphertext,
+                'aes-256-gcm',
+                $key,
+                OPENSSL_RAW_DATA,
+                $iv,
+                $tag
+            );
+            return $decrypted !== false ? $decrypted : null;
         }
 
-        list($encrypted_data, $iv) = explode('::', $decoded, 2);
+        // Backward compatibility for credentials encrypted by older releases.
+        $decoded = base64_decode((string)$encryptedData, true);
+        if ($decoded === false || !str_contains($decoded, '::')) return null;
+        [$encrypted_data, $iv] = explode('::', $decoded, 2);
         $decrypted = openssl_decrypt($encrypted_data, 'aes-256-cbc', $key, 0, $iv);
 
         return $decrypted !== false ? $decrypted : null;

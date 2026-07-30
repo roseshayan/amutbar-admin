@@ -185,7 +185,11 @@ final class IdentityVerificationRunner
             return null;
         }
 
-        $path = BASE_PATH . '/storage/uploads/' . ltrim((string)$row['file_key'], '/');
+        $key = ltrim(str_replace('\\', '/', (string)$row['file_key']), '/');
+        if ($key === '' || str_contains($key, '..')) return null;
+        $path = str_starts_with($key, 'storage/uploads/')
+            ? BASE_PATH . '/' . $key
+            : BASE_PATH . '/storage/uploads/' . $key;
         if (!is_file($path)) return null;
 
         $bin = file_get_contents($path);
@@ -257,8 +261,22 @@ final class IdentityVerificationRunner
         if (!is_array($data)) return $data;
         foreach ($data as $k => $v) {
             $lk = strtolower((string)$k);
-            if (str_contains($lk, 'token') || str_contains($lk, 'secret') || str_contains($lk, 'video')) {
+            $sensitive = [
+                'token', 'secret', 'key', 'authorization', 'video',
+                'national', 'mobile', 'phone', 'birth', 'serial',
+                'image', 'photo', 'address', 'postal', 'email',
+            ];
+            $mustRedact = false;
+            foreach ($sensitive as $field) {
+                if (str_contains($lk, $field)) {
+                    $mustRedact = true;
+                    break;
+                }
+            }
+            if ($mustRedact) {
                 $data[$k] = '[REDACTED]';
+            } elseif (is_array($v)) {
+                $data[$k] = $this->redact($v);
             }
         }
         return $data;

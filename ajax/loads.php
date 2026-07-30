@@ -2,9 +2,13 @@
 
 declare(strict_types=1);
 require_once __DIR__ . '/../includes/init.php';
+require_admin();
 
 header('Content-Type: application/json; charset=utf-8');
 $action = $_GET['action'] ?? ($_POST['action'] ?? '');
+if (in_array($action, ['get_avg_price', 'create', 'update', 'bulk_delete', 'delete'], true)) {
+    require_post();
+}
 $pdo = db();
 
 function normalize_money($value): ?float

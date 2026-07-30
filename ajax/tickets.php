@@ -76,7 +76,7 @@ if ($action === 'reply') {
         $mime = finfo_file($finfo, $file['tmp_name']);
         finfo_close($finfo);
 
-        if (in_array($mime, $allowedImages)) {
+        if (in_array($mime, $allowedImages, true) && @getimagesize((string)$file['tmp_name']) !== false) {
             $messageType = 2; // image
             $ext = 'jpg';
             if ($mime === 'image/png') $ext = 'png';
@@ -104,9 +104,10 @@ if ($action === 'reply') {
             echo json_encode(['ok' => false, 'message' => 'خطا در ذخیره فایل']);
             exit;
         }
+        @chmod($dest, 0640);
 
         $attachmentKey = 'uploads/tickets/' . $filename;  // مسیر نسبی
-        $attachmentName = $file['name'];
+        $attachmentName = mb_substr(basename((string)$file['name']), 0, 190);
 
         // اگر پیام خالی بود، یک پیش‌فرض بگذاریم
         if ($message === '') {

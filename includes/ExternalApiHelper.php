@@ -10,21 +10,7 @@ class ExternalApiHelper {
      * دریافت کلید رمزنگاری
      */
     private function getEncryptionKey(): string {
-        // تابع env از config.php
-        if (function_exists('env')) {
-            $key = env('API_ENCRYPTION_KEY', env('API_TOKEN_PEPPER', 'default-encryption-key'));
-        } else {
-            $key = getenv('API_ENCRYPTION_KEY') ?: getenv('API_TOKEN_PEPPER') ?: 'default-encryption-key';
-        }
-        
-        // تبدیل به 32 بایت
-        if (strlen($key) < 32) {
-            $key = hash('sha256', $key);
-        } elseif (strlen($key) > 32) {
-            $key = substr($key, 0, 32);
-        }
-        
-        return $key;
+        return get_encryption_key();
     }
     
     /**
@@ -36,12 +22,27 @@ class ExternalApiHelper {
         $key = $this->getEncryptionKey();
         
         try {
-            $decoded = base64_decode($encryptedData);
-            if (strpos($decoded, '::') === false) {
-                return null;
+            if (str_starts_with((string)$encryptedData, 'v2:')) {
+                $decoded = base64_decode(substr((string)$encryptedData, 3), true);
+                if ($decoded === false || strlen($decoded) < 29) return null;
+                $iv = substr($decoded, 0, 12);
+                $tag = substr($decoded, 12, 16);
+                $ciphertext = substr($decoded, 28);
+                $decrypted = openssl_decrypt(
+                    $ciphertext,
+                    'aes-256-gcm',
+                    $key,
+                    OPENSSL_RAW_DATA,
+                    $iv,
+                    $tag
+                );
+                return $decrypted !== false ? $decrypted : null;
             }
-            
-            list($encrypted_data, $iv) = explode('::', $decoded, 2);
+
+            // Backward compatibility for credentials encrypted by older releases.
+            $decoded = base64_decode((string)$encryptedData, true);
+            if ($decoded === false || strpos($decoded, '::') === false) return null;
+            [$encrypted_data, $iv] = explode('::', $decoded, 2);
             $decrypted = openssl_decrypt($encrypted_data, 'aes-256-cbc', $key, 0, $iv);
             
             return $decrypted !== false ? $decrypted : null;
@@ -141,6 +142,16 @@ class ExternalApiHelper {
             
             // ساخت URL کامل
             $url = rtrim($provider['base_url'], '/') . '/' . ltrim($endpoint, '/');
+            $scheme = strtolower((string)(parse_url($url, PHP_URL_SCHEME) ?: ''));
+            if (!in_array($scheme, ['http', 'https'], true)) {
+                throw new Exception('پروتکل آدرس ارائه‌دهنده مجاز نیست');
+            }
+            if (
+                strtolower((string)env('APP_ENV', 'local')) === 'production'
+                && $scheme !== 'https'
+            ) {
+                throw new Exception('در محیط عملیاتی آدرس ارائه‌دهنده باید HTTPS باشد');
+            }
             
             // آماده‌سازی هدرها
             $headers = [
@@ -172,7 +183,9 @@ class ExternalApiHelper {
             curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_TIMEOUT_MS, $provider['timeout_ms']);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // برای محیط توسعه
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+            curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
             
             // اجرای درخواست
             $response = curl_exec($ch);
@@ -287,21 +300,44 @@ class ExternalApiHelper {
      * حذف اطلاعات حساس از داده‌ها برای لاگ
      */
     private function redactSensitiveData($data) {
-        if (is_array($data)) {
-            $sensitiveFields = ['password', 'token', 'secret', 'key', 'authorization'];
-            foreach ($data as $key => $value) {
+        if (is_string($data)) {
+            $decoded = json_decode($data, true);
+            $data = is_array($decoded) ? $decoded : ['body' => mb_substr($data, 0, 2000)];
+        }
+
+        $sensitiveFields = [
+            'password', 'token', 'secret', 'key', 'authorization',
+            'national', 'mobile', 'phone', 'birth', 'email', 'address',
+            'postal', 'serial', 'video', 'image', 'document', 'file',
+        ];
+        $walk = function ($value) use (&$walk, $sensitiveFields) {
+            if (!is_array($value)) return $value;
+            $result = [];
+            foreach ($value as $key => $item) {
+                $redact = false;
                 if (is_string($key)) {
                     foreach ($sensitiveFields as $field) {
                         if (stripos($key, $field) !== false) {
-                            $data[$key] = '[REDACTED]';
+                            $redact = true;
                             break;
                         }
                     }
                 }
+                $result[$key] = $redact ? '[REDACTED]' : $walk($item);
             }
+            return $result;
+        };
+
+        $json = json_encode($walk($data), JSON_UNESCAPED_UNICODE);
+        if ($json === false) return '{}';
+        if (strlen($json) > 32768) {
+            return json_encode([
+                'truncated' => true,
+                'original_size' => strlen($json),
+                'sha256' => hash('sha256', $json),
+            ], JSON_UNESCAPED_UNICODE) ?: '{}';
         }
-        
-        return json_encode($data);
+        return $json;
     }
     
     /**

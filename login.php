@@ -3,13 +3,14 @@ $page_title = 'ورود ادمین';
 require __DIR__ . '/views/auth/header.php';
 
 if (admin_id()) {
-    redirect('/dashboard.php');
+    redirect(url_path('dashboard.php'));
 }
 ?>
 
 <div id="loginAlert" class="alert alert-danger d-none"></div>
 
 <form id="loginForm" class="row gy-3" onsubmit="return false;">
+    <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
     <div class="col-xl-12">
         <label for="phone" class="form-label text-default">شماره موبایل</label>
         <div class="position-relative">

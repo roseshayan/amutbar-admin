@@ -9,6 +9,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 // 1. بررسی لاگین
 $user = api_require_auth();
+$userType = (int)($user['user_type'] ?? 0);
+if ($userType !== 1) api_err('Forbidden', 403);
 $pdo = db();
 $user_id = (int)($user['id'] ?? 0);
 if ($user_id <= 0) api_err('Unauthorized - لطفا مجدد وارد شوید', 401);
@@ -50,7 +52,7 @@ try {
     try {
         $shahkarRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/ShahkarLite', 'POST', $shahkarBody);
     } catch (Exception $e) {
-        api_err('خطا در ارتباط با سرویس شاهکار: ' . $e->getMessage());
+        api_err('در حال حاضر ارتباط با سرویس احراز هویت ممکن نیست', 502);
     }
 
     if (empty($shahkarRes['success']) || $shahkarRes['success'] !== true) {
@@ -76,7 +78,7 @@ try {
         try {
             $photoRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/PersonImage', 'POST', $photoBody);
         } catch (Exception $e) {
-            api_err('خطا در ارتباط با سرویس عکس: ' . $e->getMessage());
+            api_err('در حال حاضر ارتباط با سرویس تصویر هویتی ممکن نیست', 502);
         }
 
         if (empty($photoRes['success']) || $photoRes['success'] !== true) {
@@ -86,13 +88,18 @@ try {
 
         $imageBase64 = $photoRes['data']['imageBase64'] ?? null;
         if (!empty($imageBase64)) {
-            $imgBin = base64_decode($imageBase64);
-            if ($imgBin) {
+            $imgBin = base64_decode($imageBase64, true);
+            if (
+                $imgBin !== false
+                && strlen($imgBin) <= 5 * 1024 * 1024
+                && @getimagesizefromstring($imgBin) !== false
+            ) {
                 $fileName = 'avatar_' . $user_id . '_' . time() . '.jpg';
                 $uploadDir = __DIR__ . '/../../../storage/avatars/';
 
                 if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
                 file_put_contents($uploadDir . $fileName, $imgBin);
+                @chmod($uploadDir . $fileName, 0640);
 
                 $avatarFilename = $fileName;
             }
@@ -127,7 +134,8 @@ try {
         $pdo->commit();
     } catch (Throwable $e) {
         $pdo->rollBack();
-        api_err('خطا در ذخیره‌سازی اطلاعات: ' . $e->getMessage(), 500);
+        $msg = ((string)env('APP_DEBUG', '0') === '1') ? $e->getMessage() : 'خطا در ذخیره‌سازی اطلاعات';
+        api_err($msg, 500);
     }
 
     api_ok([
@@ -139,5 +147,6 @@ try {
         ]
     ]);
 } catch (Exception $e) {
-    api_err('خطا در پردازش: ' . $e->getMessage());
+    $msg = ((string)env('APP_DEBUG', '0') === '1') ? $e->getMessage() : 'خطا در پردازش';
+    api_err($msg, 500);
 }

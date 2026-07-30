@@ -59,6 +59,18 @@ if ($action === 'save') {
     $priority = (int)($_POST['priority'] ?? 100);
     $action_type = (int)($_POST['action_type'] ?? 0);
     $is_active = isset($_POST['is_active']) ? 1 : 0;
+    if (!in_array($target_app_id, [1, 2], true)) {
+        json_out(['ok' => false, 'message' => 'اپ هدف نامعتبر است'], 422);
+    }
+    if (!in_array($placement, ['dashboard', 'profile'], true)) {
+        json_out(['ok' => false, 'message' => 'محل نمایش نامعتبر است'], 422);
+    }
+    if ($action_value !== '') {
+        $scheme = strtolower((string)parse_url($action_value, PHP_URL_SCHEME));
+        if (!in_array($scheme, ['http', 'https'], true)) {
+            json_out(['ok' => false, 'message' => 'لینک بنر باید با http یا https شروع شود'], 422);
+        }
+    }
 
     // دریافت ID ادمین که در حال ساختن بنر است
     $admin_id = admin_id();
@@ -69,21 +81,27 @@ if ($action === 'save') {
     }
 
     $file = $_FILES['image'];
-    $allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!in_array($file['type'], $allowedTypes)) {
+    if ((int)($file['size'] ?? 0) <= 0 || (int)$file['size'] > 5 * 1024 * 1024) {
+        json_out(['ok' => false, 'message' => 'حجم تصویر باید حداکثر ۵ مگابایت باشد'], 422);
+    }
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = (string)$finfo->file((string)$file['tmp_name']);
+    $allowedTypes = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
+    if (!isset($allowedTypes[$mime]) || @getimagesize((string)$file['tmp_name']) === false) {
         echo json_encode(['ok' => false, 'message' => 'فرمت تصویر نامعتبر است']);
         exit;
     }
 
-    $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
-    $filename = 'banner_' . time() . '_' . uniqid() . '.' . $ext;
+    $ext = $allowedTypes[$mime];
+    $filename = 'banner_' . bin2hex(random_bytes(16)) . '.' . $ext;
 
     $dir = BASE_PATH . '/storage/uploads/banners';
-    if (!is_dir($dir)) @mkdir($dir, 0777, true);
+    if (!is_dir($dir)) @mkdir($dir, 0775, true);
 
     $dest = $dir . '/' . $filename;
 
     if (move_uploaded_file($file['tmp_name'], $dest)) {
+        @chmod($dest, 0640);
         $imageKey = 'storage/uploads/banners/' . $filename;
 
         $st = $pdo->prepare("INSERT INTO banners (title, body, image_key, placement, target_app_id, action_type, action_value, priority, is_active, created_by_user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(3), NOW(3))");

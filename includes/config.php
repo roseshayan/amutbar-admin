@@ -11,7 +11,11 @@ function env(string $key, $default = null)
 // تابع کمکی برای رمزنگاری/رمزگشایی
 function get_encryption_key(): string
 {
-    $key = env('API_ENCRYPTION_KEY', env('API_TOKEN_PEPPER', 'default-encryption-key'));
+    $key = (string)env('API_ENCRYPTION_KEY', env('API_TOKEN_PEPPER', ''));
+    if ($key === '' && strtolower((string)env('APP_ENV', 'local')) === 'production') {
+        throw new RuntimeException('API_ENCRYPTION_KEY is required in production');
+    }
+    if ($key === '') $key = 'local-only-encryption-key-change-me';
 
     // اگر کلید کوتاه است، آن را به 32 بایت تبدیل می‌کنیم
     if (strlen($key) < 32) {

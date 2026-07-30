@@ -26,6 +26,8 @@ function api_path(): string
 function api_user_with_profile(array $u): array
 {
     $pdo = db();
+    $publicUser = api_public_user_payload($u);
+    if ($publicUser) $u = $publicUser;
 
     require_once __DIR__ . '/../../includes/settings.php';
 
@@ -42,9 +44,12 @@ function api_user_with_profile(array $u): array
     }
 
     if ((int)$u['user_type'] === 2) {
-        $st = $pdo->prepare("SELECT id, company_name, owner_full_name, owner_national_code, registration_no, economic_code, province_id, city_id, address, verification_status, reject_reason, created_at, updated_at FROM companies WHERE user_id=? AND deleted_at IS NULL LIMIT 1");
+        $st = $pdo->prepare("SELECT id, company_name, owner_full_name, owner_national_code, registration_no, registration_date, economic_code, province_id, city_id, address, postal_code, verification_status, reject_reason, created_at, updated_at FROM companies WHERE user_id=? AND deleted_at IS NULL LIMIT 1");
         $st->execute([(int)$u['id']]);
         $company = $st->fetch() ?: null;
+        if ($company !== null) {
+            $company['entity_type'] = trim((string)($company['registration_no'] ?? '')) !== '' ? 2 : 1;
+        }
     }
 
     // onboarding flags
@@ -80,11 +85,18 @@ function api_user_with_profile(array $u): array
     }
 
     return [
-        'user' => $u,
+        'user' => $publicUser ?: $u,
         'driver' => $driver,
         'company' => $company,
         'onboarding' => [
-            'profile_completed' => ($driver !== null || $company !== null),
+            'profile_completed' => $driver !== null || (
+                $company !== null
+                && (int)($company['province_id'] ?? 0) > 0
+                && (int)($company['city_id'] ?? 0) > 0
+            ),
+            'identity_verified' => $driver !== null
+                ? ((int)($driver['verification_status'] ?? 0) === 1)
+                : ($company !== null && (int)($company['verification_status'] ?? 0) === 1),
             'verification_status' => $driver['verification_status'] ?? ($company['verification_status'] ?? null),
             'needs_vehicle_info' => $needsVehicleInfo,
             'require_verification_video' => $requireVideo,
@@ -96,9 +108,8 @@ function api_user_with_profile(array $u): array
 $method = api_method();
 $path = api_path();
 
-// --- مسیرهای اپلیکیشن اعلام بار (باربری). اگر مسیر مربوط نباشد، عبور می‌کند. ---
+// مسیرهای اپلیکیشن اعلام بار بعد از اعمال guardهای سراسری dispatch می‌شوند.
 require_once __DIR__ . '/_company_routes.php';
-company_routes($method, $path);
 
 // -----------------------------
 // Endpoint key (برای کنترل از پنل)
@@ -111,6 +122,7 @@ elseif ($path === '/meta/app-config') $endpointKey = 'api.meta.app_config';
 elseif ($path === '/meta/provinces') $endpointKey = 'api.meta.provinces';
 elseif ($path === '/meta/cities') $endpointKey = 'api.meta.cities';
 elseif ($path === '/meta/cities/search') $endpointKey = 'api.meta.cities_search';
+elseif ($path === '/meta/cargos/search') $endpointKey = 'api.meta.cargos_search';
 elseif ($path === '/meta/vehicle-types') $endpointKey = 'api.meta.vehicle_types';
 
 // Auth
@@ -129,6 +141,9 @@ elseif ($path === '/me/notifications') $endpointKey = 'api.me.notifications';
 // Onboarding
 elseif ($path === '/driver/profile') $endpointKey = 'api.driver.upsert';
 elseif ($path === '/company/profile') $endpointKey = 'api.company.upsert';
+elseif ($path === '/company/me') $endpointKey = 'api.company.me';
+elseif ($path === '/company/verify-identity') $endpointKey = 'api.company.verify_identity';
+elseif ($path === '/company/docs') $endpointKey = 'api.company.docs';
 elseif ($path === '/driver/docs') $endpointKey = 'api.driver.docs';
 elseif ($path === '/driver/verification-video') $endpointKey = 'api.driver.verification_video';
 
@@ -146,6 +161,11 @@ elseif ($path === '/support/tickets') {
 elseif ($path === '/loads') $endpointKey = 'api.loads.all';
 elseif ($path === '/driver/loads') $endpointKey = 'api.loads.driver_search';
 elseif (preg_match('~^/driver/loads/(\d+)$~', $path)) $endpointKey = 'api.loads.driver_single';
+elseif ($path === '/company/loads') {
+    $endpointKey = $method === 'POST' ? 'api.company.loads_create' : 'api.company.loads_list';
+} elseif (preg_match('~^/company/loads/(\d+)/close$~', $path)) {
+    $endpointKey = 'api.company.loads_close';
+}
 if ($path === '/driver/calls/history')         $endpointKey = 'api.driver.calls.history';
 elseif ($path === '/companies/active-loads') $endpointKey = 'api.loads.company_active';
 
@@ -158,6 +178,8 @@ api_guard_global($endpointKey);
 if ($endpointKey !== 'api.unknown') {
     api_guard_endpoint($endpointKey);
 }
+
+company_routes($method, $path);
 
 // Driver app activity log (batch or single event)
 if ($method === 'POST' && $path === '/driver/activity') {
@@ -206,6 +228,8 @@ if ($method === 'GET' && $path === '/health') {
 // Meta
 if ($method === 'GET' && $path === '/meta/app-config') {
     require_once __DIR__ . '/../../includes/settings.php';
+    $targetAppId = (int)($_GET['target_app_id'] ?? 1);
+    if (!in_array($targetAppId, [1, 2], true)) $targetAppId = 1;
 
     $keys = [
         'company.name',
@@ -225,6 +249,12 @@ if ($method === 'GET' && $path === '/meta/app-config') {
         'app.ios.latest_version_code',
         'app.ios.min_supported_code',
         'app.ios.update_url',
+        'cargo.app.android.latest_version_code',
+        'cargo.app.android.min_supported_code',
+        'cargo.app.android.update_url',
+        'cargo.app.ios.latest_version_code',
+        'cargo.app.ios.min_supported_code',
+        'cargo.app.ios.update_url',
         'maintenance.enabled',
         'maintenance.message',
 
@@ -256,8 +286,18 @@ if ($method === 'GET' && $path === '/meta/app-config') {
         if ($base === '') return $p;
         return $base . '/' . ltrim($p, '/');
     };
+    $appSetting = static function (string $suffix) use ($it, $targetAppId) {
+        if ($targetAppId === 2) {
+            $cargoKey = 'cargo.app.' . $suffix;
+            if (array_key_exists($cargoKey, $it) && $it[$cargoKey] !== null && $it[$cargoKey] !== '') {
+                return $it[$cargoKey];
+            }
+        }
+        return $it['app.' . $suffix] ?? null;
+    };
 
     api_ok([
+        'target_app_id' => $targetAppId,
         'company_name' => $it['company.name'] !== null ? (string)$it['company.name'] : null,
         'site_name' => $it['site.name'] !== null ? (string)$it['site.name'] : null,
         'site_url' => $it['site.url'] !== null ? (string)$it['site.url'] : null,
@@ -275,14 +315,14 @@ if ($method === 'GET' && $path === '/meta/app-config') {
         ],
         'app' => [
             'android' => [
-                'latest_version_code' => $it['app.android.latest_version_code'] !== null ? (int)$it['app.android.latest_version_code'] : null,
-                'min_supported_code' => $it['app.android.min_supported_code'] !== null ? (int)$it['app.android.min_supported_code'] : null,
-                'update_url' => $it['app.android.update_url'] !== null ? (string)$it['app.android.update_url'] : null,
+                'latest_version_code' => $appSetting('android.latest_version_code') !== null ? (int)$appSetting('android.latest_version_code') : null,
+                'min_supported_code' => $appSetting('android.min_supported_code') !== null ? (int)$appSetting('android.min_supported_code') : null,
+                'update_url' => $appSetting('android.update_url') !== null ? (string)$appSetting('android.update_url') : null,
             ],
             'ios' => [
-                'latest_version_code' => $it['app.ios.latest_version_code'] !== null ? (int)$it['app.ios.latest_version_code'] : null,
-                'min_supported_code' => $it['app.ios.min_supported_code'] !== null ? (int)$it['app.ios.min_supported_code'] : null,
-                'update_url' => $it['app.ios.update_url'] !== null ? (string)$it['app.ios.update_url'] : null,
+                'latest_version_code' => $appSetting('ios.latest_version_code') !== null ? (int)$appSetting('ios.latest_version_code') : null,
+                'min_supported_code' => $appSetting('ios.min_supported_code') !== null ? (int)$appSetting('ios.min_supported_code') : null,
+                'update_url' => $appSetting('ios.update_url') !== null ? (string)$appSetting('ios.update_url') : null,
             ],
         ],
         'maintenance' => [
@@ -466,6 +506,11 @@ if ($method === 'POST' && $path === '/auth/verify-identity') {
     if (!$fullName) api_err('full_name الزامی است', 422);
     if (!$nationalCode) api_err('national_code الزامی است', 422);
     if (!$birthDate) api_err('birth_date الزامی است', 422);
+    $nationalError = validate_national_code($nationalCode);
+    if ($nationalError !== null) api_err($nationalError, 422);
+    if (!preg_match('~^1[34]\d{2}/(?:0[1-9]|1[0-2])/(?:0[1-9]|[12]\d|3[01])$~', $birthDate)) {
+        api_err('فرمت تاریخ تولد نامعتبر است', 422);
+    }
 
     // --- اصلاح بخش اعتبارسنجی داینامیک بر اساس تنظیمات ادمین ---
     require_once __DIR__ . '/../../includes/settings.php';
@@ -490,7 +535,7 @@ if ($method === 'POST' && $path === '/auth/verify-identity') {
     try {
         $shahkarRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/ShahkarLite', 'POST', $shahkarBody);
     } catch (Throwable $e) {
-        api_err('خطا در ارتباط با سرویس شاهکار: ' . $e->getMessage(), 502);
+        api_err('در حال حاضر ارتباط با سرویس احراز هویت ممکن نیست', 502);
     }
     if (empty($shahkarRes['success']) || $shahkarRes['success'] !== true) {
         $msg = $shahkarRes['message'] ?? 'خطای ناشناخته در سرویس شاهکار';
@@ -511,7 +556,7 @@ if ($method === 'POST' && $path === '/auth/verify-identity') {
         try {
             $photoRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/PersonImage', 'POST', $photoBody);
         } catch (Throwable $e) {
-            api_err('خطا در ارتباط با سرویس عکس: ' . $e->getMessage(), 502);
+            api_err('در حال حاضر ارتباط با سرویس تصویر هویتی ممکن نیست', 502);
         }
         if (empty($photoRes['success']) || $photoRes['success'] !== true) {
             $msg = $photoRes['message'] ?? 'اطلاعات هویتی صحیح نیست.';
@@ -522,7 +567,12 @@ if ($method === 'POST' && $path === '/auth/verify-identity') {
         $imageBase64 = $photoRes['data']['imageBase64'] ?? null;
         if (is_string($imageBase64) && $imageBase64 !== '') {
             $bin = base64_decode($imageBase64, true);
-            if ($bin !== false && strlen($bin) > 0) {
+            if (
+                $bin !== false
+                && strlen($bin) > 0
+                && strlen($bin) <= 5 * 1024 * 1024
+                && @getimagesizefromstring($bin) !== false
+            ) {
                 $dir = __DIR__ . '/../../storage/uploads/avatars';
                 if (!is_dir($dir)) {
                     @mkdir($dir, 0775, true);
@@ -530,6 +580,7 @@ if ($method === 'POST' && $path === '/auth/verify-identity') {
                 $filename = 'avatar_' . (int)$u['id'] . '_' . time() . '.jpg';
                 $abs = $dir . '/' . $filename;
                 if (@file_put_contents($abs, $bin) !== false) {
+                    @chmod($abs, 0640);
                     $avatarKey = 'storage/uploads/avatars/' . $filename;
                     $pdo->prepare("UPDATE users SET avatar_key=?, updated_at=NOW(3) WHERE id=? LIMIT 1")
                         ->execute([$avatarKey, (int)$u['id']]);
@@ -559,7 +610,8 @@ if ($method === 'POST' && $path === '/auth/verify-identity') {
         $pdo->commit();
     } catch (Throwable $e) {
         $pdo->rollBack();
-        api_err('خطا در ذخیره‌سازی اطلاعات: ' . $e->getMessage(), 500);
+        $msg = ((string)env('APP_DEBUG', '0') === '1') ? $e->getMessage() : 'خطا در ذخیره‌سازی اطلاعات';
+        api_err($msg, 500);
     }
 
     api_ok([
@@ -725,19 +777,24 @@ if ($method === 'POST' && $path === '/driver/docs') {
     $st = $pdo->prepare("SELECT id FROM drivers WHERE user_id=? LIMIT 1");
     $st->execute([$u['id']]);
     $driverId = (int)$st->fetchColumn();
+    if ($driverId <= 0) api_err('ابتدا اطلاعات وسیله نقلیه را تکمیل کنید', 403);
 
     if (!empty($_FILES['license_image']) && is_array($_FILES['license_image'])) {
-        $hasAny = true;
         $k = save_user_file((int)$u['id'], 3, $_FILES['license_image']);
-        if ($k && $driverId > 0) save_driver_document($driverId, 3, $k);
+        if ($k) {
+            save_driver_document($driverId, 3, $k);
+            $hasAny = true;
+        }
     }
     if (!empty($_FILES['vehicle_card_image']) && is_array($_FILES['vehicle_card_image'])) {
-        $hasAny = true;
         $k = save_user_file((int)$u['id'], 4, $_FILES['vehicle_card_image']);
-        if ($k && $driverId > 0) save_driver_document($driverId, 4, $k);
+        if ($k) {
+            save_driver_document($driverId, 4, $k);
+            $hasAny = true;
+        }
     }
 
-    if (!$hasAny) api_err('هیچ فایلی ارسال نشده است', 422);
+    if (!$hasAny) api_err('فایل معتبر ارسال نشده است', 422);
     api_ok(['uploaded' => true]);
 }
 
@@ -807,28 +864,42 @@ if ($method === 'POST' && $path === '/driver/verification-video') {
         api_err('حجم ویدئو بیش از حد مجاز است', 422);
     }
 
-    $mime = (string)($f['type'] ?? '');
-    $allowedMimes = ['video/mp4', 'video/quicktime', 'video/x-matroska', 'video/3gpp', 'video/webm'];
-    if ($mime !== '' && !in_array($mime, $allowedMimes, true)) {
+    $tmpName = (string)($f['tmp_name'] ?? '');
+    if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+        api_err('فایل آپلودشده معتبر نیست', 422);
+    }
+    $mimeMap = [
+        'video/mp4' => 'mp4',
+        'video/quicktime' => 'mov',
+        'video/x-matroska' => 'mkv',
+        'video/3gpp' => '3gp',
+        'video/webm' => 'webm',
+    ];
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = (string)$finfo->file($tmpName);
+    if (!isset($mimeMap[$mime])) {
         api_err('فرمت ویدئو نامعتبر است', 422);
     }
 
-    $ext = strtolower(pathinfo((string)($f['name'] ?? ''), PATHINFO_EXTENSION));
-    if ($ext === '') $ext = 'mp4';
+    $ext = $mimeMap[$mime];
 
     $uploadDir = BASE_PATH . '/storage/uploads/videos';
     if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0777, true);
+        @mkdir($uploadDir, 0775, true);
+    }
+    if (!is_dir($uploadDir) || !is_writable($uploadDir)) {
+        api_err('مسیر ذخیره ویدئو در دسترس نیست', 500);
     }
 
     // فارسی: ابتدا خام را با نام موقت ذخیره می‌کنیم
-    $base = 'verify_' . (int)$u['id'] . '_' . uniqid('', true);
+    $base = 'verify_' . (int)$u['id'] . '_' . bin2hex(random_bytes(12));
     $rawFilename = $base . '_raw.' . $ext;
     $rawDest = $uploadDir . '/' . $rawFilename;
 
-    if (!move_uploaded_file((string)$f['tmp_name'], $rawDest)) {
+    if (!move_uploaded_file($tmpName, $rawDest)) {
         api_err('ذخیره ویدئو ناموفق بود', 500);
     }
+    @chmod($rawDest, 0640);
 
     // فارسی: تلاش برای فشرده سازی به mp4 (حتی اگر ورودی mov/webm باشد)
     $finalFilename = $base . '.mp4';
@@ -842,6 +913,7 @@ if ($method === 'POST' && $path === '/driver/verification-video') {
 
     if ($compressed) {
         @unlink($rawDest);
+        @chmod($finalDest, 0640);
     }
 
     // فارسی: کنترل نهایی حجم (روی نسخه نهایی/استفاده شده)
@@ -1066,7 +1138,7 @@ if ($method === 'POST' && preg_match('~^/support/tickets/(\d+)/messages$~', $pat
         $mime = finfo_file($finfo, $file['tmp_name']);
         finfo_close($finfo);
 
-        if (in_array($mime, $allowedImages)) {
+        if (in_array($mime, $allowedImages, true) && @getimagesize((string)$file['tmp_name']) !== false) {
             $messageType = 2;
             $ext = ($mime === 'image/png') ? 'png' : (($mime === 'image/gif') ? 'gif' : (($mime === 'image/webp') ? 'webp' : 'jpg'));
         } elseif (in_array($mime, $allowedFiles)) {
@@ -1084,9 +1156,10 @@ if ($method === 'POST' && preg_match('~^/support/tickets/(\d+)/messages$~', $pat
         if (!move_uploaded_file($file['tmp_name'], $dest)) {
             api_err('خطا در ذخیره فایل', 500);
         }
+        @chmod($dest, 0640);
 
         $attachmentKey = 'uploads/tickets/' . $filename;
-        $attachmentName = $file['name'];
+        $attachmentName = mb_substr(basename((string)$file['name']), 0, 190);
     }
 
     // متن پیام (می‌تواند از فیلد message بیاید، چه JSON چه multipart)
@@ -1286,6 +1359,7 @@ function amut_haversine_distance($lat1, $lon1, $lat2, $lon2)
 // ۱. لیست بارهای هوشمند رانندگان
 if ($method === 'GET' && $path === '/driver/loads') {
     $u = api_require_auth();
+    if ((int)($u['user_type'] ?? 0) !== 1) api_err('Forbidden', 403);
     $pdo = db();
 
     $stDriver = $pdo->prepare("SELECT rating_avg FROM drivers WHERE user_id=? AND deleted_at IS NULL LIMIT 1");
@@ -1345,15 +1419,57 @@ if ($method === 'GET' && $path === '/driver/loads') {
     $st->execute($params);
     $loads = $st->fetchAll();
 
+    // میانگین بازار برای همه مسیرهای همین صفحه با یک query محاسبه می‌شود.
+    $routeWhere = [];
+    $routeParams = [];
+    $seenRoutes = [];
+    foreach ($loads as $r) {
+        $routeKey = (int)$r['cargo_type_id'] . ':' . (int)$r['origin_city_id'] . ':' . (int)$r['dest_city_id'];
+        if (isset($seenRoutes[$routeKey])) continue;
+        $seenRoutes[$routeKey] = true;
+        $routeWhere[] = '(cargo_type_id=? AND origin_city_id=? AND dest_city_id=?)';
+        $routeParams[] = (int)$r['cargo_type_id'];
+        $routeParams[] = (int)$r['origin_city_id'];
+        $routeParams[] = (int)$r['dest_city_id'];
+    }
+
+    $marketStats = [];
+    if ($routeWhere) {
+        $stAvg = $pdo->prepare(
+            "SELECT cargo_type_id, origin_city_id, dest_city_id,
+                    SUM(proposed_price) AS total_price,
+                    COUNT(proposed_price) AS price_count
+             FROM loads
+             WHERE deleted_at IS NULL
+               AND created_at >= DATE_SUB(NOW(), INTERVAL 15 DAY)
+               AND (" . implode(' OR ', $routeWhere) . ")
+             GROUP BY cargo_type_id, origin_city_id, dest_city_id"
+        );
+        $stAvg->execute($routeParams);
+        foreach ($stAvg->fetchAll() as $stat) {
+            $key = (int)$stat['cargo_type_id'] . ':' . (int)$stat['origin_city_id'] . ':' . (int)$stat['dest_city_id'];
+            $marketStats[$key] = [
+                'sum' => (float)$stat['total_price'],
+                'count' => (int)$stat['price_count'],
+            ];
+        }
+    }
+
     $items = [];
     foreach ($loads as $r) {
-        $stAvg = $pdo->prepare("SELECT AVG(proposed_price) FROM loads WHERE cargo_type_id=? AND origin_city_id=? AND dest_city_id=? AND created_at >= DATE_SUB(NOW(), INTERVAL 15 DAY) AND id != ?");
-        $stAvg->execute([$r['cargo_type_id'], $r['origin_city_id'], $r['dest_city_id'], $r['id']]);
-        $marketAvg = $stAvg->fetchColumn();
+        $routeKey = (int)$r['cargo_type_id'] . ':' . (int)$r['origin_city_id'] . ':' . (int)$r['dest_city_id'];
+        $stats = $marketStats[$routeKey] ?? null;
+        $currentPrice = is_numeric($r['proposed_price'] ?? null) ? (float)$r['proposed_price'] : 0.0;
+        $marketAvg = null;
+        if ($stats !== null) {
+            $remainingCount = $stats['count'] - ($currentPrice > 0 ? 1 : 0);
+            if ($remainingCount > 0) {
+                $marketAvg = ($stats['sum'] - ($currentPrice > 0 ? $currentPrice : 0.0)) / $remainingCount;
+            }
+        }
 
         $evaluation = "منصفانه";
         if ($marketAvg > 0) {
-            $currentPrice = (float)$r['proposed_price'];
             if ($currentPrice < $marketAvg * 0.9) $evaluation = "ارزان";
             elseif ($currentPrice > $marketAvg * 1.1) $evaluation = "گران";
         }
@@ -1394,8 +1510,17 @@ if ($method === 'GET' && $path === '/meta/cities/search') {
 
 // ۳. دریافت مشخصات تکمیلی یک بار خاص
 if ($method === 'GET' && preg_match('~^/driver/loads/(\d+)$~', $path, $matches)) {
+    $u = api_require_auth();
+    if ((int)($u['user_type'] ?? 0) !== 1) api_err('Forbidden', 403);
     $loadId = (int)$matches[1];
     $pdo = db();
+
+    $stDriver = $pdo->prepare("SELECT rating_avg FROM drivers WHERE user_id=? AND deleted_at IS NULL LIMIT 1");
+    $stDriver->execute([$u['id']]);
+    $rating = (float)($stDriver->fetchColumn() ?: 0.0);
+    $timeCondition = $rating < 4.0
+        ? "DATE_SUB(NOW(3), INTERVAL 5 MINUTE)"
+        : "NOW(3)";
 
     $st = $pdo->prepare("
         SELECT l.*, comp.company_name, vt.title as vehicle_title, cl.title as cargo_title,
@@ -1409,7 +1534,11 @@ if ($method === 'GET' && preg_match('~^/driver/loads/(\d+)$~', $path, $matches))
         LEFT JOIN companies comp ON l.company_id = comp.id
         LEFT JOIN vehicle_types vt ON l.primary_vehicle_type_id = vt.id
         LEFT JOIN cargos_list cl ON l.cargo_type_id = cl.id
-        WHERE l.id = ? AND l.deleted_at IS NULL LIMIT 1
+        WHERE l.id = ?
+          AND l.load_status = 1
+          AND l.deleted_at IS NULL
+          AND l.published_at <= $timeCondition
+        LIMIT 1
     ");
     $st->execute([$loadId]);
     $load = $st->fetch();
@@ -1453,6 +1582,7 @@ if ($method === 'GET' && preg_match('~^/driver/loads/(\d+)$~', $path, $matches))
 // ۴. دریافت بارهای فعال دیگر یک شرکت خاص
 if ($method === 'GET' && $path === '/companies/active-loads') {
     $u = api_require_auth();  // 👈 احراز هویت کاربر برای گرفتن امتیاز
+    if ((int)($u['user_type'] ?? 0) !== 1) api_err('Forbidden', 403);
     $companyId = (int)($_GET['company_id'] ?? 0);
     $excludeId = (int)($_GET['exclude_id'] ?? 0);
     $pdo = db();
@@ -1502,11 +1632,22 @@ if ($method === 'GET' && $path === '/companies/active-loads') {
 // ۵. لاگ کردن سابقه تماس راننده
 if ($method === 'POST' && $path === '/driver/calls/log') {
     $u = api_require_auth();
+    if ((int)($u['user_type'] ?? 0) !== 1) api_err('Forbidden', 403);
     $in = api_input();
     $pdo = db();
 
     $loadId = (int)($in['load_id'] ?? 0);
-    $companyId = (int)($in['company_id'] ?? 0);
+    if ($loadId <= 0) api_err('اطلاعات نامعتبر', 422);
+
+    $stLoad = $pdo->prepare(
+        "SELECT company_id
+         FROM loads
+         WHERE id=? AND load_status=1 AND deleted_at IS NULL
+         LIMIT 1"
+    );
+    $stLoad->execute([$loadId]);
+    $companyId = (int)($stLoad->fetchColumn() ?: 0);
+    if ($companyId <= 0) api_err('بار فعال یافت نشد', 404);
 
     $clientPlatformStr = strtolower(api_str($in, 'client_platform', 32));
     $clientPlatform = ($clientPlatformStr === 'ios') ? 2 : 1;
@@ -1533,6 +1674,7 @@ if ($method === 'POST' && $path === '/driver/calls/log') {
 // ۶. دریافت تاریخچه تماس‌های راننده
 if ($method === 'GET' && $path === '/driver/calls/history') {
     $u = api_require_auth();
+    if ((int)($u['user_type'] ?? 0) !== 1) api_err('Forbidden', 403);
     $pdo = db();
 
     // دریافت driver_id راننده فعلی

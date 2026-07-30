@@ -202,6 +202,40 @@ function api_require_admin_user(): array
     return $u;
 }
 
+/**
+ * Return only fields that are safe and useful to the authenticated mobile
+ * user. Never serialize a raw `SELECT * FROM users` row into an API response.
+ */
+function api_public_user_payload(array $user): array
+{
+    $userId = (int)($user['id'] ?? 0);
+    if ($userId <= 0) return [];
+
+    $st = db()->prepare("
+        SELECT id, full_name, phone, email, user_type, status, display_name,
+               avatar_key, code_meli, birth_date
+        FROM users
+        WHERE id=? AND deleted_at IS NULL
+        LIMIT 1
+    ");
+    $st->execute([$userId]);
+    $row = $st->fetch();
+    if (!$row) return [];
+
+    return [
+        'id' => (int)$row['id'],
+        'full_name' => (string)$row['full_name'],
+        'display_name' => $row['display_name'] !== null ? (string)$row['display_name'] : null,
+        'avatar_key' => $row['avatar_key'] !== null ? (string)$row['avatar_key'] : null,
+        'phone' => (string)$row['phone'],
+        'email' => $row['email'] !== null ? (string)$row['email'] : null,
+        'user_type' => (int)$row['user_type'],
+        'status' => (int)$row['status'],
+        'code_meli' => $row['code_meli'] !== null ? (string)$row['code_meli'] : null,
+        'birth_date' => $row['birth_date'] !== null ? (string)$row['birth_date'] : null,
+    ];
+}
+
 function api_ok(array $payload = []): void
 {
     json_out(['ok' => true] + $payload);

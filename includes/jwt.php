@@ -12,11 +12,16 @@ declare(strict_types=1);
 function jwt_secret(): string
 {
     $sec = (string)env('JWT_SECRET', '');
-    if ($sec !== '') return $sec;
+    if (strlen($sec) >= 32) return $sec;
 
-    // لوکال/تست: fallback (اما برای پروداکشن حتما JWT_SECRET ست شود)
+    $isProduction = strtolower((string)env('APP_ENV', 'local')) === 'production';
+    if ($isProduction) {
+        throw new RuntimeException('JWT_SECRET must be a random value of at least 32 characters');
+    }
+
+    // فقط لوکال/تست.
     $fallback = (string)env('APP_KEY', env('CSRF_SECRET', ''));
-    if ($fallback !== '') return $fallback;
+    if (strlen($fallback) >= 32) return $fallback;
     return 'dev-jwt-secret-change-me';
 }
 

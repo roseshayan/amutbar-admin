@@ -25,9 +25,32 @@ function require_post(): void
     }
 }
 
+function csrf_token(): string
+{
+    $token = (string)($_SESSION['csrf_token'] ?? '');
+    if ($token === '') {
+        $token = bin2hex(random_bytes(32));
+        $_SESSION['csrf_token'] = $token;
+    }
+    return $token;
+}
+
+function csrf_require_valid(): void
+{
+    $provided = trim((string)(
+        $_SERVER['HTTP_X_CSRF_TOKEN']
+        ?? $_POST['_csrf_token']
+        ?? ''
+    ));
+    $expected = (string)($_SESSION['csrf_token'] ?? '');
+    if ($provided === '' || $expected === '' || !hash_equals($expected, $provided)) {
+        json_out(['ok' => false, 'message' => 'درخواست نامعتبر است؛ صفحه را تازه‌سازی کنید'], 419);
+    }
+}
+
 function asset(string $path): string
 {
-    return '/assets/' . ltrim($path, '/');
+    return url_path('assets/' . ltrim($path, '/'));
 }
 
 #[NoReturn]

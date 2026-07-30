@@ -60,7 +60,7 @@
                                             </div>
                                             <div class="avatar-preview">
                                                 <div id="avatarPreview"
-                                                    style="background-image: url('/assets/images/faces/default-avatar.png');">
+                                                    style="background-image: url('<?= htmlspecialchars(asset('images/faces/default-avatar.png'), ENT_QUOTES, 'UTF-8') ?>');">
                                                 </div>
                                             </div>
                                             <div class="avatar-help">

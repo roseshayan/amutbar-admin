@@ -1,3 +1,16 @@
 .DS_Store
 .idea/
 .vscode/
+.env
+/amutbar.sql
+/vendor/
+/node_modules/
+/storage/logs/*
+/storage/uploads/*
+!/storage/logs/.gitkeep
+!/storage/uploads/.gitkeep
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks

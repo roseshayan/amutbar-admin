@@ -87,8 +87,8 @@ function admin_update_profile(array $data): array
     $new_password_hash = null;
     
     if ($password !== '') {
-        if (strlen($password) < 8) {
-            return ['ok' => false, 'message' => 'رمز عبور جدید باید حداقل 8 کاراکتر باشد'];
+        if (strlen($password) < 12) {
+            return ['ok' => false, 'message' => 'رمز عبور جدید باید حداقل ۱۲ کاراکتر باشد'];
         }
         
         // برای تغییر رمز عبور، رمز عبور فعلی باید وارد شود
@@ -124,6 +124,9 @@ function admin_update_profile(array $data): array
                 WHERE id = ?
             ");
             $st->execute([$full_name, $phone, ($email === '' ? null : $email), $new_password_hash, $admin_id]);
+            $pdo->prepare("DELETE FROM remember_tokens WHERE user_id=?")->execute([$admin_id]);
+            $pdo->prepare("UPDATE jwt_refresh_tokens SET revoked_at=NOW(3) WHERE user_id=? AND revoked_at IS NULL")
+                ->execute([$admin_id]);
         } else {
             $st = $pdo->prepare("
                 UPDATE users 

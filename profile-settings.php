@@ -16,9 +16,19 @@ if (!$admin_data) {
 
 $message = '';
 $message_type = '';
+$csrfValid = true;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $providedCsrf = (string)($_POST['_csrf_token'] ?? '');
+    $csrfValid = $providedCsrf !== '' && hash_equals(csrf_token(), $providedCsrf);
+    if (!$csrfValid) {
+        http_response_code(419);
+        $message = 'درخواست نامعتبر است؛ صفحه را تازه‌سازی و دوباره تلاش کنید.';
+        $message_type = 'danger';
+    }
+}
 
 // پردازش فرم ارسال شده
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_profile') {
+if ($csrfValid && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_profile') {
     $update_data = [
         'id' => $admin_id,
         'full_name' => $_POST['full_name'] ?? '',
@@ -42,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 // پردازش آپلود عکس پروفایل
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_avatar') {
+if ($csrfValid && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_avatar') {
     $res = admin_update_avatar((int)$admin_id, $_FILES['avatar'] ?? []);
     if ($res['ok']) {
         $message = $res['message'] ?? 'عکس پروفایل بروزرسانی شد';
@@ -102,6 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     </div>
                     <div class="card-body">
                         <form method="POST" action="" id="profileForm">
+                            <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
                             <input type="hidden" name="action" value="update_profile">
                             
                             <div class="row gy-4">
@@ -145,8 +156,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                         <div class="col-xl-6 mb-3">
                                             <label for="new_password" class="form-label">رمز عبور جدید</label>
                                             <input type="password" class="form-control" id="new_password" name="new_password" 
-                                                   placeholder="رمز عبور جدید را وارد کنید">
-                                            <div class="form-text">حداقل 8 کاراکتر باشد</div>
+                                                   placeholder="رمز عبور جدید را وارد کنید" minlength="12">
+                                            <div class="form-text">حداقل ۱۲ کاراکتر باشد</div>
                                         </div>
                                         
                                         <div class="col-xl-6">
@@ -211,6 +222,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         </div>
 
                         <form method="POST" action="" enctype="multipart/form-data" class="mb-4">
+                            <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
                             <input type="hidden" name="action" value="update_avatar">
                             <label class="form-label">تغییر عکس پروفایل</label>
                             <input type="file" name="avatar" class="form-control" accept="image/png,image/jpeg,image/webp" required>
@@ -294,10 +306,10 @@ document.getElementById('profileForm').addEventListener('submit', function(e) {
         return false;
     }
     
-    // اگر رمز عبور جدید کمتر از 8 کاراکتر باشد
-    if (newPassword && newPassword.length < 8) {
+    // اگر رمز عبور جدید کمتر از ۱۲ کاراکتر باشد
+    if (newPassword && newPassword.length < 12) {
         e.preventDefault();
-        alert('رمز عبور جدید باید حداقل 8 کاراکتر باشد');
+        alert('رمز عبور جدید باید حداقل ۱۲ کاراکتر باشد');
         return false;
     }
     
