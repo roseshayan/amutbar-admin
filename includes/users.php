@@ -53,9 +53,49 @@ function users_get(int $id): ?array
 function users_soft_delete(int $id): bool
 {
     $pdo = db();
-    $st = $pdo->prepare("UPDATE users SET deleted_at = NOW(3), updated_at = NOW(3) WHERE id = ? AND deleted_at IS NULL");
-    $st->execute([$id]);
-    return $st->rowCount() > 0;
+    $ownsTransaction = !$pdo->inTransaction();
+
+    if ($ownsTransaction) {
+        $pdo->beginTransaction();
+    }
+
+    try {
+        // پروفایل‌ها بایگانی می‌شوند؛ بارها، گفتگوها و سوابق مالی باقی می‌مانند.
+        $pdo->prepare("UPDATE companies SET deleted_at=COALESCE(deleted_at, NOW(3)), updated_at=NOW(3) WHERE user_id=?")
+            ->execute([$id]);
+        $pdo->prepare("UPDATE drivers SET deleted_at=COALESCE(deleted_at, NOW(3)), updated_at=NOW(3) WHERE user_id=?")
+            ->execute([$id]);
+
+        // تمام نشست‌ها و توکن‌های فعال کاربر باطل شوند.
+        $pdo->prepare("UPDATE jwt_refresh_tokens SET revoked_at=NOW(3) WHERE user_id=? AND revoked_at IS NULL")
+            ->execute([$id]);
+        $pdo->prepare("UPDATE api_tokens SET revoked_at=NOW(3) WHERE user_id=? AND revoked_at IS NULL")
+            ->execute([$id]);
+        $pdo->prepare("DELETE FROM remember_tokens WHERE user_id=?")
+            ->execute([$id]);
+
+        $st = $pdo->prepare("
+            UPDATE users
+            SET status=2,
+                deleted_at=NOW(3),
+                updated_at=NOW(3),
+                jwt_token_version=IFNULL(jwt_token_version, 1) + 1
+            WHERE id=? AND deleted_at IS NULL
+        ");
+        $st->execute([$id]);
+        $deleted = $st->rowCount() > 0;
+
+        if ($ownsTransaction) {
+            $pdo->commit();
+        }
+
+        return $deleted;
+    } catch (Throwable $e) {
+        if ($ownsTransaction && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
 }
 
 function users_save(array $in): array

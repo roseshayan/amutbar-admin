@@ -41,35 +41,12 @@ try {
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
 
     if ($action === 'delete') {
-
-        // لیست تمام جداولی که ممکن است اطلاعات کاربر در آن‌ها باشد
-        // این کار جلوی ارور Foreign Key Constraint دیتابیس را می‌گیرد
-        $queries = [
-            "DELETE FROM auth_events WHERE user_id IN ($placeholders)",
-            "DELETE FROM remember_tokens WHERE user_id IN ($placeholders)",
-            "DELETE FROM jwt_refresh_tokens WHERE user_id IN ($placeholders)",
-            "DELETE FROM user_files WHERE user_id IN ($placeholders)",
-            "DELETE FROM drivers WHERE user_id IN ($placeholders)",
-            "DELETE FROM companies WHERE user_id IN ($placeholders)",
-            "DELETE FROM identity_verification_jobs WHERE subject_user_id IN ($placeholders)",
-            "DELETE FROM user_roles WHERE user_id IN ($placeholders)"
-        ];
-
-        // پاک کردن وابستگی‌ها قبل از حذف خود کاربر
-        foreach ($queries as $sql) {
-            try {
-                $pdo->prepare($sql)->execute($ids);
-            } catch (Throwable $e) {
-                // اگر جدولی وجود نداشت یا پاک شده بود، از آن عبور می‌کنیم تا فرآیند متوقف نشود
-            }
-        }
-
-        // در نهایت حذف فیزیکی و دائمی خود کاربر از سیستم
-        $st = $pdo->prepare("DELETE FROM users WHERE id IN ($placeholders)");
-        $st->execute($ids);
-
+        // حذف نرم از ایجاد خطای Foreign Key جلوگیری می‌کند و سوابق عملیاتی را نگه می‌دارد.
         foreach ($ids as $id) {
-            audit_log('users.hard_delete', 'user', $id);
+            if (!users_soft_delete((int)$id)) {
+                throw new RuntimeException('کاربر یافت نشد یا قبلاً حذف شده است.');
+            }
+            audit_log('users.soft_delete', 'user', (int)$id);
         }
     } elseif ($action === 'deactivate') {
         // تغییر وضعیت فیلد وضعیت به ۲ (غیرفعال)

@@ -28,7 +28,8 @@ if (!function_exists('company_profile_payload')) {
             $company['entity_type'] = $hasReg ? 2 : 1;
         }
 
-        // آیا پروفایل تکمیل شده؟ (شهر/استان به‌عنوان مبنای تکمیل بودن)
+        // اطلاعات شهر و استان اختیاری است؛ این پرچم فقط برای نمایش یادآوری
+        // در پروفایل استفاده می‌شود و نباید آنبوردینگ را متوقف کند.
         $needsProfile = true;
         if ($company !== null) {
             $needsProfile = ((int)($company['province_id'] ?? 0) <= 0) || ((int)($company['city_id'] ?? 0) <= 0);
@@ -40,8 +41,9 @@ if (!function_exists('company_profile_payload')) {
             'onboarding' => [
                 'identity_verified'   => ($company !== null) && ((int)($company['verification_status'] ?? 0) === 1),
                 'verification_status' => $company['verification_status'] ?? null,
-                'profile_completed'   => ($company !== null) && !$needsProfile,
+                'profile_completed'   => $company !== null,
                 'needs_company_profile' => $needsProfile,
+                'company_profile_optional' => true,
             ],
         ];
     }
@@ -197,7 +199,7 @@ if (!function_exists('company_routes')) {
                     $pdo->prepare("UPDATE companies SET owner_full_name=?, owner_national_code=?, verification_status=1, verified_at=NOW(3), reject_reason=NULL, updated_at=NOW(3) WHERE id=? LIMIT 1")
                         ->execute([$fullName, $nationalCode, $companyId]);
                 } else {
-                    // ردیف اولیه؛ موقعیت در مرحله‌ی بعدی آنبوردینگ تکمیل می‌شود.
+                    // ردیف اولیه؛ موقعیت بعداً و به‌صورت اختیاری از پروفایل تکمیل می‌شود.
                     $pdo->prepare("INSERT INTO companies (user_id, company_name, owner_full_name, owner_national_code, province_id, city_id, verification_status, verified_at, created_at, updated_at) VALUES (?, ?, ?, ?, NULL, NULL, 1, NOW(3), NOW(3), NOW(3))")
                         ->execute([(int)$u['id'], $fullName, $fullName, $nationalCode]);
                 }
@@ -248,8 +250,9 @@ if (!function_exists('company_routes')) {
 
             if (!in_array($entityType, [1, 2], true)) api_err('entity_type نامعتبر است', 422);
             if (!$companyName) api_err('نام باربری/صاحب بار الزامی است', 422);
-            if (!$provinceId || $provinceId <= 0) api_err('استان الزامی است', 422);
-            if (!$cityId || $cityId <= 0) api_err('شهر الزامی است', 422);
+            if (($provinceId === null) !== ($cityId === null)) {
+                api_err('استان و شهر باید با هم انتخاب شوند', 422);
+            }
             if ($entityType === 2 && !$registrationNo) api_err('شماره ثبت برای شخص حقوقی الزامی است', 422);
             if ($postalCode !== null && !preg_match('/^\d{10}$/', $postalCode)) {
                 api_err('کد پستی باید ۱۰ رقم باشد', 422);
@@ -262,14 +265,16 @@ if (!function_exists('company_routes')) {
                 api_err('ابتدا احراز هویت صاحب بار را تکمیل کنید', 403);
             }
 
-            $st = $pdo->prepare("SELECT 1 FROM cities WHERE id=? AND province_id=? LIMIT 1");
-            $st->execute([$cityId, $provinceId]);
-            if (!$st->fetchColumn()) api_err('شهر انتخاب‌شده متعلق به استان انتخاب‌شده نیست', 422);
+            if ($provinceId !== null && $cityId !== null) {
+                $st = $pdo->prepare("SELECT 1 FROM cities WHERE id=? AND province_id=? LIMIT 1");
+                $st->execute([$cityId, $provinceId]);
+                if (!$st->fetchColumn()) api_err('شهر انتخاب‌شده متعلق به استان انتخاب‌شده نیست', 422);
+            }
 
             $pdo->beginTransaction();
             try {
                 $companyId = (int)$existingCompany['id'];
-                $pdo->prepare("UPDATE companies SET company_name=?, registration_no=?, registration_date=?, economic_code=?, province_id=?, city_id=?, address=?, postal_code=?, updated_at=NOW(3) WHERE id=? LIMIT 1")
+                $pdo->prepare("UPDATE companies SET company_name=?, registration_no=?, registration_date=COALESCE(?, registration_date), economic_code=?, province_id=?, city_id=?, address=?, postal_code=?, updated_at=NOW(3) WHERE id=? LIMIT 1")
                     ->execute([$companyName, $registrationNo, $registrationDate, $economicCode, $provinceId, $cityId, $address, $postalCode, $companyId]);
 
                 $pdo->commit();

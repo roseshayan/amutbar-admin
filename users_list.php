@@ -36,7 +36,7 @@ require_once "views/panel/sidebar.php";
                             <span class="text-muted small fw-bold"><i class="ri-checkbox-multiple-line"></i> عملیات گروهی (<span id="selectedCount">0</span> کاربر):</span>
                             <button class="btn btn-sm btn-success" onclick="bulkAction('activate')">فعال‌سازی</button>
                             <button class="btn btn-sm btn-warning" onclick="bulkAction('deactivate')">غیرفعال‌سازی</button>
-                            <button class="btn btn-sm btn-danger" onclick="bulkAction('delete')">حذف دائمی</button>
+                            <button class="btn btn-sm btn-danger" onclick="bulkAction('delete')">حذف و بایگانی</button>
                         </div>
 
                         <div class="table-responsive">
@@ -225,20 +225,20 @@ require_once "views/panel/sidebar.php";
         }
     }
 
-    // عملیات حذف تکی کاربر با پیام هشدار اختصاصی دائم
+    // حذف نرم کاربر و حفظ سوابق عملیاتی
     async function deleteUser(id) {
         const r = await Swal.fire({
             icon: 'warning',
-            title: 'حذف دائمی کاربر',
-            text: 'آیا واقعاً می‌خواهی حذف کنی؟ با حذف کاربر به صورت دائم اطلاعات آن حذف خواهد شد.',
+            title: 'حذف و بایگانی کاربر',
+            text: 'کاربر از سامانه غیرفعال می‌شود، اما سوابق بارها و فعالیت‌های او برای گزارش‌گیری حفظ خواهد شد.',
             showCancelButton: true,
-            confirmButtonText: 'بله، کاملاً حذف شود',
+            confirmButtonText: 'بله، حذف و بایگانی شود',
             cancelButtonText: 'انصراف',
             confirmButtonColor: '#d33'
         });
         if (!r.isConfirmed) return;
 
-        loader('در حال حذف کامل...');
+        loader('در حال حذف و بایگانی...');
         try {
             const fd = new FormData();
             fd.append('ids[]', id);
@@ -259,7 +259,7 @@ require_once "views/panel/sidebar.php";
                 Swal.fire({
                     icon: 'success',
                     title: 'موفق',
-                    text: 'کاربر و کلیه اطلاعات مربوطه کاملاً حذف شدند.'
+                    text: 'کاربر با موفقیت غیرفعال و بایگانی شد.'
                 });
                 dt.ajax.reload(null, false);
             } else {
@@ -292,10 +292,10 @@ require_once "views/panel/sidebar.php";
         if (action === 'delete') {
             const r = await Swal.fire({
                 icon: 'warning',
-                title: 'حذف دائمی گروهی کاربران',
-                text: `آیا واقعاً می‌خواهی ${ids.length} کاربر انتخاب شده را حذف کنی؟ با حذف کاربران به صورت دائم اطلاعات آن‌ها حذف خواهد شد.`,
+                title: 'حذف و بایگانی گروهی کاربران',
+                text: `${ids.length} کاربر غیرفعال و بایگانی می‌شوند؛ سوابق عملیاتی آن‌ها حفظ خواهد شد.`,
                 showCancelButton: true,
-                confirmButtonText: 'بله، حذف گروهی انجام شود',
+                confirmButtonText: 'بله، حذف و بایگانی شوند',
                 cancelButtonText: 'انصراف',
                 confirmButtonColor: '#d33'
             });

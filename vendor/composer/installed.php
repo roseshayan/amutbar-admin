@@ -3,7 +3,7 @@
         'name' => 'amutbar/admin',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '0694ef139a58773200dccd5e76bb230dac0584dc',
+        'reference' => '5ff36b3bbe02516f646b421c54f96539225986b1',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -13,7 +13,7 @@
         'amutbar/admin' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '0694ef139a58773200dccd5e76bb230dac0584dc',
+            'reference' => '5ff36b3bbe02516f646b421c54f96539225986b1',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

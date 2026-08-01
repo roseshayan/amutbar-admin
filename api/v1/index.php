@@ -89,11 +89,9 @@ function api_user_with_profile(array $u): array
         'driver' => $driver,
         'company' => $company,
         'onboarding' => [
-            'profile_completed' => $driver !== null || (
-                $company !== null
-                && (int)($company['province_id'] ?? 0) > 0
-                && (int)($company['city_id'] ?? 0) > 0
-            ),
+            // برای صاحب بار، اطلاعات مکانی بخشی اختیاری از پروفایل است و
+            // نباید مسیر ثبت‌نام را متوقف کند.
+            'profile_completed' => $driver !== null || $company !== null,
             'identity_verified' => $driver !== null
                 ? ((int)($driver['verification_status'] ?? 0) === 1)
                 : ($company !== null && (int)($company['verification_status'] ?? 0) === 1),
@@ -363,7 +361,8 @@ if ($method === 'GET' && $path === '/meta/cities') {
     $pdo = db();
     $provinceId = isset($_GET['province_id']) ? (int)$_GET['province_id'] : null;
     if (!$provinceId) api_err('province_id الزامی است', 422);
-    $st = $pdo->prepare("SELECT id, province_id, name, lat, lng FROM cities WHERE province_id=? ORDER BY name ASC");
+    // جدول مرجع فعلی مختصات ندارد؛ NULLها قرارداد قبلی API را حفظ می‌کنند.
+    $st = $pdo->prepare("SELECT id, province_id, name, NULL AS lat, NULL AS lng FROM cities WHERE province_id=? ORDER BY name ASC");
     $st->execute([$provinceId]);
     $rows = $st->fetchAll();
     api_ok(['items' => array_map(fn($r) => [
@@ -477,9 +476,8 @@ if ($method === 'POST' && $path === '/auth/verify-otp') {
 
     $profile = api_user_with_profile($user);
 
-    // مرحله/مسیر پیشنهادی برای اپلیکیشن
-    // (برای جلوگیری از ابهام، مبنا را «کامل بودن پروفایل» گذاشتیم)
-    $next = ($profile['onboarding']['profile_completed'] ?? false) ? 'dashboard' : 'onboarding';
+    // اطلاعات باربری اختیاری است؛ فقط احراز هویت مسیر ثبت‌نام را تعیین می‌کند.
+    $next = ($profile['onboarding']['identity_verified'] ?? false) ? 'dashboard' : 'onboarding';
     api_ok([
         'auth' => $token,
         'profile' => $profile,
