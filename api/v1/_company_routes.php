@@ -124,6 +124,20 @@ if (!function_exists('company_routes')) {
                 api_err('فرمت تاریخ تولد نامعتبر است', 422);
             }
 
+            $pdo = db();
+
+            // فقط حساب‌های فعال باید کد ملی را رزرو کنند. رکورد بایگانی‌شده
+            // بعد از اجرای migration کد ملی را برای ثبت‌نام جدید آزاد می‌کند.
+            $st = $pdo->prepare("SELECT id FROM users WHERE code_meli=? AND deleted_at IS NULL AND id<>? LIMIT 1");
+            $st->execute([$nationalCode, (int)$u['id']]);
+            if ($st->fetchColumn()) {
+                api_err(
+                    'این کد ملی قبلاً برای یک حساب فعال ثبت شده است. اگر حساب متعلق به شماست، به پشتیبانی پیام بدهید.',
+                    409,
+                    ['code' => 'national_code_already_registered']
+                );
+            }
+
             require_once __DIR__ . '/../../includes/settings.php';
             $requireSerial = (settings_get('auth.require_national_serial') === '1');
             if ($requireSerial && !$cardSerial) {
@@ -131,7 +145,6 @@ if (!function_exists('company_routes')) {
             }
 
             require_once __DIR__ . '/../../includes/ExternalApiHelper.php';
-            $pdo = db();
             $apiHelper = new ExternalApiHelper($pdo);
             $providerSlug = 'api_ir';
 
@@ -142,10 +155,12 @@ if (!function_exists('company_routes')) {
                     'nationalCode' => $nationalCode,
                 ]);
             } catch (Throwable $e) {
+                error_log('company.verify_identity shahkar failed: ' . $e->getMessage());
                 api_err('در حال حاضر ارتباط با سرویس احراز هویت ممکن نیست', 502);
             }
             if (empty($shahkarRes['success']) || $shahkarRes['success'] !== true) {
-                api_err('استعلام شاهکار ناموفق: ' . (string)($shahkarRes['message'] ?? 'خطای ناشناخته'), 400);
+                error_log('company.verify_identity shahkar rejected: ' . (string)($shahkarRes['message'] ?? 'provider rejected request'));
+                api_err('استعلام اطلاعات هویتی انجام نشد. لطفاً اطلاعات را بررسی و دوباره تلاش کنید.', 400);
             }
             if (($shahkarRes['data'] ?? false) !== true) {
                 api_err('کد ملی وارد شده متعلق به این شماره موبایل نیست.', 422);
@@ -161,10 +176,12 @@ if (!function_exists('company_routes')) {
                         'serialNumber' => $cardSerial,
                     ]);
                 } catch (Throwable $e) {
+                    error_log('company.verify_identity photo service failed: ' . $e->getMessage());
                     api_err('در حال حاضر ارتباط با سرویس تصویر هویتی ممکن نیست', 502);
                 }
                 if (empty($photoRes['success']) || $photoRes['success'] !== true) {
-                    api_err('استعلام عکس تایید نشد: ' . (string)($photoRes['message'] ?? 'اطلاعات هویتی صحیح نیست.'), 400);
+                    error_log('company.verify_identity photo rejected: ' . (string)($photoRes['message'] ?? 'provider rejected request'));
+                    api_err('تصویر هویتی تأیید نشد. لطفاً تاریخ تولد و سریال کارت ملی را بررسی کنید.', 400);
                 }
                 $imageBase64 = $photoRes['data']['imageBase64'] ?? null;
                 if (is_string($imageBase64) && $imageBase64 !== '') {
@@ -202,6 +219,7 @@ if (!function_exists('company_routes')) {
                     // ردیف اولیه؛ موقعیت بعداً و به‌صورت اختیاری از پروفایل تکمیل می‌شود.
                     $pdo->prepare("INSERT INTO companies (user_id, company_name, owner_full_name, owner_national_code, province_id, city_id, verification_status, verified_at, created_at, updated_at) VALUES (?, ?, ?, ?, NULL, NULL, 1, NOW(3), NOW(3), NOW(3))")
                         ->execute([(int)$u['id'], $fullName, $fullName, $nationalCode]);
+                    $companyId = (int)$pdo->lastInsertId();
                 }
 
                 $pdo->prepare("UPDATE users SET full_name=?, code_meli=?, birth_date=?, national_card_serial=?, updated_at=NOW(3) WHERE id=? LIMIT 1")
@@ -210,18 +228,74 @@ if (!function_exists('company_routes')) {
                 $pdo->commit();
             } catch (Throwable $e) {
                 $pdo->rollBack();
-                $msg = ((string)env('APP_DEBUG', '0') === '1') ? $e->getMessage() : 'خطا در ذخیره‌سازی اطلاعات';
-                api_err($msg, 500);
+                error_log('company.verify_identity save failed: ' . $e->getMessage());
+
+                $dbMessage = strtolower($e->getMessage());
+                $isNationalCodeDuplicate = $e instanceof PDOException
+                    && (string)$e->getCode() === '23000'
+                    && (
+                        str_contains($dbMessage, 'code_meli')
+                        || str_contains($dbMessage, 'national_code')
+                    );
+                if ($isNationalCodeDuplicate) {
+                    api_err(
+                        'این کد ملی قبلاً برای یک حساب فعال ثبت شده است. اگر حساب متعلق به شماست، به پشتیبانی پیام بدهید.',
+                        409,
+                        ['code' => 'national_code_already_registered']
+                    );
+                }
+
+                api_err('ذخیره اطلاعات انجام نشد. لطفاً دوباره تلاش کنید.', 500, [
+                    'code' => 'identity_save_failed',
+                ]);
             }
 
-            $st = db()->prepare("SELECT * FROM users WHERE id=? LIMIT 1");
-            $st->execute([(int)$u['id']]);
-            $uFull = $st->fetch() ?: $u;
+            try {
+                $st = db()->prepare("SELECT * FROM users WHERE id=? LIMIT 1");
+                $st->execute([(int)$u['id']]);
+                $uFull = $st->fetch() ?: $u;
+                $me = company_profile_payload($uFull);
+            } catch (Throwable $e) {
+                // ذخیره قبلاً commit شده است؛ خطای ساخت پاسخ نباید باعث ارسال
+                // دوباره فرم و ایجاد خطای تکراری شود.
+                error_log('company.verify_identity response failed: ' . $e->getMessage());
+                $me = [
+                    'user' => [
+                        'id' => (int)$u['id'],
+                        'full_name' => $fullName,
+                        'display_name' => $u['display_name'] ?? null,
+                        'avatar_key' => $avatarKey ?? ($u['avatar_key'] ?? null),
+                        'phone' => (string)$u['phone'],
+                        'email' => $u['email'] ?? null,
+                        'user_type' => 2,
+                        'status' => (int)$u['status'],
+                        'code_meli' => $nationalCode,
+                        'birth_date' => $birthDate,
+                    ],
+                    'company' => [
+                        'id' => $companyId,
+                        'company_name' => $fullName,
+                        'owner_full_name' => $fullName,
+                        'owner_national_code' => $nationalCode,
+                        'province_id' => null,
+                        'city_id' => null,
+                        'verification_status' => 1,
+                        'entity_type' => 1,
+                    ],
+                    'onboarding' => [
+                        'identity_verified' => true,
+                        'verification_status' => 1,
+                        'profile_completed' => true,
+                        'needs_company_profile' => true,
+                        'company_profile_optional' => true,
+                    ],
+                ];
+            }
 
             api_ok([
                 'message'    => 'احراز هویت با موفقیت انجام شد.',
                 'avatar_key' => $avatarKey,
-                'me'         => company_profile_payload($uFull),
+                'me'         => $me,
             ]);
         }
 
@@ -280,8 +354,8 @@ if (!function_exists('company_routes')) {
                 $pdo->commit();
             } catch (Throwable $e) {
                 $pdo->rollBack();
-                $msg = ((string)env('APP_DEBUG', '0') === '1') ? $e->getMessage() : 'خطا در ذخیره‌سازی';
-                api_err($msg, 500);
+                error_log('company.profile save failed: ' . $e->getMessage());
+                api_err('ذخیره اطلاعات انجام نشد. لطفاً دوباره تلاش کنید.', 500);
             }
 
             $st = db()->prepare("SELECT * FROM users WHERE id=? LIMIT 1");
@@ -337,13 +411,10 @@ if (!function_exists('company_routes')) {
             $st = $pdo->prepare("SELECT id, verification_status, province_id, city_id FROM companies WHERE user_id=? AND deleted_at IS NULL LIMIT 1");
             $st->execute([(int)$u['id']]);
             $company = $st->fetch();
-            if (!$company) api_err('ابتدا پروفایل باربری را تکمیل کنید', 403);
+            if (!$company) api_err('ابتدا احراز هویت صاحب بار را تکمیل کنید', 403);
             $companyId = (int)$company['id'];
             if ((int)$company['verification_status'] !== 1) {
                 api_err('حساب شما هنوز تایید نشده است. پس از تایید می‌توانید بار اعلام کنید.', 403);
-            }
-            if ((int)($company['province_id'] ?? 0) <= 0 || (int)($company['city_id'] ?? 0) <= 0) {
-                api_err('ابتدا پروفایل صاحب بار/باربری را تکمیل کنید.', 403);
             }
 
             $in = api_input();
@@ -414,8 +485,8 @@ if (!function_exists('company_routes')) {
                 ]);
                 $loadId = (int)$pdo->lastInsertId();
             } catch (Throwable $e) {
-                $msg = ((string)env('APP_DEBUG', '0') === '1') ? $e->getMessage() : 'خطا در ثبت بار';
-                api_err($msg, 500);
+                error_log('company.load create failed: ' . $e->getMessage());
+                api_err('ثبت بار انجام نشد. لطفاً دوباره تلاش کنید.', 500);
             }
 
             api_ok(['message' => 'بار با موفقیت اعلام شد', 'load_id' => $loadId, 'public_code' => $publicCode]);

@@ -34,6 +34,6 @@ try {
         'resend_in_sec' => 60,
     ]);
 } catch (Throwable $e) {
-    $msg = ((string)env('APP_DEBUG', '0') === '1') ? $e->getMessage() : 'خطای سرور';
-    json_out(['ok' => false, 'message' => $msg], 500);
+    error_log('admin.password reset otp failed: ' . $e->getMessage());
+    json_out(['ok' => false, 'message' => 'درخواست انجام نشد. لطفاً دوباره تلاش کنید.'], 500);
 }

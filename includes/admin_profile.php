@@ -151,8 +151,8 @@ function admin_update_profile(array $data): array
         
     } catch (Throwable $e) {
         $pdo->rollBack();
-        $msg = ((string)env('APP_DEBUG', '0') === '1') ? $e->getMessage() : 'خطا در بروزرسانی پروفایل';
-        return ['ok' => false, 'message' => $msg];
+        error_log('admin.profile update failed: ' . $e->getMessage());
+        return ['ok' => false, 'message' => 'به‌روزرسانی پروفایل انجام نشد. لطفاً دوباره تلاش کنید.'];
     }
 }
 

@@ -9,4 +9,9 @@ Options -Indexes
   Header always set X-Frame-Options "SAMEORIGIN"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+
+  # فایل‌های عمومی در Flutter Web روی localhost نیز قابل بارگذاری باشند.
+  <FilesMatch "\.(?i:png|jpe?g|webp|gif|svg|ico|woff2?|ttf|otf)$">
+    Header always set Access-Control-Allow-Origin "*"
+  </FilesMatch>
 </IfModule>

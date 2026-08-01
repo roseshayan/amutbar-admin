@@ -52,12 +52,13 @@ try {
     try {
         $shahkarRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/ShahkarLite', 'POST', $shahkarBody);
     } catch (Exception $e) {
+        error_log('legacy.verify_identity shahkar failed: ' . $e->getMessage());
         api_err('در حال حاضر ارتباط با سرویس احراز هویت ممکن نیست', 502);
     }
 
     if (empty($shahkarRes['success']) || $shahkarRes['success'] !== true) {
-        $msg = $shahkarRes['message'] ?? 'خطای ناشناخته در سرویس شاهکار';
-        api_err("استعلام شاهکار ناموفق: $msg");
+        error_log('legacy.verify_identity shahkar rejected: ' . (string)($shahkarRes['message'] ?? 'provider rejected request'));
+        api_err('استعلام اطلاعات هویتی انجام نشد. لطفاً اطلاعات را بررسی و دوباره تلاش کنید.');
     }
 
     if (($shahkarRes['data'] ?? false) !== true) {
@@ -78,12 +79,13 @@ try {
         try {
             $photoRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/PersonImage', 'POST', $photoBody);
         } catch (Exception $e) {
+            error_log('legacy.verify_identity photo service failed: ' . $e->getMessage());
             api_err('در حال حاضر ارتباط با سرویس تصویر هویتی ممکن نیست', 502);
         }
 
         if (empty($photoRes['success']) || $photoRes['success'] !== true) {
-            $msg = $photoRes['message'] ?? 'اطلاعات هویتی (سریال/تاریخ تولد) صحیح نیست.';
-            api_err("استعلام عکس تایید نشد: $msg");
+            error_log('legacy.verify_identity photo rejected: ' . (string)($photoRes['message'] ?? 'provider rejected request'));
+            api_err('تصویر هویتی تأیید نشد. لطفاً تاریخ تولد و سریال کارت ملی را بررسی کنید.');
         }
 
         $imageBase64 = $photoRes['data']['imageBase64'] ?? null;
@@ -134,8 +136,8 @@ try {
         $pdo->commit();
     } catch (Throwable $e) {
         $pdo->rollBack();
-        $msg = ((string)env('APP_DEBUG', '0') === '1') ? $e->getMessage() : 'خطا در ذخیره‌سازی اطلاعات';
-        api_err($msg, 500);
+        error_log('legacy.verify_identity save failed: ' . $e->getMessage());
+        api_err('ذخیره اطلاعات انجام نشد. لطفاً دوباره تلاش کنید.', 500);
     }
 
     api_ok([
@@ -147,6 +149,6 @@ try {
         ]
     ]);
 } catch (Exception $e) {
-    $msg = ((string)env('APP_DEBUG', '0') === '1') ? $e->getMessage() : 'خطا در پردازش';
-    api_err($msg, 500);
+    error_log('legacy.verify_identity failed: ' . $e->getMessage());
+    api_err('پردازش اطلاعات انجام نشد. لطفاً دوباره تلاش کنید.', 500);
 }

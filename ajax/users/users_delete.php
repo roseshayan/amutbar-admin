@@ -75,5 +75,6 @@ try {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    json_out(['ok' => false, 'message' => 'خطا در دیتابیس: ' . $e->getMessage()], 500);
+    error_log('admin.users action failed: ' . $e->getMessage());
+    json_out(['ok' => false, 'message' => 'انجام عملیات ممکن نشد. لطفاً دوباره تلاش کنید.'], 500);
 }

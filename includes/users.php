@@ -172,8 +172,8 @@ function users_save(array $in): array
             }
             return ['ok' => true, 'id' => $id];
         } catch (Throwable $e) {
-            $msg = ((string)env('APP_DEBUG', '0') === '1') ? $e->getMessage() : 'خطا در ذخیره‌سازی';
-            return ['ok' => false, 'message' => $msg];
+            error_log('admin.users save failed: ' . $e->getMessage());
+            return ['ok' => false, 'message' => 'ذخیره اطلاعات انجام نشد. لطفاً دوباره تلاش کنید.'];
         }
     }
 
@@ -570,8 +570,8 @@ function save_driver_info(int $userId, array $data): array
         if (str_contains($e->getMessage(), 'uq_drivers_plate_active')) {
             return ['ok' => false, 'message' => 'این پلاک قبلاً ثبت شده است'];
         }
-        $msg = ((string)env('APP_DEBUG', '0') === '1') ? $e->getMessage() : 'خطا در ذخیره اطلاعات راننده';
-        return ['ok' => false, 'message' => $msg];
+        error_log('admin.driver profile save failed: ' . $e->getMessage());
+        return ['ok' => false, 'message' => 'ذخیره اطلاعات راننده انجام نشد. لطفاً دوباره تلاش کنید.'];
     }
 }
 
@@ -689,8 +689,8 @@ function save_company_info(int $userId, array $data): array
 
         return ['ok' => true];
     } catch (Throwable $e) {
-        $msg = ((string)env('APP_DEBUG', '0') === '1') ? $e->getMessage() : 'خطا در ذخیره اطلاعات باربری';
-        return ['ok' => false, 'message' => $msg];
+        error_log('admin.company profile save failed: ' . $e->getMessage());
+        return ['ok' => false, 'message' => 'ذخیره اطلاعات باربری انجام نشد. لطفاً دوباره تلاش کنید.'];
     }
 }
 

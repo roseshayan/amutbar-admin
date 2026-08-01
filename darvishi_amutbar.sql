@@ -3351,7 +3351,8 @@ CREATE TABLE `users` (
   `updated_at` datetime(3) NOT NULL DEFAULT current_timestamp(3) ON UPDATE current_timestamp(3),
   `deleted_at` datetime(3) DEFAULT NULL,
   `phone_active` varchar(16) GENERATED ALWAYS AS (case when `deleted_at` is null then `phone` else NULL end) STORED,
-  `email_active` varchar(191) GENERATED ALWAYS AS (case when `deleted_at` is null then `email` else NULL end) STORED
+  `email_active` varchar(191) GENERATED ALWAYS AS (case when `deleted_at` is null then `email` else NULL end) STORED,
+  `code_meli_active` varchar(10) GENERATED ALWAYS AS (case when `deleted_at` is null then `code_meli` else NULL end) STORED
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -3834,7 +3835,7 @@ ALTER TABLE `system_settings`
 --
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `code_meli` (`code_meli`),
+  ADD UNIQUE KEY `uq_users_code_meli_active` (`code_meli_active`),
   ADD UNIQUE KEY `uq_users_phone_active` (`phone_active`),
   ADD UNIQUE KEY `uq_users_email_active` (`email_active`),
   ADD KEY `ix_users_type_status` (`user_type`,`status`),

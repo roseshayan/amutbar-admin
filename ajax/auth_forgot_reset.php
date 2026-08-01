@@ -44,6 +44,6 @@ try {
 
     json_out(['ok' => true, 'message' => 'رمز عبور با موفقیت تغییر کرد']);
 } catch (Throwable $e) {
-    $msg = ((string)env('APP_DEBUG', '0') === '1') ? ($e->getMessage()) : 'خطای سرور';
-    json_out(['ok' => false, 'message' => $msg], 500);
+    error_log('admin.password reset failed: ' . $e->getMessage());
+    json_out(['ok' => false, 'message' => 'تغییر رمز انجام نشد. لطفاً دوباره تلاش کنید.'], 500);
 }

@@ -14,8 +14,14 @@ function api_cors(): void
 
     $allowed = trim((string)env('API_CORS_ORIGINS', ''));
     $allowOrigin = null;
+    $debugEnabled = (string)env('APP_DEBUG', '0') === '1';
+    $isLocalDevelopmentOrigin = ($env === 'local' || $debugEnabled)
+        && $origin !== ''
+        && preg_match('~^https?://(?:localhost|127\.0\.0\.1)(?::\d+)?$~D', $origin) === 1;
 
-    if ($allowed !== '' && $origin !== '') {
+    if ($isLocalDevelopmentOrigin) {
+        $allowOrigin = $origin;
+    } elseif ($allowed !== '' && $origin !== '') {
         $list = array_filter(array_map('trim', explode(',', $allowed)));
         if (in_array($origin, $list, true)) $allowOrigin = $origin;
     } elseif ($env === 'local') {
@@ -26,7 +32,9 @@ function api_cors(): void
     if ($allowOrigin !== null) {
         header('Access-Control-Allow-Origin: ' . $allowOrigin);
         header('Vary: Origin');
-        header('Access-Control-Allow-Credentials: true');
+        if ($allowOrigin !== '*') {
+            header('Access-Control-Allow-Credentials: true');
+        }
     }
 
     header('Access-Control-Allow-Headers: Authorization, Content-Type, X-Requested-With');

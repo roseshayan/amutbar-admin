@@ -13,7 +13,9 @@ if (class_exists(\Dotenv\Dotenv::class)) {
 }
 
 $debug = (string)env('APP_DEBUG', '0') === '1';
-ini_set('display_errors', $debug ? '1' : '0');
+$displayErrors = $debug && !defined('AMUTBAR_API_REQUEST');
+ini_set('display_errors', $displayErrors ? '1' : '0');
+ini_set('html_errors', $displayErrors ? '1' : '0');
 error_reporting($debug ? E_ALL : 0);
 
 ini_set('log_errors', '1');

@@ -322,8 +322,8 @@ function api_refresh_rotate(string $refreshToken, ?string $deviceId = null): arr
         return ['ok' => true] + $tok;
     } catch (Throwable $e) {
         $pdo->rollBack();
-        $msg = ((string)env('APP_DEBUG', '0') === '1') ? $e->getMessage() : 'server_error';
-        return ['ok' => false, 'status' => 500, 'message' => $msg];
+        error_log('api.refresh rotate failed: ' . $e->getMessage());
+        return ['ok' => false, 'status' => 500, 'message' => 'server_error'];
     }
 }
 

@@ -133,7 +133,7 @@ if ($action === 'reply') {
         if ($targetUserId) {
             $dataJson = json_encode(['ticket_id' => $ticketId], JSON_UNESCAPED_UNICODE);
             $pdo->prepare("INSERT INTO notifications (user_id, type, title, body, data_json, created_at) 
-                VALUES (?, 'ticket_reply', 'پاسخ به تیکت', 'پشتیبانی به تیکت شما پاسخ داد.', ?, NOW(3))")
+                VALUES (?, 'ticket_reply', 'پاسخ پشتیبانی', 'پشتیبانی به پیام شما پاسخ داد.', ?, NOW(3))")
                 ->execute([$targetUserId, $dataJson]);
         }
 

@@ -455,8 +455,8 @@ if ($method === 'POST' && $path === '/auth/verify-otp') {
         $pdo->commit();
     } catch (Throwable $e) {
         $pdo->rollBack();
-        $msg = ((string)env('APP_DEBUG', '0') === '1') ? $e->getMessage() : 'خطای سرور';
-        api_err($msg, 500);
+        error_log('auth.verify_otp failed: ' . $e->getMessage());
+        api_err('ورود انجام نشد. لطفاً دوباره تلاش کنید.', 500);
     }
 
     $deviceId = api_str($in, 'device_id', 64);
@@ -533,11 +533,12 @@ if ($method === 'POST' && $path === '/auth/verify-identity') {
     try {
         $shahkarRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/ShahkarLite', 'POST', $shahkarBody);
     } catch (Throwable $e) {
+        error_log('driver.verify_identity shahkar failed: ' . $e->getMessage());
         api_err('در حال حاضر ارتباط با سرویس احراز هویت ممکن نیست', 502);
     }
     if (empty($shahkarRes['success']) || $shahkarRes['success'] !== true) {
-        $msg = $shahkarRes['message'] ?? 'خطای ناشناخته در سرویس شاهکار';
-        api_err('استعلام شاهکار ناموفق: ' . (string)$msg, 400);
+        error_log('driver.verify_identity shahkar rejected: ' . (string)($shahkarRes['message'] ?? 'provider rejected request'));
+        api_err('استعلام اطلاعات هویتی انجام نشد. لطفاً اطلاعات را بررسی و دوباره تلاش کنید.', 400);
     }
     if (($shahkarRes['data'] ?? false) !== true) {
         api_err('کد ملی وارد شده متعلق به این شماره موبایل نیست.', 422);
@@ -554,11 +555,12 @@ if ($method === 'POST' && $path === '/auth/verify-identity') {
         try {
             $photoRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/PersonImage', 'POST', $photoBody);
         } catch (Throwable $e) {
+            error_log('driver.verify_identity photo service failed: ' . $e->getMessage());
             api_err('در حال حاضر ارتباط با سرویس تصویر هویتی ممکن نیست', 502);
         }
         if (empty($photoRes['success']) || $photoRes['success'] !== true) {
-            $msg = $photoRes['message'] ?? 'اطلاعات هویتی صحیح نیست.';
-            api_err('استعلام عکس تایید نشد: ' . (string)$msg, 400);
+            error_log('driver.verify_identity photo rejected: ' . (string)($photoRes['message'] ?? 'provider rejected request'));
+            api_err('تصویر هویتی تأیید نشد. لطفاً تاریخ تولد و سریال کارت ملی را بررسی کنید.', 400);
         }
 
         // ذخیره عکس به عنوان avatar_key (اگر imageBase64 موجود باشد)
@@ -608,8 +610,8 @@ if ($method === 'POST' && $path === '/auth/verify-identity') {
         $pdo->commit();
     } catch (Throwable $e) {
         $pdo->rollBack();
-        $msg = ((string)env('APP_DEBUG', '0') === '1') ? $e->getMessage() : 'خطا در ذخیره‌سازی اطلاعات';
-        api_err($msg, 500);
+        error_log('auth.verify_identity failed: ' . $e->getMessage());
+        api_err('ذخیره اطلاعات انجام نشد. لطفاً دوباره تلاش کنید.', 500);
     }
 
     api_ok([
@@ -758,8 +760,8 @@ if ($method === 'POST' && $path === '/driver/profile') {
         $pdo->commit();
     } catch (Throwable $e) {
         $pdo->rollBack();
-        $msg = ((string)env('APP_DEBUG', '0') === '1') ? $e->getMessage() : 'خطا در ذخیره‌سازی';
-        api_err($msg, 500);
+        error_log('driver.profile save failed: ' . $e->getMessage());
+        api_err('ذخیره اطلاعات انجام نشد. لطفاً دوباره تلاش کنید.', 500);
     }
 
     api_ok(['driver' => api_user_with_profile($u)]);
@@ -1045,7 +1047,7 @@ if ($method === 'GET' && $path === '/banners') {
 // Support Tickets API
 // ==========================================
 
-// 1. دریافت لیست تیکت‌های من
+// 1. دریافت فهرست پیام‌های پشتیبانی من
 if ($method === 'GET' && $path === '/support/tickets') {
     $u = api_require_auth();
     $pdo = db();
@@ -1054,14 +1056,14 @@ if ($method === 'GET' && $path === '/support/tickets') {
     api_ok(['items' => $st->fetchAll()]);
 }
 
-// 2. ایجاد تیکت جدید
+// 2. ایجاد پیام جدید
 if ($method === 'POST' && $path === '/support/tickets') {
     $u = api_require_auth();
     $in = api_input();
     $subject = api_str($in, 'subject', 255);
     $message = trim((string)($in['message'] ?? ''));
 
-    if (!$subject || !$message) api_err('موضوع و متن تیکت الزامی است', 422);
+    if (!$subject || !$message) api_err('موضوع و متن پیام الزامی است', 422);
 
     $pdo = db();
     $pdo->beginTransaction();
@@ -1074,24 +1076,24 @@ if ($method === 'POST' && $path === '/support/tickets') {
         $st2->execute([$ticketId, $u['id'], $message]);
 
         $pdo->commit();
-        api_ok(['message' => 'تیکت با موفقیت ایجاد شد', 'ticket_id' => $ticketId]);
+        api_ok(['message' => 'پیام با موفقیت ایجاد شد', 'ticket_id' => $ticketId]);
     } catch (Throwable $e) {
         $pdo->rollBack();
-        api_err('خطا در ثبت تیکت', 500);
+        api_err('خطا در ثبت پیام', 500);
     }
 }
 
-// 3. دریافت پیام‌های یک تیکت
+// 3. دریافت گفت‌وگوی پشتیبانی
 if ($method === 'GET' && preg_match('~^/support/tickets/(\d+)/messages$~', $path, $m)) {
     $u = api_require_auth();
     $ticketId = (int)$m[1];
     $pdo = db();
 
-    // بررسی مالکیت تیکت
+    // بررسی مالکیت گفت‌وگو
     $stCheck = $pdo->prepare("SELECT id, subject, status FROM support_tickets WHERE id=? AND user_id=? LIMIT 1");
     $stCheck->execute([$ticketId, $u['id']]);
     $ticket = $stCheck->fetch();
-    if (!$ticket) api_err('تیکت یافت نشد', 404);
+    if (!$ticket) api_err('پیام یافت نشد', 404);
 
     $stMsg = $pdo->prepare("SELECT id, sender_user_id, message, message_type, attachment_key, attachment_name, created_at FROM support_ticket_messages WHERE ticket_id=? ORDER BY created_at ASC");
     $stMsg->execute([$ticketId]);
@@ -1111,7 +1113,7 @@ if ($method === 'GET' && preg_match('~^/support/tickets/(\d+)/messages$~', $path
     ]);
 }
 
-// 4. ارسال پیام جدید در تیکت (Reply) - پشتیبانی از فایل
+// 4. ارسال پاسخ جدید در گفت‌وگو - پشتیبانی از فایل
 if ($method === 'POST' && preg_match('~^/support/tickets/(\d+)/messages$~', $path, $m)) {
     $u = api_require_auth();
     $ticketId = (int)$m[1];
@@ -1180,8 +1182,8 @@ if ($method === 'POST' && preg_match('~^/support/tickets/(\d+)/messages$~', $pat
     $stCheck = $pdo->prepare("SELECT id, status FROM support_tickets WHERE id=? AND user_id=? LIMIT 1");
     $stCheck->execute([$ticketId, $u['id']]);
     $ticket = $stCheck->fetch();
-    if (!$ticket) api_err('تیکت یافت نشد', 404);
-    if ((int)$ticket['status'] === 3) api_err('این تیکت بسته شده است', 403);
+    if (!$ticket) api_err('پیام یافت نشد', 404);
+    if ((int)$ticket['status'] === 3) api_err('این گفت‌وگو بسته شده است', 403);
 
     $pdo->beginTransaction();
     try {
