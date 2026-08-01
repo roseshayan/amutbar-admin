@@ -510,6 +510,20 @@ if ($method === 'POST' && $path === '/auth/verify-identity') {
         api_err('فرمت تاریخ تولد نامعتبر است', 422);
     }
 
+    $pdo = db();
+
+    // فقط حساب فعال باید کد ملی را رزرو کند. با این بررسی، خطای unique
+    // دیتابیس به‌صورت پیام قابل‌فهم و قبل از هزینه استعلام خارجی برمی‌گردد.
+    $st = $pdo->prepare("SELECT id FROM users WHERE code_meli=? AND deleted_at IS NULL AND id<>? LIMIT 1");
+    $st->execute([$nationalCode, (int)$u['id']]);
+    if ($st->fetchColumn()) {
+        api_err(
+            'این کد ملی قبلاً برای یک حساب فعال ثبت شده است. اگر حساب متعلق به شماست، به پشتیبانی پیام بدهید.',
+            409,
+            ['code' => 'national_code_already_registered']
+        );
+    }
+
     // --- اصلاح بخش اعتبارسنجی داینامیک بر اساس تنظیمات ادمین ---
     require_once __DIR__ . '/../../includes/settings.php';
     $requireSerial = (settings_get('auth.require_national_serial') === '1');
@@ -521,7 +535,6 @@ if ($method === 'POST' && $path === '/auth/verify-identity') {
     // --------------------------------------------------------
 
     require_once __DIR__ . '/../../includes/ExternalApiHelper.php';
-    $pdo = db();
     $apiHelper = new ExternalApiHelper($pdo);
     $providerSlug = 'api_ir';
 
@@ -592,15 +605,18 @@ if ($method === 'POST' && $path === '/auth/verify-identity') {
     // 3) ثبت اطلاعات نهایی در دیتابیس
     $pdo->beginTransaction();
     try {
-        $st = $pdo->prepare("SELECT id FROM drivers WHERE user_id=? AND deleted_at IS NULL LIMIT 1");
+        // user_id روی drivers یکتا است؛ اگر پروفایل قبلاً soft-delete شده باشد
+        // همان رکورد را احیا می‌کنیم تا INSERT با uq_drivers_user برخورد نکند.
+        $st = $pdo->prepare("SELECT id FROM drivers WHERE user_id=? LIMIT 1");
         $st->execute([(int)$u['id']]);
         $driverId = (int)($st->fetchColumn() ?: 0);
         if ($driverId > 0) {
-            $pdo->prepare("UPDATE drivers SET full_name=?, national_code=?, verification_status=1, verified_at=NOW(3), reject_reason=NULL, updated_at=NOW(3) WHERE id=? LIMIT 1")
+            $pdo->prepare("UPDATE drivers SET full_name=?, national_code=?, verification_status=1, verified_at=NOW(3), reject_reason=NULL, deleted_at=NULL, updated_at=NOW(3) WHERE id=? LIMIT 1")
                 ->execute([$fullName, $nationalCode, $driverId]);
         } else {
             $pdo->prepare("INSERT INTO drivers (user_id, full_name, national_code, verification_status, verified_at, created_at, updated_at) VALUES (?, ?, ?, 1, NOW(3), NOW(3), NOW(3))")
                 ->execute([(int)$u['id'], $fullName, $nationalCode]);
+            $driverId = (int)$pdo->lastInsertId();
         }
 
         // در جدول users هم نام و فیلدها را همسان می‌کنیم
@@ -609,15 +625,74 @@ if ($method === 'POST' && $path === '/auth/verify-identity') {
 
         $pdo->commit();
     } catch (Throwable $e) {
-        $pdo->rollBack();
+        if ($pdo->inTransaction()) $pdo->rollBack();
         error_log('auth.verify_identity failed: ' . $e->getMessage());
-        api_err('ذخیره اطلاعات انجام نشد. لطفاً دوباره تلاش کنید.', 500);
+
+        $dbMessage = strtolower($e->getMessage());
+        $isNationalCodeDuplicate = $e instanceof PDOException
+            && (string)$e->getCode() === '23000'
+            && (
+                str_contains($dbMessage, 'code_meli')
+                || str_contains($dbMessage, 'national_code')
+            );
+        if ($isNationalCodeDuplicate) {
+            api_err(
+                'این کد ملی قبلاً برای یک حساب فعال ثبت شده است. اگر حساب متعلق به شماست، به پشتیبانی پیام بدهید.',
+                409,
+                ['code' => 'national_code_already_registered']
+            );
+        }
+
+        api_err('ذخیره اطلاعات انجام نشد. لطفاً دوباره تلاش کنید.', 500, [
+            'code' => 'identity_save_failed',
+        ]);
+    }
+
+    try {
+        $st = db()->prepare("SELECT * FROM users WHERE id=? LIMIT 1");
+        $st->execute([(int)$u['id']]);
+        $uFull = $st->fetch() ?: $u;
+        $me = api_user_with_profile($uFull);
+    } catch (Throwable $e) {
+        // ذخیره commit شده است؛ شکست ساخت پاسخ نباید فرم را دوباره ارسال کند.
+        error_log('auth.verify_identity response failed: ' . $e->getMessage());
+        $me = [
+            'user' => [
+                'id' => (int)$u['id'],
+                'full_name' => $fullName,
+                'display_name' => $u['display_name'] ?? null,
+                'avatar_key' => $avatarKey ?? ($u['avatar_key'] ?? null),
+                'phone' => (string)$u['phone'],
+                'email' => $u['email'] ?? null,
+                'user_type' => 1,
+                'status' => (int)$u['status'],
+                'code_meli' => $nationalCode,
+                'birth_date' => $birthDate,
+            ],
+            'driver' => [
+                'id' => $driverId,
+                'full_name' => $fullName,
+                'national_code' => $nationalCode,
+                'verification_status' => 1,
+                'vehicle_type_id' => null,
+                'plate_number' => null,
+            ],
+            'company' => null,
+            'onboarding' => [
+                'identity_verified' => true,
+                'verification_status' => 1,
+                'profile_completed' => true,
+                'needs_vehicle_info' => true,
+                'require_verification_video' => false,
+                'needs_verification_video' => false,
+            ],
+        ];
     }
 
     api_ok([
         'message' => 'احراز هویت با موفقیت انجام شد.',
         'avatar_key' => $avatarKey,
-        'me' => api_user_with_profile(api_require_auth()),
+        'me' => $me,
     ]);
 }
 
@@ -1003,9 +1078,11 @@ if ($method === 'POST' && $path === '/driver/verification-video') {
 // دریافت بنرهای تبلیغاتی
 if ($method === 'GET' && $path === '/banners') {
     $pdo = db();
-    // 1 برای اپلیکیشن رانندگان
     $targetAppId = isset($_GET['target_app_id']) ? (int)$_GET['target_app_id'] : 1;
     $placement = isset($_GET['placement']) ? trim($_GET['placement']) : 'dashboard';
+
+    if (!in_array($targetAppId, [1, 2], true)) $targetAppId = 1;
+    if (!in_array($placement, ['dashboard', 'profile'], true)) $placement = 'dashboard';
 
     // استفاده از فیلدهای دیتابیس شامل action_value و target_app_id
     $st = $pdo->prepare("
@@ -1020,6 +1097,15 @@ if ($method === 'GET' && $path === '/banners') {
     ");
     $st->execute([$targetAppId, $placement]);
     $rows = $st->fetchAll();
+
+    // تا وقتی برای اپ اعلام بار (۲) بنر اختصاصی ساخته نشده، بنرهای فعال
+    // رانندگان (۱) را نمایش بده. به محض تعریف بنر اختصاصی، همان اولویت دارد.
+    $fallbackTargetAppId = null;
+    if ($targetAppId === 2 && !$rows) {
+        $st->execute([1, $placement]);
+        $rows = $st->fetchAll();
+        if ($rows) $fallbackTargetAppId = 1;
+    }
 
     require_once __DIR__ . '/../../includes/settings.php';
     $siteUrl = rtrim((string)settings_get('site.url', ''), '/');
@@ -1040,7 +1126,11 @@ if ($method === 'GET' && $path === '/banners') {
         ];
     }, $rows);
 
-    api_ok(['items' => $banners]);
+    api_ok([
+        'items' => $banners,
+        'target_app_id' => $targetAppId,
+        'fallback_target_app_id' => $fallbackTargetAppId,
+    ]);
 }
 
 // ==========================================
