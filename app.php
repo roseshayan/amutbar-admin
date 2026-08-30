@@ -1,522 +1,138 @@
-<!DOCTYPE html>
+<?php
+
+declare(strict_types=1);
+require_once __DIR__ . '/includes/init.php';
+
+$settings = settings_get_many([
+    'company.name','site.name','site.logo_path','site.favicon_path','site.url',
+    'links.terms_url','support.phone','support.whatsapp','support.telegram',
+    'app.android.update_url','app.ios.update_url',
+    'cargo.app.android.update_url','cargo.app.ios.update_url',
+]);
+
+$companyName = trim((string)($settings['company.name'] ?? '')) ?: 'آموت بار';
+$siteName = trim((string)($settings['site.name'] ?? '')) ?: $companyName;
+$termsUrl = trim((string)($settings['links.terms_url'] ?? '')) ?: 'terms.php';
+$supportPhone = trim((string)($settings['support.phone'] ?? ''));
+$whatsapp = preg_replace('/\D+/', '', (string)($settings['support.whatsapp'] ?? ''));
+$telegram = trim((string)($settings['support.telegram'] ?? ''));
+
+function landing_asset_url(?string $value): string
+{
+    $value = trim((string)$value);
+    if ($value === '') return '';
+    if (preg_match('~^https?://~i', $value)) return $value;
+    return url_path(ltrim($value, '/'));
+}
+
+function safe_download_url(?string $value, string $siteBase): string
+{
+    $value = trim((string)$value);
+    if ($value === '') return '';
+    if (filter_var($value, FILTER_VALIDATE_URL)) {
+        return in_array(strtolower((string)parse_url($value, PHP_URL_SCHEME)), ['http','https'], true) ? $value : '';
+    }
+    if (preg_match('~^[a-z][a-z0-9+.-]*:~i', $value)) return '';
+    return rtrim($siteBase, '/') . '/' . ltrim($value, '/');
+}
+
+$logoUrl = landing_asset_url($settings['site.logo_path'] ?? '');
+if ($logoUrl === '') $logoUrl = asset('images/brand-logos/logo.png');
+$faviconUrl = landing_asset_url($settings['site.favicon_path'] ?? '');
+
+$siteBase = rtrim(trim((string)($settings['site.url'] ?? '')), '/');
+if ($siteBase === '') {
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $siteBase = $scheme . '://' . (string)($_SERVER['HTTP_HOST'] ?? 'localhost') . base_url();
+}
+$driverAndroid = safe_download_url($settings['app.android.update_url'] ?? '', $siteBase);
+$driverIos = safe_download_url($settings['app.ios.update_url'] ?? '', $siteBase);
+$cargoAndroid = safe_download_url($settings['cargo.app.android.update_url'] ?? '', $siteBase);
+$cargoIos = safe_download_url($settings['cargo.app.ios.update_url'] ?? '', $siteBase);
+$hasAnyDownload = $driverAndroid || $driverIos || $cargoAndroid || $cargoIos;
+?>
+<!doctype html>
 <html lang="fa" dir="rtl">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>باربری هوشمند | دانلود اپلیکیشن رانندگان و صاحبان بار</title>
-    <!-- استایل اصلی پروژه (فایل ارسالی) -->
-    <link id="style" href="assets/vendor/bootstrap/bootstrap.rtl.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/styles.min.css">
-    <!-- بازنویسی رنگ‌ها و تنظیمات اضافی -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <meta name="theme-color" content="#00bffe">
+    <meta name="description" content="دانلود اپلیکیشن رانندگان و اپلیکیشن اعلام بار <?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?>">
+    <title>دانلود اپلیکیشن <?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?></title>
+    <?php if ($faviconUrl !== ''): ?><link rel="icon" href="<?= htmlspecialchars($faviconUrl, ENT_QUOTES, 'UTF-8') ?>"><?php endif; ?>
     <style>
-        /* بازنویسی متغیرهای رنگ با رنگ‌های درخواستی */
-        :root {
-            --primary-rgb: 0, 191, 254;   /* #00BFFE */
-            --secondary-rgb: 114, 114, 115; /* #727273 */
-            --primary-color: rgb(var(--primary-rgb));
-            --secondary-color: rgb(var(--secondary-rgb));
-            --primary01: rgba(var(--primary-rgb), 0.1);
-            --primary05: rgba(var(--primary-rgb), 0.5);
-            --primary08: rgba(var(--primary-rgb), 0.8);
-        }
-
-        /* تنظیم فونت برای کل صفحه (IRANSans قبلاً در CSS اصلی تعریف شده) */
-        body {
-            font-family: 'IRANSans', sans-serif;
-            background-color: var(--default-body-bg-color);
-            color: var(--default-text-color);
-        }
-
-        /* استایل‌های اختصاصی لندینگ */
-        .landing-header {
-            background: var(--custom-white);
-            border-bottom: 1px solid var(--default-border);
-            padding: 0.8rem 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        .landing-header .logo img {
-            height: 2.5rem;
-        }
-        .landing-header .nav-link {
-            color: var(--menu-prime-color);
-            font-weight: 500;
-            margin: 0 0.5rem;
-        }
-        .landing-header .nav-link:hover {
-            color: var(--primary-color);
-        }
-
-        .hero-section {
-            background: linear-gradient(135deg, var(--primary-color) 0%, #0099cc 100%);
-            color: #fff;
-            padding: 4rem 0;
-            position: relative;
-            overflow: hidden;
-        }
-        .hero-section::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(255,255,255,0.05)" d="M0,128L48,144C96,160,192,192,288,186.7C384,181,480,139,576,128C672,117,768,139,864,149.3C960,160,1056,160,1152,144C1248,128,1344,96,1392,80L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"/></svg>') no-repeat bottom;
-            background-size: cover;
-            opacity: 0.3;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
-        .hero-section .container {
-            position: relative;
-            z-index: 2;
-        }
-        .hero-title {
-            font-size: 2.8rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-        }
-        .hero-sub {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            margin-bottom: 2rem;
-        }
-        .btn-download {
-            background: var(--custom-white);
-            color: var(--primary-color);
-            border: none;
-            padding: 0.75rem 2rem;
-            border-radius: 3rem;
-            font-weight: 600;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        .btn-download:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-            color: var(--primary-color);
-        }
-        .btn-download i {
-            font-size: 1.5rem;
-        }
-
-        .app-card {
-            background: var(--custom-white);
-            border-radius: 1rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            padding: 2rem;
-            transition: all 0.3s;
-            border: 1px solid var(--default-border);
-            height: 100%;
-        }
-        .app-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-            border-color: var(--primary01);
-        }
-        .app-card .app-icon {
-            width: 80px;
-            height: 80px;
-            background: var(--primary01);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 1.5rem;
-            color: var(--primary-color);
-            font-size: 2.5rem;
-        }
-        .app-card h4 {
-            font-weight: 600;
-            color: var(--default-text-color);
-        }
-        .app-card .feature-list {
-            list-style: none;
-            padding: 0;
-            text-align: right;
-        }
-        .app-card .feature-list li {
-            padding: 0.4rem 0;
-            border-bottom: 1px solid var(--default-border);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .app-card .feature-list li:last-child {
-            border-bottom: none;
-        }
-        .app-card .feature-list i {
-            color: var(--primary-color);
-            font-size: 1.2rem;
-        }
-
-        .section-title {
-            font-size: 2rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            position: relative;
-            display: inline-block;
-        }
-        .section-title::after {
-            content: '';
-            position: absolute;
-            bottom: -8px;
-            right: 0;
-            width: 60px;
-            height: 4px;
-            background: var(--primary-color);
-            border-radius: 4px;
-        }
-        .section-sub {
-            color: var(--text-muted);
-            font-size: 1.1rem;
-            margin-bottom: 2.5rem;
-        }
-
-        .stats-section {
-            background: var(--default-background);
-            padding: 3rem 0;
-            border-top: 1px solid var(--default-border);
-            border-bottom: 1px solid var(--default-border);
-        }
-        .stat-item {
-            text-align: center;
-        }
-        .stat-item .number {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-        .stat-item .label {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-
-        .testimonial-card {
-            background: var(--custom-white);
-            border-radius: 1rem;
-            padding: 2rem;
-            border: 1px solid var(--default-border);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.03);
-        }
-        .testimonial-card .avatar {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: var(--primary01);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.8rem;
-            color: var(--primary-color);
-        }
-
-        .footer-landing {
-            background: #1a1a2e;
-            color: rgba(255,255,255,0.7);
-            padding: 3rem 0 1.5rem;
-            border-top: 3px solid var(--primary-color);
-        }
-        .footer-landing a {
-            color: rgba(255,255,255,0.7);
-            transition: color 0.3s;
-        }
-        .footer-landing a:hover {
-            color: #fff;
-            text-decoration: none;
-        }
-        .footer-landing .social-link {
-            display: inline-block;
-            width: 40px;
-            height: 40px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 50%;
-            text-align: center;
-            line-height: 40px;
-            margin-left: 0.5rem;
-            color: #fff;
-            transition: all 0.3s;
-        }
-        .footer-landing .social-link:hover {
-            background: var(--primary-color);
-            transform: translateY(-3px);
-        }
-
-        /* ریسپانسیو */
-        @media (max-width: 767.98px) {
-            .hero-title {
-                font-size: 2rem;
-            }
-            .app-card {
-                margin-bottom: 1.5rem;
-            }
-            .stat-item .number {
-                font-size: 1.8rem;
-            }
-        }
+        :root{--primary:#00bffe;--primary-dark:#008dbd;--ink:#182229;--muted:#6f7a82;--line:#e5edf1;--soft:#f4fbfd;--white:#fff;--shadow:0 22px 70px rgba(19,73,97,.12)}
+        *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Tahoma,"Segoe UI",sans-serif;background:#fff;color:var(--ink);line-height:1.8}a{text-decoration:none;color:inherit}.shell{width:min(1160px,calc(100% - 34px));margin:auto}
+        .top{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdrop-filter:blur(14px);border-bottom:1px solid rgba(229,237,241,.8)}.nav{min-height:74px;display:flex;align-items:center;justify-content:space-between;gap:18px}.brand{display:flex;align-items:center;gap:11px;font-weight:900}.brand img{width:48px;height:48px;object-fit:contain;border-radius:14px}.brand-fallback{width:46px;height:46px;border-radius:14px;background:var(--primary);color:#fff;display:grid;place-items:center}.navlinks{display:flex;align-items:center;gap:8px}.navlinks a{padding:9px 12px;color:#53616a;font-size:14px}.navlinks .primary{background:var(--primary);color:#fff;border-radius:12px;font-weight:800}
+        .hero{overflow:hidden;position:relative;background:linear-gradient(135deg,#f7fdff,#eaf9ff 55%,#f9fcfd);border-bottom:1px solid var(--line)}.hero:before{content:"";position:absolute;width:520px;height:520px;border-radius:50%;background:rgba(0,191,254,.12);left:-180px;top:-230px}.hero-grid{position:relative;display:grid;grid-template-columns:1.15fr .85fr;align-items:center;gap:55px;padding:84px 0 80px}.eyebrow{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid #dff3fb;border-radius:999px;padding:7px 12px;color:var(--primary-dark);font-size:13px;font-weight:800}.hero h1{font-size:clamp(34px,5vw,58px);line-height:1.35;margin:19px 0}.hero p{font-size:18px;color:var(--muted);max-width:650px}.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:13px 18px;border-radius:14px;font-weight:800;border:1px solid var(--line);background:white}.btn-primary{background:var(--primary);border-color:var(--primary);color:white;box-shadow:0 10px 26px rgba(0,191,254,.26)}.btn:hover{transform:translateY(-1px)}
+        .phone-stage{min-height:380px;display:grid;place-items:center}.visual{width:min(390px,100%);aspect-ratio:1/1;border-radius:50%;background:linear-gradient(145deg,#00bffe,#65d9ff);box-shadow:0 35px 90px rgba(0,157,210,.26);position:relative;display:grid;place-items:center}.visual:after{content:"";position:absolute;inset:18%;border:1px dashed rgba(255,255,255,.6);border-radius:50%}.visual .truck{position:relative;z-index:1;font-size:105px;filter:drop-shadow(0 14px 18px rgba(0,0,0,.14))}.visual .badge{position:absolute;background:white;border-radius:15px;padding:10px 14px;box-shadow:0 12px 34px rgba(26,70,87,.14);font-size:13px;font-weight:800}.visual .one{top:18%;right:-3%}.visual .two{bottom:20%;left:-5%}
+        .section{padding:76px 0}.section-head{text-align:center;max-width:720px;margin:0 auto 36px}.section-head h2{font-size:clamp(27px,4vw,39px);margin:0 0 10px}.section-head p{color:var(--muted);margin:0}.apps{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}.app-card{border:1px solid var(--line);border-radius:25px;padding:28px;background:#fff;box-shadow:0 8px 35px rgba(22,65,81,.05);position:relative;overflow:hidden}.app-card:before{content:"";position:absolute;width:150px;height:150px;border-radius:50%;background:var(--soft);left:-55px;top:-55px}.app-head{display:flex;align-items:center;gap:15px;position:relative}.app-icon{width:62px;height:62px;border-radius:18px;background:rgba(0,191,254,.11);display:grid;place-items:center;font-size:30px}.app-head h3{font-size:21px;margin:0 0 3px}.app-head small{color:var(--muted)}.features{list-style:none;padding:0;margin:24px 0;display:grid;gap:10px}.features li{display:flex;gap:9px;align-items:flex-start;color:#526069}.features li:before{content:"✓";width:24px;height:24px;display:grid;place-items:center;border-radius:50%;background:#eafff4;color:#159357;font-weight:900;flex:0 0 auto}.downloads{display:flex;gap:10px;flex-wrap:wrap}.store{flex:1;min-width:160px;padding:12px 15px;border-radius:13px;border:1px solid #dbe8ee;background:#fafdfe;font-weight:800;display:flex;justify-content:center;gap:8px}.store.android{border-color:#beeefc;color:#087fa4;background:#f2fcff}.store.disabled{opacity:.46;cursor:not-allowed;pointer-events:none}
+        .flow{background:var(--soft);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.feature{background:white;border:1px solid var(--line);border-radius:20px;padding:23px}.feature span{width:44px;height:44px;border-radius:13px;background:rgba(0,191,254,.1);color:var(--primary-dark);display:grid;place-items:center;font-size:21px}.feature h4{margin:14px 0 5px}.feature p{margin:0;color:var(--muted);font-size:14px}
+        .support{padding:58px 0}.support-box{background:linear-gradient(135deg,#132933,#194250);color:white;border-radius:28px;padding:34px;display:flex;align-items:center;justify-content:space-between;gap:25px}.support-box p{margin:6px 0 0;color:rgba(255,255,255,.72)}.support-actions{display:flex;gap:9px;flex-wrap:wrap}.support-actions a{padding:11px 14px;border-radius:12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);white-space:nowrap}.footer{border-top:1px solid var(--line);padding:24px 0 35px;color:var(--muted);font-size:13px}.footer-row{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}.footer a{color:var(--primary-dark)}
+        .empty{margin-top:18px;padding:13px 15px;border:1px dashed #f1bd73;background:#fff9f0;color:#8a5c1d;border-radius:13px;font-size:13px}
+        @media(max-width:850px){.navlinks a:not(.primary){display:none}.hero-grid{grid-template-columns:1fr;padding:55px 0}.phone-stage{min-height:300px}.visual{width:300px}.apps,.feature-grid{grid-template-columns:1fr}.support-box{align-items:flex-start;flex-direction:column}}
+        @media(max-width:520px){.hero h1{font-size:34px}.hero p{font-size:15px}.hero-grid{gap:28px}.visual{width:240px}.visual .truck{font-size:80px}.visual .badge{font-size:11px}.section{padding:55px 0}.app-card{padding:21px}.support-box{padding:24px}.store{min-width:100%}}
     </style>
 </head>
 <body>
+<header class="top"><div class="shell nav">
+    <a class="brand" href="#top">
+        <?php if ($logoUrl !== ''): ?><img src="<?= htmlspecialchars($logoUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?>"><?php else: ?><span class="brand-fallback">آ</span><?php endif; ?>
+        <span><?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?></span>
+    </a>
+    <nav class="navlinks"><a href="#apps">اپلیکیشن‌ها</a><a href="#features">امکانات</a><a href="<?= htmlspecialchars($termsUrl, ENT_QUOTES, 'UTF-8') ?>">قوانین</a><a class="primary" href="#apps">دانلود</a></nav>
+</div></header>
+<main id="top">
+    <section class="hero"><div class="shell hero-grid">
+        <div>
+            <span class="eyebrow">● سامانه هوشمند حمل بار</span>
+            <h1>یک حساب، دو مسیر؛<br>رانندگی و اعلام بار</h1>
+            <p>اپلیکیشن مناسب نقش خود را دانلود کنید. یک شماره موبایل می‌تواند در هر دو اپلیکیشن <?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?> استفاده شود و اطلاعات هر نقش به‌صورت مستقل مدیریت می‌شود.</p>
+            <div class="hero-actions"><a class="btn btn-primary" href="#apps">دانلود اپلیکیشن‌ها</a><a class="btn" href="<?= htmlspecialchars($termsUrl, ENT_QUOTES, 'UTF-8') ?>">مشاهده قوانین و مقررات</a></div>
+            <?php if (!$hasAnyDownload): ?><div class="empty">لینک نسخه‌ها هنوز از پنل مدیریت تنظیم نشده است. به محض ثبت لینک Android یا iOS، دکمه دانلود همین صفحه فعال می‌شود.</div><?php endif; ?>
+        </div>
+        <div class="phone-stage"><div class="visual"><span class="truck">🚚</span><span class="badge one">برای رانندگان</span><span class="badge two">برای صاحبان بار</span></div></div>
+    </div></section>
 
-<!-- ====== هدر ====== -->
-<header class="landing-header">
-    <div class="container">
-        <nav class="navbar navbar-expand-lg navbar-light p-0">
-            <div class="container-fluid px-0">
-                <a class="navbar-brand logo" href="#">
-                    <img src="assets/images/brand-logos/logo.png" alt="لوگو باربری هوشمند" height="40" />
-                </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav ms-auto">
-                        <li class="nav-item"><a class="nav-link" href="#driver">اپلیکیشن رانندگان</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#owner">اپلیکیشن صاحبان بار</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#features">امکانات</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#testimonials">نظرات</a></li>
-                        <li class="nav-item"><a class="nav-link btn btn-primary btn-sm text-white px-3" href="#download">دانلود</a></li>
-                    </ul>
+    <section class="section" id="apps"><div class="shell">
+        <div class="section-head"><h2>اپلیکیشن موردنیازتان را انتخاب کنید</h2><p>نسخه‌های دانلودی مستقیماً از پنل مدیریت کنترل می‌شوند؛ بنابراین لینک‌های این صفحه همیشه از همان تنظیمات اپ‌ها خوانده می‌شوند.</p></div>
+        <div class="apps">
+            <article class="app-card">
+                <div class="app-head"><div class="app-icon">🚛</div><div><h3>اپلیکیشن رانندگان</h3><small>پیداکردن بار و مدیریت سفر</small></div></div>
+                <ul class="features"><li>مشاهده و جستجوی بارهای مناسب</li><li>دسترسی به اطلاعات حمل و تماس مرتبط</li><li>پیگیری فعالیت‌ها، تاریخچه و پشتیبانی</li><li>احراز هویت و مدیریت مشخصات راننده و خودرو</li></ul>
+                <div class="downloads">
+                    <a class="store android <?= $driverAndroid ? '' : 'disabled' ?>" href="<?= htmlspecialchars($driverAndroid ?: '#', ENT_QUOTES, 'UTF-8') ?>" <?= $driverAndroid ? 'target="_blank" rel="noopener"' : 'aria-disabled="true"' ?>>🤖 دانلود Android</a>
+                    <a class="store <?= $driverIos ? '' : 'disabled' ?>" href="<?= htmlspecialchars($driverIos ?: '#', ENT_QUOTES, 'UTF-8') ?>" <?= $driverIos ? 'target="_blank" rel="noopener"' : 'aria-disabled="true"' ?>> دانلود iOS</a>
                 </div>
-            </div>
-        </nav>
-    </div>
-</header>
+            </article>
+            <article class="app-card">
+                <div class="app-head"><div class="app-icon">📦</div><div><h3>اپلیکیشن اعلام بار</h3><small>ویژه صاحبان بار و باربری‌ها</small></div></div>
+                <ul class="features"><li>ثبت و مدیریت سریع درخواست حمل بار</li><li>پیگیری بارهای فعال و سوابق درخواست‌ها</li><li>مدیریت اطلاعات کسب‌وکار و احراز هویت</li><li>دسترسی به پشتیبانی و راهنمای مستقل اپ</li></ul>
+                <div class="downloads">
+                    <a class="store android <?= $cargoAndroid ? '' : 'disabled' ?>" href="<?= htmlspecialchars($cargoAndroid ?: '#', ENT_QUOTES, 'UTF-8') ?>" <?= $cargoAndroid ? 'target="_blank" rel="noopener"' : 'aria-disabled="true"' ?>>🤖 دانلود Android</a>
+                    <a class="store <?= $cargoIos ? '' : 'disabled' ?>" href="<?= htmlspecialchars($cargoIos ?: '#', ENT_QUOTES, 'UTF-8') ?>" <?= $cargoIos ? 'target="_blank" rel="noopener"' : 'aria-disabled="true"' ?>> دانلود iOS</a>
+                </div>
+            </article>
+        </div>
+    </div></section>
 
-<!-- ====== بخش اصلی (Hero) ====== -->
-<section class="hero-section">
-    <div class="container">
-        <div class="row align-items-center">
-            <div class="col-lg-7 mb-4 mb-lg-0">
-                <h1 class="hero-title">سامانه هوشمند حمل بار</h1>
-                <p class="hero-sub">
-                    ارتباط مستقیم رانندگان و صاحبان بار، بدون واسطه و با بهترین قیمت.
-                    اپلیکیشن اختصاصی برای هر دو طرف، حمل بار را آسان‌تر از همیشه.
-                </p>
-                <div class="d-flex flex-wrap gap-3">
-                    <a href="#" class="btn-download">
-                        <i class="ri-android-fill"></i> دانلود برای اندروید
-                    </a>
-                    <a href="#" class="btn-download" style="background: rgba(255,255,255,0.15); color:#fff; backdrop-filter: blur(4px);">
-                        <i class="ri-apple-fill"></i> دانلود برای iOS
-                    </a>
-                </div>
-            </div>
-            <div class="col-lg-5 text-center">
-                <img src="assets/images/hero-apps.png" alt="نمایش اپلیکیشن" class="img-fluid" style="max-height: 400px;" />
-            </div>
+    <section class="section flow" id="features"><div class="shell">
+        <div class="section-head"><h2>ساخته‌شده برای یک جریان کاری واقعی</h2><p>دو اپ جدا، اما یک هویت کاربری؛ بدون ساخت حساب‌های تکراری و بدون قفل شدن شماره موبایل بین نقش‌ها.</p></div>
+        <div class="feature-grid">
+            <div class="feature"><span>1</span><h4>ثبت‌نام یکپارچه</h4><p>با همان شماره وارد هر اپ می‌شوید و نقش موردنیاز برای همان اپ فعال می‌شود.</p></div>
+            <div class="feature"><span>2</span><h4>محتوای مستقل هر اپ</h4><p>سوالات متداول، راهنما و نیازهای پشتیبانی می‌توانند متناسب با راننده یا صاحب بار باشند.</p></div>
+            <div class="feature"><span>3</span><h4>بروزرسانی از پنل</h4><p>لینک نسخه‌ها، قوانین و محتوای راهنما بدون انتشار مجدد وب‌سایت قابل مدیریت است.</p></div>
         </div>
-    </div>
-</section>
+    </div></section>
 
-<!-- ====== معرفی دو اپلیکیشن ====== -->
-<section class="py-5" id="driver">
-    <div class="container">
-        <div class="text-center mb-5">
-            <h2 class="section-title">اپلیکیشن‌های تخصصی</h2>
-            <p class="section-sub">هر کاربر با توجه به نقش خود، اپلیکیشن مخصوص را دریافت می‌کند</p>
-        </div>
-        <div class="row g-4">
-            <!-- اپلیکیشن رانندگان -->
-            <div class="col-md-6" id="driver">
-                <div class="app-card text-center">
-                    <div class="app-icon"><i class="ri-taxi-line"></i></div>
-                    <h4>اپلیکیشن رانندگان</h4>
-                    <p class="text-muted">بارهای موجود را مشاهده، پیشنهاد قیمت بده و بار را جابجا کن</p>
-                    <ul class="feature-list">
-                        <li><i class="ri-check-line"></i> مشاهده بارهای نزدیک</li>
-                        <li><i class="ri-check-line"></i> پیشنهاد قیمت لحظه‌ای</li>
-                        <li><i class="ri-check-line"></i> مسیریابی هوشمند</li>
-                        <li><i class="ri-check-line"></i> دریافت اعلان بارهای جدید</li>
-                    </ul>
-                    <a href="#" class="btn btn-primary mt-3">دانلود اپلیکیشن رانندگان</a>
-                </div>
-            </div>
-            <!-- اپلیکیشن صاحبان بار -->
-            <div class="col-md-6" id="owner">
-                <div class="app-card text-center">
-                    <div class="app-icon"><i class="ri-stack-line"></i></div>
-                    <h4>اپلیکیشن صاحبان بار</h4>
-                    <p class="text-muted">بار خود را ثبت کن و از بین رانندگان بهترین پیشنهاد را انتخاب کن</p>
-                    <ul class="feature-list">
-                        <li><i class="ri-check-line"></i> ثبت سریع بار</li>
-                        <li><i class="ri-check-line"></i> دریافت پیشنهادات رانندگان</li>
-                        <li><i class="ri-check-line"></i> رهگیری لحظه‌ای بار</li>
-                        <li><i class="ri-check-line"></i> امتیازدهی به رانندگان</li>
-                    </ul>
-                    <a href="#" class="btn btn-primary mt-3">دانلود اپلیکیشن صاحبان بار</a>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ====== امکانات ویژه ====== -->
-<section class="py-5 bg-light" id="features">
-    <div class="container">
-        <div class="text-center mb-5">
-            <h2 class="section-title">چرا باربری هوشمند؟</h2>
-            <p class="section-sub">مزایای استفاده از سامانه برای همه کاربران</p>
-        </div>
-        <div class="row g-4">
-            <div class="col-md-4">
-                <div class="text-center p-3">
-                    <i class="ri-money-dollar-circle-line" style="font-size: 3rem; color: var(--primary-color);"></i>
-                    <h5 class="mt-3">شفافیت قیمت</h5>
-                    <p class="text-muted">پیشنهادات رقابتی رانندگان را مشاهده و بهترین گزینه را انتخاب کنید.</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="text-center p-3">
-                    <i class="ri-map-pin-line" style="font-size: 3rem; color: var(--primary-color);"></i>
-                    <h5 class="mt-3">ردیابی لحظه‌ای</h5>
-                    <p class="text-muted">موقعیت بار خود را در لحظه مشاهده کنید و از تحویل به موقع مطمئن شوید.</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="text-center p-3">
-                    <i class="ri-shield-check-line" style="font-size: 3rem; color: var(--primary-color);"></i>
-                    <h5 class="mt-3">امنیت و اعتماد</h5>
-                    <p class="text-muted">سیستم امتیازدهی و احراز هویت، کیفیت خدمات را تضمین می‌کند.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ====== آمار ====== -->
-<section class="stats-section">
-    <div class="container">
-        <div class="row g-4">
-            <div class="col-6 col-md-3 stat-item">
-                <div class="number">۱۲,۵۰۰+</div>
-                <div class="label">راننده فعال</div>
-            </div>
-            <div class="col-6 col-md-3 stat-item">
-                <div class="number">۸,۲۰۰+</div>
-                <div class="label">بار ثبت شده</div>
-            </div>
-            <div class="col-6 col-md-3 stat-item">
-                <div class="number">۴.۹</div>
-                <div class="label">میانگین امتیاز</div>
-            </div>
-            <div class="col-6 col-md-3 stat-item">
-                <div class="number">۹۸٪</div>
-                <div class="label">رضایت کاربران</div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ====== نظرات کاربران ====== -->
-<section class="py-5" id="testimonials">
-    <div class="container">
-        <div class="text-center mb-5">
-            <h2 class="section-title">نظرات کاربران</h2>
-            <p class="section-sub">آنچه رانندگان و صاحبان بار درباره ما می‌گویند</p>
-        </div>
-        <div class="row g-4">
-            <div class="col-md-4">
-                <div class="testimonial-card">
-                    <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="avatar"><i class="ri-user-3-fill"></i></div>
-                        <div>
-                            <h6 class="mb-0">علی رضایی</h6>
-                            <small class="text-muted">راننده</small>
-                        </div>
-                    </div>
-                    <p class="mb-0">“با این اپلیکیشن دیگه مجبور نیستم توی شرکت‌های واسطه وقت تلف کنم. مستقیم با صاحب بار در ارتباطم.”</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="testimonial-card">
-                    <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="avatar"><i class="ri-user-3-fill"></i></div>
-                        <div>
-                            <h6 class="mb-0">محمد کریمی</h6>
-                            <small class="text-muted">صاحب بار</small>
-                        </div>
-                    </div>
-                    <p class="mb-0">“خیلی سریع بارم ثبت میشه و توی کمتر از ۱۰ دقیقه چندین پیشنهاد دریافت می‌کنم. عالی!”</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="testimonial-card">
-                    <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="avatar"><i class="ri-user-3-fill"></i></div>
-                        <div>
-                            <h6 class="mb-0">سارا حسینی</h6>
-                            <small class="text-muted">مدیر لجستیک</small>
-                        </div>
-                    </div>
-                    <p class="mb-0">“سیستم ردیابی بار و امتیازدهی به رانندگان باعث شده کیفیت حمل بار به شدت افزایش پیدا کنه.”</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ====== دعوت به دانلود ====== -->
-<section class="py-5" style="background: var(--primary01);" id="download">
-    <div class="container text-center">
-        <h2 class="mb-3" style="color: var(--primary-color);">همین حالا شروع کن!</h2>
-        <p class="mb-4" style="font-size: 1.1rem;">اپلیکیشن مخصوص خود را دانلود کن و از حمل بار بدون دردسر لذت ببر.</p>
-        <div class="d-flex flex-wrap justify-content-center gap-3">
-            <a href="#" class="btn-download" style="background: var(--primary-color); color:#fff;">
-                <i class="ri-android-fill"></i> دریافت نسخه اندروید
-            </a>
-            <a href="#" class="btn-download" style="background: var(--secondary-color); color:#fff; border-color: var(--secondary-color);">
-                <i class="ri-apple-fill"></i> دریافت نسخه iOS
-            </a>
-        </div>
-        <p class="mt-3 text-muted small">نسخه وب نیز به زودی ارائه می‌شود.</p>
-    </div>
-</section>
-
-<!-- ====== فوتر ====== -->
-<footer class="footer-landing">
-    <div class="container">
-        <div class="row">
-            <div class="col-md-4 mb-4 mb-md-0">
-                <img src="assets/images/brand-logos/logo.png" alt="لوگو" height="40" class="mb-3" style="filter: brightness(0) invert(1);" />
-                <p>ارائه‌دهنده سامانه هوشمند حمل بار، اتصال مستقیم رانندگان و صاحبان بار.</p>
-                <div>
-                    <a href="#" class="social-link"><i class="ri-instagram-line"></i></a>
-                    <a href="#" class="social-link"><i class="ri-telegram-line"></i></a>
-                    <a href="#" class="social-link"><i class="ri-whatsapp-line"></i></a>
-                </div>
-            </div>
-            <div class="col-md-2 col-6 mb-4 mb-md-0">
-                <h6 class="text-white">دسترسی سریع</h6>
-                <ul class="list-unstyled">
-                    <li><a href="#driver">اپلیکیشن رانندگان</a></li>
-                    <li><a href="#owner">اپلیکیشن صاحبان بار</a></li>
-                    <li><a href="#features">امکانات</a></li>
-                    <li><a href="#testimonials">نظرات</a></li>
-                </ul>
-            </div>
-            <div class="col-md-3 col-6 mb-4 mb-md-0">
-                <h6 class="text-white">ارتباط با ما</h6>
-                <ul class="list-unstyled">
-                    <li><i class="ri-phone-line ml-1"></i> ۰۲۱-۱۲۳۴۵۶۷۸</li>
-                    <li><i class="ri-mail-line ml-1"></i> info@barbari.com</li>
-                    <li><i class="ri-map-pin-line ml-1"></i> تهران، خیابان آزادی</li>
-                </ul>
-            </div>
-            <div class="col-md-3">
-                <h6 class="text-white">دانلود اپلیکیشن</h6>
-                <a href="#" class="btn btn-outline-light btn-sm w-100 mb-2"><i class="ri-android-fill"></i> گوگل پلی</a>
-                <a href="#" class="btn btn-outline-light btn-sm w-100"><i class="ri-apple-fill"></i> اپ استور</a>
-            </div>
-        </div>
-        <hr class="my-3" style="border-color: rgba(255,255,255,0.1);" />
-        <div class="text-center small">
-            &copy; ۱۴۰۴ باربری هوشمند. تمامی حقوق محفوظ است.
-        </div>
-    </div>
-</footer>
-
-<!-- Bootstrap JS (برای هامبورگر و ...) -->
-<script src="assets/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+    <?php if ($supportPhone !== '' || $whatsapp !== '' || $telegram !== ''): ?>
+    <section class="support"><div class="shell"><div class="support-box"><div><strong style="font-size:22px">برای نصب یا ورود مشکل دارید؟</strong><p>از یکی از راه‌های رسمی با پشتیبانی <?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?> ارتباط بگیرید.</p></div><div class="support-actions">
+        <?php if ($supportPhone !== ''): ?><a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', $supportPhone), ENT_QUOTES, 'UTF-8') ?>">☎ تماس</a><?php endif; ?>
+        <?php if ($whatsapp !== ''): ?><a href="https://wa.me/<?= htmlspecialchars($whatsapp, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">واتساپ</a><?php endif; ?>
+        <?php if ($telegram !== ''): ?><a href="<?= htmlspecialchars(str_starts_with($telegram, 'http') ? $telegram : 'https://t.me/' . ltrim($telegram, '@'), ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">تلگرام</a><?php endif; ?>
+    </div></div></div></section>
+    <?php endif; ?>
+</main>
+<footer class="footer"><div class="shell footer-row"><span>© <?= date('Y') ?> <?= htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8') ?> — تمامی حقوق محفوظ است.</span><span><a href="<?= htmlspecialchars($termsUrl, ENT_QUOTES, 'UTF-8') ?>">قوانین و مقررات</a></span></div></footer>
 </body>
 </html>

@@ -100,15 +100,26 @@ require_once "views/panel/sidebar.php";
                                     </div>
                                     <div class="col-lg-6">
                                         <label for="terms_url" class="form-label">لینک صفحه قوانین و مقررات</label>
-                                        <input type="url" class="form-control" id="terms_url" dir="ltr" placeholder="https://example.com/terms">
+                                        <div class="input-group">
+                                            <input type="url" class="form-control" id="terms_url" dir="ltr" placeholder="https://example.com/terms.php">
+                                            <button class="btn btn-outline-secondary" type="button" id="btnSuggestTermsUrl" title="استفاده از صفحه داخلی">خودکار</button>
+                                            <button class="btn btn-outline-info" type="button" id="btnOpenTermsUrl" title="باز کردن صفحه"><i class="ri-external-link-line"></i></button>
+                                        </div>
+                                        <div class="text-muted small mt-1">صفحه <code>terms.php</code> متن زیر را به‌صورت پویا نمایش می‌دهد.</div>
                                     </div>
                                     <div class="col-lg-6">
                                         <label for="app_download_url" class="form-label">لینک صفحه دانلود اپلیکیشن</label>
-                                        <input type="url" class="form-control" id="app_download_url" dir="ltr" placeholder="https://example.com/app">
+                                        <div class="input-group">
+                                            <input type="url" class="form-control" id="app_download_url" dir="ltr" placeholder="https://example.com/app.php">
+                                            <button class="btn btn-outline-secondary" type="button" id="btnSuggestAppUrl" title="استفاده از صفحه داخلی">خودکار</button>
+                                            <button class="btn btn-outline-info" type="button" id="btnOpenAppUrl" title="باز کردن صفحه"><i class="ri-external-link-line"></i></button>
+                                        </div>
+                                        <div class="text-muted small mt-1">لینک‌های دانلود Android/iOS این لندینگ از همین تنظیمات اپ خوانده می‌شوند.</div>
                                     </div>
                                     <div class="col-12 mt-3">
-                                        <label for="terms_text" class="form-label">متن قوانین و مقررات (برای نمایش داخل اپ)</label>
-                                        <textarea class="form-control" id="terms_text" rows="6" placeholder="متن قوانین را اینجا وارد کنید..."></textarea>
+                                        <label for="terms_text" class="form-label">متن قوانین و مقررات</label>
+                                        <textarea class="form-control" id="terms_text" rows="12" placeholder="## عنوان بخش اول&#10;متن قوانین...&#10;&#10;## عنوان بخش دوم&#10;متن بخش دوم..."></textarea>
+                                        <div class="text-muted small mt-1">برای ساخت بخش‌های جداگانه در وب و اپ، عنوان هر بخش را با <code>##</code> شروع کنید؛ مثال: <code>## حریم خصوصی</code>.</div>
                                     </div>
                                 </div>
                             </div>
@@ -513,6 +524,29 @@ require_once "views/panel/footer.php";
         }
 
         document.getElementById('btnSendTestSms').addEventListener('click', sendTestSms);
+
+        function publicPageBase() {
+            const configured = (els.site_url.value || '').trim().replace(/\/+$/, '');
+            if (configured) return configured;
+            const dir = window.location.pathname.replace(/\/[^/]*$/, '').replace(/\/+$/, '');
+            return `${window.location.origin}${dir}`;
+        }
+
+        function suggestPublicUrl(input, file) {
+            input.value = `${publicPageBase()}/${file}`;
+            input.dispatchEvent(new Event('change'));
+        }
+
+        function openPublicUrl(input) {
+            const url = (input.value || '').trim();
+            if (!url) return;
+            try { window.open(new URL(url, window.location.href).toString(), '_blank', 'noopener'); } catch (_) {}
+        }
+
+        document.getElementById('btnSuggestTermsUrl').addEventListener('click', () => suggestPublicUrl(els.terms_url, 'terms.php'));
+        document.getElementById('btnSuggestAppUrl').addEventListener('click', () => suggestPublicUrl(els.app_download_url, 'app.php'));
+        document.getElementById('btnOpenTermsUrl').addEventListener('click', () => openPublicUrl(els.terms_url));
+        document.getElementById('btnOpenAppUrl').addEventListener('click', () => openPublicUrl(els.app_download_url));
 
         async function load() {
             const res = await fetch('ajax/site-settings.php?action=get', {

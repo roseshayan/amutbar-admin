@@ -16,6 +16,28 @@ function user_type_label(int $t): string
     };
 }
 
+
+function users_enable_app_role(int $userId, int $userType): void
+{
+    if (!in_array($userType, [1, 2], true)) return;
+    $st = db()->prepare("
+        INSERT INTO user_app_roles (user_id, app_role, status, created_at, updated_at)
+        VALUES (?, ?, 1, NOW(3), NOW(3))
+        ON DUPLICATE KEY UPDATE status=1, updated_at=NOW(3)
+    ");
+    $st->execute([$userId, $userType]);
+}
+
+function user_app_roles_label(?string $roles, int $fallbackType): string
+{
+    $parts = array_values(array_unique(array_filter(array_map('intval', explode(',', (string)$roles)))));
+    sort($parts);
+    if ($parts === [1, 2]) return 'راننده + صاحب بار';
+    if ($parts === [1]) return 'راننده';
+    if ($parts === [2]) return 'صاحب بار';
+    return user_type_label($fallbackType);
+}
+
 function user_status_label(int $s): string
 {
     return match ($s) {
@@ -170,6 +192,7 @@ function users_save(array $in): array
                 $st = $pdo->prepare("UPDATE users SET full_name=?, phone=?, email=?, user_type=?, status=?, updated_at=NOW(3), code_meli=?, birth_date=?, father_name=?, gender=?, national_card_serial=?, display_name=? WHERE id=? AND deleted_at IS NULL");
                 $st->execute([$full_name, $phone, ($email === '' ? null : $email), $user_type, $status, ($code_meli === '' ? null : $code_meli), ($birth_date === '' ? null : $birth_date), ($father_name === '' ? null : $father_name), $gender, ($national_card_serial === '' ? null : $national_card_serial), ($display_name === '' ? null : $display_name), $id]);
             }
+            users_enable_app_role($id, $user_type);
             return ['ok' => true, 'id' => $id];
         } catch (Throwable $e) {
             error_log('admin.users save failed: ' . $e->getMessage());
@@ -220,7 +243,9 @@ function users_save(array $in): array
         ($display_name === '' ? null : $display_name)
     ]);
 
-    return ['ok' => true, 'id' => (int)$pdo->lastInsertId()];
+    $newUserId = (int)$pdo->lastInsertId();
+    users_enable_app_role($newUserId, $user_type);
+    return ['ok' => true, 'id' => $newUserId];
 }
 
 function users_datatable(array $req): array
@@ -258,7 +283,10 @@ function users_datatable(array $req): array
     $st->execute($params);
     $filtered = (int)$st->fetchColumn();
 
-    $sql = "SELECT id, full_name, phone, email, user_type, status, created_at, code_meli, display_name
+    $sql = "SELECT users.id, users.full_name, users.phone, users.email, users.user_type, users.status, users.created_at, users.code_meli, users.display_name,
+                   (SELECT GROUP_CONCAT(uar.app_role ORDER BY uar.app_role SEPARATOR ',')
+                    FROM user_app_roles uar
+                    WHERE uar.user_id = users.id AND uar.status = 1) AS app_roles
             FROM users
             WHERE {$where}
             ORDER BY {$orderCol} {$orderDir}
@@ -275,7 +303,7 @@ function users_datatable(array $req): array
             'phone' => htmlspecialchars((string)$r['phone'], ENT_QUOTES, 'UTF-8'),
             'email' => htmlspecialchars((string)($r['email'] ?? ''), ENT_QUOTES, 'UTF-8'),
             'user_type' => (int)$r['user_type'],
-            'user_type_label' => user_type_label((int)$r['user_type']),
+            'user_type_label' => user_app_roles_label($r['app_roles'] ?? null, (int)$r['user_type']),
             'status' => (int)$r['status'],
             'status_label' => user_status_label((int)$r['status']),
             'created_at' => (string)$r['created_at'],

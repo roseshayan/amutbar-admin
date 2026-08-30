@@ -48,6 +48,7 @@ function internal_api_endpoints_catalog(): array
 
         // ---------- Content ----------
         'api.content.banners' => ['دریافت بنرهای تبلیغاتی', 'Content', true, true],
+        'api.content.faqs' => ['دریافت سوالات متداول', 'Content', true, true],
 
         // ---------- Support ----------
         'api.support.tickets_list' => ['لیست تیکت‌های کاربر', 'Support', true, true],

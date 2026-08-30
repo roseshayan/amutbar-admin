@@ -77,11 +77,35 @@ function api_refresh_ttl_days(?int $override = null): int
     return ($v < 7 || $v > 365) ? 30 : $v;
 }
 
+function api_user_has_app_role(int $userId, int $role): bool
+{
+    if (!in_array($role, [1, 2], true)) return false;
+
+    $st = db()->prepare("SELECT 1 FROM user_app_roles WHERE user_id=? AND app_role=? AND status=1 LIMIT 1");
+    $st->execute([$userId, $role]);
+    return (bool)$st->fetchColumn();
+}
+
+function api_ensure_app_role(int $userId, int $role): void
+{
+    if (!in_array($role, [1, 2], true)) {
+        throw new InvalidArgumentException('invalid_app_role');
+    }
+
+    $st = db()->prepare("
+        INSERT INTO user_app_roles (user_id, app_role, status, created_at, updated_at)
+        VALUES (?, ?, 1, NOW(3), NOW(3))
+        ON DUPLICATE KEY UPDATE status=1, updated_at=NOW(3)
+    ");
+    $st->execute([$userId, $role]);
+}
+
 /**
  * صدور توکن‌ها (Access + Refresh)
  * ttl_days پارامتر قدیمی پروژه بوده؛ اینجا به عنوان TTL رفرش استفاده می‌شود.
+ * role_type نقش فعال داخل همین اپ است و برای حساب‌های چندنقشی در JWT scope می‌شود.
  */
-function api_issue_token(int $user_id, ?string $device_id = null, ?int $platform = null, ?int $ttl_days = 30): array
+function api_issue_token(int $user_id, ?string $device_id = null, ?int $platform = null, ?int $ttl_days = 30, ?int $role_type = null): array
 {
     $pdo = db();
 
@@ -91,6 +115,15 @@ function api_issue_token(int $user_id, ?string $device_id = null, ?int $platform
     $u = $st->fetch();
     if (!$u) return ['ok' => false, 'message' => 'user_not_found'];
     if ((int)$u['status'] !== 1) return ['ok' => false, 'message' => 'user_inactive'];
+
+    $effectiveRole = $role_type ?? (int)$u['user_type'];
+    if (in_array($effectiveRole, [1, 2], true)) {
+        if (!api_user_has_app_role((int)$u['id'], $effectiveRole)) {
+            return ['ok' => false, 'message' => 'role_not_enabled'];
+        }
+    } elseif ($effectiveRole !== 3 || (int)$u['user_type'] !== 3) {
+        return ['ok' => false, 'message' => 'invalid_role'];
+    }
 
     $tv = (int)($u['jwt_token_version'] ?? 1);
     if ($tv <= 0) $tv = 1;
@@ -102,7 +135,7 @@ function api_issue_token(int $user_id, ?string $device_id = null, ?int $platform
     // access
     $access = jwt_encode([
         'sub' => (int)$user_id,
-        'ut' => (int)$u['user_type'],
+        'ut' => $effectiveRole,
         'tv' => $tv,
         'did' => $device_id,
         'plt' => $platform,
@@ -111,7 +144,7 @@ function api_issue_token(int $user_id, ?string $device_id = null, ?int $platform
     // refresh
     $refresh = jwt_encode([
         'sub' => (int)$user_id,
-        'ut' => (int)$u['user_type'],
+        'ut' => $effectiveRole,
         'tv' => $tv,
         'did' => $device_id,
         'plt' => $platform,
@@ -162,6 +195,8 @@ function api_auth_user(): ?array
 
     $tv = (int)($p['tv'] ?? 0);
     if ($tv <= 0) return null;
+    $activeRole = (int)($p['ut'] ?? 0);
+    if (!in_array($activeRole, [1, 2, 3], true)) return null;
 
     $pdo = db();
     $st = $pdo->prepare(
@@ -176,6 +211,12 @@ function api_auth_user(): ?array
     if ($dbTv <= 0) $dbTv = 1;
     if ($dbTv !== $tv) return null;
 
+    if (in_array($activeRole, [1, 2], true)) {
+        if (!api_user_has_app_role((int)$u['id'], $activeRole)) return null;
+    } elseif ((int)$u['user_type'] !== 3) {
+        return null;
+    }
+
     return [
         'id' => (int)$u['id'],
         'full_name' => (string)$u['full_name'],
@@ -183,7 +224,8 @@ function api_auth_user(): ?array
         'avatar_key' => $u['avatar_key'] !== null ? (string)$u['avatar_key'] : null,
         'phone' => (string)$u['phone'],
         'email' => $u['email'] !== null ? (string)$u['email'] : null,
-        'user_type' => (int)$u['user_type'],
+        'user_type' => $activeRole,
+        '_active_user_type' => $activeRole,
         'status' => (int)$u['status'],
     ];
 }
@@ -222,6 +264,10 @@ function api_public_user_payload(array $user): array
     $row = $st->fetch();
     if (!$row) return [];
 
+    $effectiveRole = isset($user['_active_user_type'])
+        ? (int)$user['_active_user_type']
+        : (int)$row['user_type'];
+
     return [
         'id' => (int)$row['id'],
         'full_name' => (string)$row['full_name'],
@@ -229,7 +275,7 @@ function api_public_user_payload(array $user): array
         'avatar_key' => $row['avatar_key'] !== null ? (string)$row['avatar_key'] : null,
         'phone' => (string)$row['phone'],
         'email' => $row['email'] !== null ? (string)$row['email'] : null,
-        'user_type' => (int)$row['user_type'],
+        'user_type' => $effectiveRole,
         'status' => (int)$row['status'],
         'code_meli' => $row['code_meli'] !== null ? (string)$row['code_meli'] : null,
         'birth_date' => $row['birth_date'] !== null ? (string)$row['birth_date'] : null,
@@ -259,6 +305,7 @@ function api_refresh_rotate(string $refreshToken, ?string $deviceId = null): arr
 
     $userId = (int)($p['sub'] ?? 0);
     $tv = (int)($p['tv'] ?? 0);
+    $activeRole = (int)($p['ut'] ?? 0);
     $jti = (string)($p['jti'] ?? '');
     $did = (string)($p['did'] ?? '');
     $plt = isset($p['plt']) ? (int)$p['plt'] : null;
@@ -279,6 +326,13 @@ function api_refresh_rotate(string $refreshToken, ?string $deviceId = null): arr
     $dbTv = (int)($u['jwt_token_version'] ?? 1);
     if ($dbTv <= 0) $dbTv = 1;
     if ($dbTv !== $tv) return ['ok' => false, 'status' => 401, 'message' => 'refresh_revoked'];
+    if (in_array($activeRole, [1, 2], true)) {
+        if (!api_user_has_app_role($userId, $activeRole)) {
+            return ['ok' => false, 'status' => 403, 'message' => 'role_not_enabled'];
+        }
+    } elseif ($activeRole !== 3 || (int)$u['user_type'] !== 3) {
+        return ['ok' => false, 'status' => 401, 'message' => 'refresh_invalid'];
+    }
 
     $jtiHash = api_refresh_jti_hash($jti);
 
@@ -301,7 +355,7 @@ function api_refresh_rotate(string $refreshToken, ?string $deviceId = null): arr
             ->execute([$rtId]);
 
         // issue new pair (refresh TTL از env)
-        $tok = api_issue_token($userId, $did !== '' ? $did : $deviceId, $plt, null);
+        $tok = api_issue_token($userId, $did !== '' ? $did : $deviceId, $plt, null, $activeRole);
         if (!$tok['ok']) {
             $pdo->rollBack();
             return ['ok' => false, 'status' => 500, 'message' => 'token_issue_failed'];
