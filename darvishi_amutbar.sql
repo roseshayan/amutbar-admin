@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.2
+-- version 5.2.3
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jul 30, 2026 at 09:53 PM
--- Server version: 11.4.12-MariaDB
--- PHP Version: 8.4.23
+-- Generation Time: Sep 20, 2026 at 02:56 PM
+-- Server version: 11.4.13-MariaDB
+-- PHP Version: 8.4.25
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -126,7 +126,18 @@ INSERT INTO `admin_audit_logs` (`id`, `actor_user_id`, `action`, `entity_type`, 
 (80, 1, 'users.save', 'user', 53, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '[]', '2026-05-18 18:04:48.720'),
 (81, 1, 'users.save', 'user', 53, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '[]', '2026-05-18 18:07:54.331'),
 (82, 1, 'users.save', 'user', 54, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '[]', '2026-05-18 20:55:24.244'),
-(83, 1, 'users.save', 'user', 54, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '[]', '2026-05-18 20:55:31.601');
+(83, 1, 'users.save', 'user', 54, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '[]', '2026-05-18 20:55:31.601'),
+(84, 1, 'users.hard_delete', 'user', 53, '5.74.192.91', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '[]', '2026-07-30 21:56:55.257'),
+(85, 1, 'users.hard_delete', 'user', 55, '5.74.192.91', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '[]', '2026-07-30 21:56:55.258'),
+(86, 1, 'users.soft_delete', 'user', 56, '5.74.139.30', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '[]', '2026-08-01 19:34:48.939'),
+(87, 1, 'users.soft_delete', 'user', 54, '5.74.139.30', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '[]', '2026-08-01 19:34:48.949'),
+(88, 1, 'users.soft_delete', 'user', 57, '5.74.139.30', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '[]', '2026-08-01 20:20:28.209'),
+(89, 1, 'users.soft_delete', 'user', 60, '5.74.139.30', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '[]', '2026-08-01 21:02:39.158'),
+(90, 1, 'users.save', 'user', 1, '5.74.139.30', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '[]', '2026-08-01 21:05:07.154'),
+(91, 1, 'users.soft_delete', 'user', 61, '5.74.139.30', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '[]', '2026-08-01 21:30:01.987'),
+(92, 1, 'users.soft_delete', 'user', 62, '5.74.139.30', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '[]', '2026-08-01 21:32:27.695'),
+(93, 1, 'users.soft_delete', 'user', 65, '2.176.231.47', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '[]', '2026-08-22 11:03:37.348'),
+(94, 1, 'users.soft_delete', 'user', 64, '2.176.231.47', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '[]', '2026-08-22 11:04:19.323');
 
 -- --------------------------------------------------------
 
@@ -229,7 +240,20 @@ INSERT INTO `auth_daily_stats` (`stat_date`, `user_type`, `event_type`, `cnt`) V
 ('2026-07-17', 1, 4, 2),
 ('2026-07-17', 3, 1, 1),
 ('2026-07-17', 3, 3, 92),
-('2026-07-21', 1, 4, 1);
+('2026-07-21', 1, 4, 1),
+('2026-07-30', 3, 1, 1),
+('2026-08-01', 1, 4, 6),
+('2026-08-01', 2, 4, 6),
+('2026-08-01', 3, 3, 1),
+('2026-08-06', 1, 4, 2),
+('2026-08-06', 2, 4, 2),
+('2026-08-06', 3, 1, 2),
+('2026-08-17', 1, 4, 2),
+('2026-08-17', 2, 4, 2),
+('2026-08-22', 1, 4, 1),
+('2026-08-22', 3, 1, 2),
+('2026-08-22', 3, 5, 1),
+('2026-08-30', 3, 1, 1);
 
 -- --------------------------------------------------------
 
@@ -304,7 +328,6 @@ INSERT INTO `auth_events` (`id`, `user_id`, `user_type`, `event_type`, `ip_addre
 (1979, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:11:55.684'),
 (1980, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:12:14.184'),
 (1981, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:12:24.645'),
-(1982, 53, 1, 4, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"platform\":null,\"device_id\":null}', '2026-07-17 22:19:12.145'),
 (1983, 1, 3, 1, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"remember\":true}', '2026-07-17 22:19:48.388'),
 (1984, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:19:48.683'),
 (1985, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:19:52.832'),
@@ -394,12 +417,39 @@ INSERT INTO `auth_events` (`id`, `user_id`, `user_type`, `event_type`, `ip_addre
 (2069, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:36:17.193'),
 (2070, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:36:32.205'),
 (2071, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:36:47.178'),
-(2072, 53, 1, 4, 0xcc126d5b, 0x46b17d32fb739949221d021c1a0a9d12f9f0e738fa52aa9367b07ab1ec47c734, '{\"platform\":1,\"device_id\":\"R16NW\"}', '2026-07-17 22:37:10.987'),
 (2073, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:37:40.177'),
 (2074, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:55:41.939'),
 (2075, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:56:40.262'),
 (2076, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:56:54.190'),
-(2077, 55, 1, 4, 0x5d767fa2, 0x46b17d32fb739949221d021c1a0a9d12f9f0e738fa52aa9367b07ab1ec47c734, '{\"platform\":1,\"device_id\":\"SP1A.210812.016\"}', '2026-07-21 14:31:15.661');
+(2078, 1, 3, 1, 0x054ac05b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"remember\":true}', '2026-07-30 21:56:13.349'),
+(2079, 56, 2, 4, 0x054a8b1e, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"platform\":null,\"device_id\":null}', '2026-08-01 19:03:41.198'),
+(2080, 56, 2, 4, 0x054a8b1e, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"platform\":3,\"device_id\":\"chrome|Win32|Google Inc.\"}', '2026-08-01 19:29:23.511'),
+(2081, 56, 2, 4, 0x054a8b1e, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"platform\":3,\"device_id\":\"chrome|Win32|Google Inc.\"}', '2026-08-01 19:32:00.978'),
+(2082, 1, 3, 3, 0x054a8b1e, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-08-01 19:34:34.977'),
+(2083, 57, 2, 4, 0x054a8b1e, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"platform\":3,\"device_id\":\"chrome|Win32|Google Inc.\"}', '2026-08-01 19:35:13.846'),
+(2084, 58, 2, 4, 0x054a8b1e, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"platform\":3,\"device_id\":\"chrome|Win32|Google Inc.\"}', '2026-08-01 20:20:47.304'),
+(2085, 59, 2, 4, 0x054a8b1e, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"platform\":3,\"device_id\":\"chrome|Win32|Google Inc.\"}', '2026-08-01 20:53:55.683'),
+(2086, 60, 1, 4, 0x054a8b1e, 0x46b17d32fb739949221d021c1a0a9d12f9f0e738fa52aa9367b07ab1ec47c734, '{\"platform\":1,\"device_id\":\"R16NW\"}', '2026-08-01 20:57:04.436'),
+(2087, 61, 1, 4, 0x054a8b1e, 0xe625a3d42ef01c764e5960f048f430f34b7862e7aa3264338186d02f75d0cb9c, '{\"platform\":null,\"device_id\":null}', '2026-08-01 21:05:35.245'),
+(2088, 62, 1, 4, 0x054a8b1e, 0x46b17d32fb739949221d021c1a0a9d12f9f0e738fa52aa9367b07ab1ec47c734, '{\"platform\":1,\"device_id\":\"R16NW\"}', '2026-08-01 21:30:36.047'),
+(2089, 62, 1, 4, 0x054a8b1e, 0xe625a3d42ef01c764e5960f048f430f34b7862e7aa3264338186d02f75d0cb9c, '{\"platform\":null,\"device_id\":null}', '2026-08-01 21:32:00.536'),
+(2090, 63, 1, 4, 0x054a8b1e, 0xe625a3d42ef01c764e5960f048f430f34b7862e7aa3264338186d02f75d0cb9c, '{\"platform\":null,\"device_id\":null}', '2026-08-01 21:33:35.313'),
+(2091, 63, 1, 4, 0x054a8b1e, 0xe625a3d42ef01c764e5960f048f430f34b7862e7aa3264338186d02f75d0cb9c, '{\"platform\":null,\"device_id\":null}', '2026-08-01 21:36:32.969'),
+(2092, 64, 2, 4, 0x5d767fa2, 0x46b17d32fb739949221d021c1a0a9d12f9f0e738fa52aa9367b07ab1ec47c734, '{\"platform\":1,\"device_id\":\"R16NW\"}', '2026-08-06 15:58:34.915'),
+(2093, 65, 1, 4, 0x5d767fa2, 0x46b17d32fb739949221d021c1a0a9d12f9f0e738fa52aa9367b07ab1ec47c734, '{\"platform\":1,\"device_id\":\"R16NW\"}', '2026-08-06 16:06:32.140'),
+(2094, 66, 2, 4, 0x2e33610c, 0x46b17d32fb739949221d021c1a0a9d12f9f0e738fa52aa9367b07ab1ec47c734, '{\"platform\":1,\"device_id\":\"BP4A.251205.006\"}', '2026-08-06 16:06:51.836'),
+(2095, 1, 3, 1, 0xa9282031, 0x40956f08f6c9af83802ecd226385c678a06f995e8a19f59cd575a9a4c6acc287, '{\"remember\":true}', '2026-08-06 16:16:16.651'),
+(2096, 67, 1, 4, 0x05d7cbe3, 0x46b17d32fb739949221d021c1a0a9d12f9f0e738fa52aa9367b07ab1ec47c734, '{\"platform\":1,\"device_id\":\"SP1A.210812.016\"}', '2026-08-06 16:16:34.699'),
+(2097, 1, 3, 1, 0x5d767fa2, 0x241bc9185226fa674c958983976fb51a72cec8a48970f8aacc6f1d93d6c4144d, '{\"remember\":false}', '2026-08-06 16:25:38.148'),
+(2098, 68, 2, 4, 0x02b0fb65, 0x46b17d32fb739949221d021c1a0a9d12f9f0e738fa52aa9367b07ab1ec47c734, '{\"platform\":1,\"device_id\":\"SP1A.210812.016\"}', '2026-08-17 12:08:20.049'),
+(2099, 69, 1, 4, 0x02b0fb65, 0x46b17d32fb739949221d021c1a0a9d12f9f0e738fa52aa9367b07ab1ec47c734, '{\"platform\":1,\"device_id\":\"SP1A.210812.016\"}', '2026-08-17 13:24:53.253'),
+(2100, 70, 2, 4, 0x6260fe2b, 0x46b17d32fb739949221d021c1a0a9d12f9f0e738fa52aa9367b07ab1ec47c734, '{\"platform\":1,\"device_id\":\"SP1A.210812.016\"}', '2026-08-17 13:37:39.369'),
+(2101, 71, 1, 4, 0x02b0fb65, 0x46b17d32fb739949221d021c1a0a9d12f9f0e738fa52aa9367b07ab1ec47c734, '{\"platform\":1,\"device_id\":\"SP1A.210812.016\"}', '2026-08-17 13:43:05.051'),
+(2102, 1, 3, 5, 0x02b0e72f, 0x40956f08f6c9af83802ecd226385c678a06f995e8a19f59cd575a9a4c6acc287, '{\"reason\":\"bad_password\"}', '2026-08-22 11:02:55.315'),
+(2103, 1, 3, 1, 0x02b0e72f, 0x40956f08f6c9af83802ecd226385c678a06f995e8a19f59cd575a9a4c6acc287, '{\"remember\":false}', '2026-08-22 11:02:59.169'),
+(2104, 72, 1, 4, 0x02b0e72f, 0x46b17d32fb739949221d021c1a0a9d12f9f0e738fa52aa9367b07ab1ec47c734, '{\"platform\":1,\"device_id\":\"R16NW\"}', '2026-08-22 11:03:57.226'),
+(2105, 1, 3, 1, 0x02b0e72f, 0x40956f08f6c9af83802ecd226385c678a06f995e8a19f59cd575a9a4c6acc287, '{\"remember\":false}', '2026-08-22 13:54:54.246'),
+(2106, 1, 3, 1, 0x02bedb79, 0x40956f08f6c9af83802ecd226385c678a06f995e8a19f59cd575a9a4c6acc287, '{\"remember\":false}', '2026-08-30 21:57:58.767');
 
 -- --------------------------------------------------------
 
@@ -464,8 +514,10 @@ CREATE TABLE `call_logs` (
 --
 
 INSERT INTO `call_logs` (`id`, `load_id`, `driver_id`, `company_id`, `event_type`, `duration_sec`, `result_code`, `client_platform`, `client_version_code`, `ip_address`, `user_agent`, `created_at`) VALUES
-(1, 9, 15, 1, 1, NULL, 'DIALED', 1, 3, 0x057b064f, 'Dart/3.12 (dart:io)', '2026-07-08 20:57:35.103'),
-(2, 9, 16, 1, 1, NULL, 'DIALED', 1, 3, 0x5d767fa2, 'Dart/3.12 (dart:io)', '2026-07-21 14:35:03.593');
+(3, 11, 27, 9, 1, NULL, 'DIALED', 1, 3, 0x05d7cbe3, 'Dart/3.12 (dart:io)', '2026-08-06 16:19:25.085'),
+(4, 9, 27, 1, 1, NULL, 'DIALED', 1, 3, 0x05d7cbe3, 'Dart/3.12 (dart:io)', '2026-08-06 16:25:45.258'),
+(5, 10, 27, 7, 1, NULL, 'DIALED', 1, 3, 0x05d7cbe3, 'Dart/3.12 (dart:io)', '2026-08-06 16:25:54.592'),
+(6, 12, 27, 10, 1, NULL, 'DIALED', 1, 3, 0x6260fe2b, 'Dart/3.12 (dart:io)', '2026-08-17 13:15:34.574');
 
 -- --------------------------------------------------------
 
@@ -2110,7 +2162,12 @@ CREATE TABLE `companies` (
 --
 
 INSERT INTO `companies` (`id`, `user_id`, `company_name`, `owner_full_name`, `owner_national_code`, `registration_no`, `economic_code`, `province_id`, `city_id`, `address`, `verification_status`, `verified_at`, `verified_by_user_id`, `reject_reason`, `created_at`, `updated_at`, `deleted_at`, `registration_date`, `postal_code`) VALUES
-(1, 54, 'آموت‌بار', 'آموت بار', '1551956039', '645651651', '654165165131', 123, 1230001001576, 'شسبدمسشنبد', 0, NULL, NULL, '', '2026-05-18 20:55:24.234', '2026-05-18 20:55:31.591', NULL, '1405-02-28', '1471934411');
+(1, 54, 'آموت‌بار', 'آموت بار', '1551956039', '645651651', '654165165131', 123, 1230001001576, 'شسبدمسشنبد', 0, NULL, NULL, '', '2026-05-18 20:55:24.234', '2026-08-01 19:34:48.944', '2026-08-01 19:34:48.944', '1405-02-28', '1471934411'),
+(2, 56, 'شایان نماینده', 'شایان نماینده', '0312449348', NULL, NULL, NULL, NULL, NULL, 1, '2026-08-01 19:04:10.260', NULL, NULL, '2026-08-01 19:04:10.260', '2026-08-01 19:34:48.929', '2026-08-01 19:34:48.929', NULL, NULL),
+(7, 59, 'شایان نماینده', 'شایان نماینده', '0312449348', NULL, NULL, 123, 1230001001576, NULL, 1, '2026-08-01 20:54:08.301', NULL, NULL, '2026-08-01 20:54:08.301', '2026-08-01 20:54:39.676', NULL, NULL, NULL),
+(8, 64, 'شایان نماینده', 'شایان نماینده', '0312449348', NULL, NULL, NULL, NULL, NULL, 1, '2026-08-06 15:59:36.582', NULL, NULL, '2026-08-06 15:59:36.582', '2026-08-22 11:04:19.310', '2026-08-22 11:04:19.310', NULL, NULL),
+(9, 66, 'محمد درویشی نیا', 'محمد درویشی نیا', '4190260975', NULL, NULL, NULL, NULL, NULL, 1, '2026-08-06 16:07:40.306', NULL, NULL, '2026-08-06 16:07:40.306', '2026-08-06 16:07:40.306', NULL, NULL, NULL),
+(10, 68, 'علیرضا درویشی نیا', 'علیرضا درویشی نیا', '4190718335', NULL, NULL, NULL, NULL, NULL, 1, '2026-08-17 12:10:08.386', NULL, NULL, '2026-08-17 12:10:08.386', '2026-08-17 12:10:08.386', NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -2211,8 +2268,9 @@ CREATE TABLE `drivers` (
 --
 
 INSERT INTO `drivers` (`id`, `user_id`, `full_name`, `national_code`, `smart_card_number`, `vehicle_type_id`, `plate_number`, `model_year`, `color`, `capacity_kg`, `province_id`, `city_id`, `verification_status`, `verified_at`, `verified_by_user_id`, `reject_reason`, `rating_avg`, `rating_count`, `created_at`, `updated_at`, `deleted_at`, `license_serial`, `license_base`, `vin_number`, `insurance_number`, `insurance_expiry`, `engine_number`, `chassis_number`, `issued_from`, `address`, `home_phone`, `postal_code`, `extra_phones`) VALUES
-(15, 53, 'شایان نماینده', '0312449348', NULL, 2, '32 م 569 ایران 55', NULL, NULL, NULL, NULL, NULL, 1, '2026-05-18 18:08:24.450', NULL, NULL, 4.85, 24, '2026-05-16 21:22:38.510', '2026-05-18 18:17:57.977', NULL, '6546854165', 'اول', NULL, NULL, NULL, NULL, NULL, 'کرج', 'تهران، پیامر غرب', '02144007633', '1471934411', '[\"09351794610\"]'),
-(16, 55, 'رسول درویشی نیا', '4190412147', NULL, 2, '11 ب 111 ایران 11', NULL, NULL, NULL, NULL, NULL, 1, '2026-07-21 14:31:43.118', NULL, NULL, 0.00, 0, '2026-07-21 14:31:43.118', '2026-07-21 14:33:16.158', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+(26, 63, 'شایان نماینده', '0312449348', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, '2026-08-01 21:34:11.703', NULL, NULL, 0.00, 0, '2026-08-01 21:34:11.703', '2026-08-01 21:34:11.703', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(27, 67, 'رسول درویشی نیا', '4190412147', NULL, 2, '11 ب 111 ایران 11', NULL, NULL, NULL, NULL, NULL, 1, '2026-08-06 16:17:04.678', NULL, NULL, 0.00, 0, '2026-08-06 16:17:04.678', '2026-08-06 16:18:29.647', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(28, 72, 'شایان نماینده', '0312449348', NULL, 2, '32 م 568 ایران 55', NULL, NULL, NULL, NULL, NULL, 1, '2026-08-22 11:04:21.446', NULL, NULL, 0.00, 0, '2026-08-22 11:04:21.446', '2026-08-22 11:04:58.746', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -2375,7 +2433,77 @@ INSERT INTO `driver_activity_logs` (`id`, `user_id`, `driver_id`, `event_key`, `
 (122, 55, 16, 'nearby_loads_view', 'مشاهده بارهای اطراف من', 'nearby_loads', 'بارهای اطراف من', NULL, NULL, NULL, NULL, NULL, '1784632581104160-bfdf5c73', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x5d767fa2, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-07-21 14:46:21.000', '2026-07-21 14:46:22.128'),
 (123, 55, 16, 'support_view', 'مشاهده پشتیبانی', 'support', 'پشتیبانی و پیام‌ها', NULL, NULL, NULL, NULL, NULL, '1784632584356999-89dc9a95', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x5d767fa2, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-07-21 14:46:24.000', '2026-07-21 14:46:25.488'),
 (124, 55, 16, 'ticket_create', 'ثبت تیکت جدید', 'support', 'پشتیبانی و پیام‌ها', 'ticket', 5, NULL, NULL, 5, '1784632636496355-16343f21', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x5d767fa2, 'Dart/3.12 (dart:io)', '{\"subject\":\"بارهای بیشتری نشان دهید\",\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-07-21 14:47:16.000', '2026-07-21 14:47:17.584'),
-(125, 55, 16, 'ticket_view', 'مشاهده گفتگوی تیکت', 'ticket_chat', 'گفتگوی تیکت', 'ticket', 5, NULL, NULL, 5, '1784632636534583-400d4dd9', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x5d767fa2, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-07-21 14:47:16.000', '2026-07-21 14:47:17.593');
+(125, 55, 16, 'ticket_view', 'مشاهده گفتگوی تیکت', 'ticket_chat', 'گفتگوی تیکت', 'ticket', 5, NULL, NULL, 5, '1784632636534583-400d4dd9', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x5d767fa2, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-07-21 14:47:16.000', '2026-07-21 14:47:17.593'),
+(126, 67, 27, 'dashboard_view', 'مشاهده داشبورد', 'dashboard', 'داشبورد', NULL, NULL, NULL, NULL, NULL, '1786020558063465-fb9662c2', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:19:18.000', '2026-08-06 16:19:19.463'),
+(127, 67, 27, 'profile_view', 'مشاهده پروفایل', 'profile', 'پروفایل', NULL, NULL, NULL, NULL, NULL, '1786020558064083-9a114d1', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:19:18.000', '2026-08-06 16:19:19.487'),
+(128, 67, 27, 'app_open', 'باز شدن اپلیکیشن', 'dashboard', 'داشبورد', NULL, NULL, NULL, NULL, NULL, '1786020558063156-61918cd2', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:19:18.000', '2026-08-06 16:19:19.625'),
+(129, 67, 27, 'nearby_loads_view', 'مشاهده بارهای اطراف من', 'nearby_loads', 'بارهای اطراف من', NULL, NULL, NULL, NULL, NULL, '1786020558063713-84fd944', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:19:18.000', '2026-08-06 16:19:19.650'),
+(130, 67, 27, 'tab_change', 'تغییر تب پایین اپ', 'nearby_loads', 'بارهای اطراف من', NULL, NULL, NULL, NULL, NULL, '1786020562291976-32014731', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"tab_index\":1,\"tab_title\":\"بارهای اطراف من\",\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:19:22.000', '2026-08-06 16:19:22.238'),
+(131, 67, 27, 'nearby_loads_view', 'مشاهده بارهای اطراف من', 'nearby_loads', 'بارهای اطراف من', NULL, NULL, NULL, NULL, NULL, '1786020562292462-c8c91006', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:19:22.000', '2026-08-06 16:19:22.243'),
+(132, 67, 27, 'load_card_open', 'باز کردن کارت بار', 'loads_list', 'لیست بارها', 'load', 11, 11, NULL, NULL, '1786020563921481-3ef3a377', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"origin\":\"تهران (تهران)\",\"destination\":\"اصفهان (اصفهان)\",\"cargo_title\":\"خوراکی\",\"price\":\"3,800,000\",\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:19:23.000', '2026-08-06 16:19:23.903'),
+(133, 67, 27, 'load_detail_view', 'مشاهده جزئیات بار', 'load_details', 'جزئیات بار', 'load', 11, 11, NULL, NULL, '1786020563937798-2a502fd7', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:19:23.000', '2026-08-06 16:19:24.020'),
+(134, 67, 27, 'call_button_tap', 'کلیک روی برقراری تماس', 'load_details', 'جزئیات بار', 'load', 11, 11, 9, NULL, '1786020565054491-eb9989cc', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"public_code\":\"489035311573\",\"origin\":\"تهران (تهران)\",\"destination\":\"اصفهان (اصفهان)\",\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:19:25.000', '2026-08-06 16:19:25.044'),
+(135, 67, 27, 'dashboard_view', 'مشاهده داشبورد', 'dashboard', 'داشبورد', NULL, NULL, NULL, NULL, NULL, '1786020901577875-c49f3581', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:25:01.000', '2026-08-06 16:25:01.747'),
+(136, 67, 27, 'app_open', 'باز شدن اپلیکیشن', 'dashboard', 'داشبورد', NULL, NULL, NULL, NULL, NULL, '1786020901577600-93b3dd87', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:25:01.000', '2026-08-06 16:25:01.808'),
+(137, 67, 27, 'nearby_loads_view', 'مشاهده بارهای اطراف من', 'nearby_loads', 'بارهای اطراف من', NULL, NULL, NULL, NULL, NULL, '1786020901578135-327fe8', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:25:01.000', '2026-08-06 16:25:01.918'),
+(138, 67, 27, 'profile_view', 'مشاهده پروفایل', 'profile', 'پروفایل', NULL, NULL, NULL, NULL, NULL, '1786020901578502-a3fb52e3', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:25:01.000', '2026-08-06 16:25:01.949'),
+(139, 67, 27, 'profile_view', 'مشاهده پروفایل', 'profile', 'پروفایل', NULL, NULL, NULL, NULL, NULL, '1786020906718331-7d314a99', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:25:06.000', '2026-08-06 16:25:06.756'),
+(140, 67, 27, 'tab_change', 'تغییر تب پایین اپ', 'profile', 'پروفایل', NULL, NULL, NULL, NULL, NULL, '1786020906717881-8e5399cd', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"tab_index\":3,\"tab_title\":\"پروفایل\",\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:25:06.000', '2026-08-06 16:25:06.796'),
+(141, 67, 27, 'identity_info_view', 'مشاهده مشخصات هویتی', 'identity_info', 'اطلاعات هویتی', NULL, NULL, NULL, NULL, NULL, '1786020909712907-6ad2a296', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:25:09.000', '2026-08-06 16:25:09.681'),
+(142, 67, 27, 'identity_info_view', 'مشاهده مشخصات هویتی', 'identity_info', 'اطلاعات هویتی', NULL, NULL, NULL, NULL, NULL, '1786020909715603-4a554bfe', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:25:09.000', '2026-08-06 16:25:09.696'),
+(143, 67, 27, 'tab_change', 'تغییر تب پایین اپ', 'dashboard', 'داشبورد', NULL, NULL, NULL, NULL, NULL, '1786020928573406-ca711bf2', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"tab_index\":0,\"tab_title\":\"داشبورد\",\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:25:28.000', '2026-08-06 16:25:28.647'),
+(144, 67, 27, 'dashboard_view', 'مشاهده داشبورد', 'dashboard', 'داشبورد', NULL, NULL, NULL, NULL, NULL, '1786020928573929-d4b3247b', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:25:28.000', '2026-08-06 16:25:28.649'),
+(145, 67, 27, 'nearby_loads_view', 'مشاهده بارهای اطراف من', 'nearby_loads', 'بارهای اطراف من', NULL, NULL, NULL, NULL, NULL, '1786020934556323-5d8fa506', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:25:34.000', '2026-08-06 16:25:34.502'),
+(146, 67, 27, 'tab_change', 'تغییر تب پایین اپ', 'nearby_loads', 'بارهای اطراف من', NULL, NULL, NULL, NULL, NULL, '1786020934555943-42e0085c', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"tab_index\":1,\"tab_title\":\"بارهای اطراف من\",\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:25:34.000', '2026-08-06 16:25:34.502'),
+(147, 67, 27, 'load_card_open', 'باز کردن کارت بار', 'loads_list', 'لیست بارها', 'load', 9, 9, NULL, NULL, '1786020944048965-f16b5c4a', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"origin\":\"تهران (تهران)\",\"destination\":\"مراغه (آذربایجان شرقی)\",\"cargo_title\":\"خوراکی\",\"price\":\"5,000,000\",\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:25:44.000', '2026-08-06 16:25:44.019'),
+(148, 67, 27, 'load_detail_view', 'مشاهده جزئیات بار', 'load_details', 'جزئیات بار', 'load', 9, 9, NULL, NULL, '1786020944066267-99e80cd7', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:25:44.000', '2026-08-06 16:25:44.113'),
+(149, 67, 27, 'call_button_tap', 'کلیک روی برقراری تماس', 'load_details', 'جزئیات بار', 'load', 9, 9, 1, NULL, '1786020945310027-450fbab1', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"public_code\":\"358597326497\",\"origin\":\"تهران (تهران)\",\"destination\":\"مراغه (آذربایجان شرقی)\",\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:25:45.000', '2026-08-06 16:25:45.264'),
+(150, 67, 27, 'load_card_open', 'باز کردن کارت بار', 'loads_list', 'لیست بارها', 'load', 10, 10, NULL, NULL, '1786020953648719-d67db813', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"origin\":\"تهران (تهران)\",\"destination\":\"مشهد (خراسان رضوی)\",\"cargo_title\":\"مواد غذایی - پالت: ماکارونی و رشته‌های بسته‌بندی\",\"price\":\"5,000,000\",\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:25:53.000', '2026-08-06 16:25:53.785'),
+(151, 67, 27, 'load_detail_view', 'مشاهده جزئیات بار', 'load_details', 'جزئیات بار', 'load', 10, 10, NULL, NULL, '1786020953650450-5b622c9d', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:25:53.000', '2026-08-06 16:25:53.828'),
+(152, 67, 27, 'call_button_tap', 'کلیک روی برقراری تماس', 'load_details', 'جزئیات بار', 'load', 10, 10, 7, NULL, '1786020954646875-a606adb4', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x05d7cbe3, 'Dart/3.12 (dart:io)', '{\"public_code\":\"300772862700\",\"origin\":\"تهران (تهران)\",\"destination\":\"مشهد (خراسان رضوی)\",\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 16:25:54.000', '2026-08-06 16:25:54.585'),
+(153, 67, 27, 'dashboard_view', 'مشاهده داشبورد', 'dashboard', 'داشبورد', NULL, NULL, NULL, NULL, NULL, '1786043595833549-4bf4b869', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x6260fd89, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 22:43:15.000', '2026-08-06 22:43:17.479'),
+(154, 67, 27, 'profile_view', 'مشاهده پروفایل', 'profile', 'پروفایل', NULL, NULL, NULL, NULL, NULL, '1786043595834061-59bfd70b', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x6260fd89, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 22:43:15.000', '2026-08-06 22:43:17.550'),
+(155, 67, 27, 'nearby_loads_view', 'مشاهده بارهای اطراف من', 'nearby_loads', 'بارهای اطراف من', NULL, NULL, NULL, NULL, NULL, '1786043595833768-a9be1ed1', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x6260fd89, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 22:43:15.000', '2026-08-06 22:43:17.560'),
+(156, 67, 27, 'app_open', 'باز شدن اپلیکیشن', 'dashboard', 'داشبورد', NULL, NULL, NULL, NULL, NULL, '1786043595833279-da23ea9a', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x6260fd89, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 22:43:15.000', '2026-08-06 22:43:17.565'),
+(157, 67, 27, 'nearby_loads_view', 'مشاهده بارهای اطراف من', 'nearby_loads', 'بارهای اطراف من', NULL, NULL, NULL, NULL, NULL, '1786043602425012-2652f4ed', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x6260fd89, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 22:43:22.000', '2026-08-06 22:43:23.077'),
+(158, 67, 27, 'tab_change', 'تغییر تب پایین اپ', 'nearby_loads', 'بارهای اطراف من', NULL, NULL, NULL, NULL, NULL, '1786043602424449-b71ac206', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x6260fd89, 'Dart/3.12 (dart:io)', '{\"tab_index\":1,\"tab_title\":\"بارهای اطراف من\",\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 22:43:22.000', '2026-08-06 22:43:23.114'),
+(159, 67, 27, 'dashboard_view', 'مشاهده داشبورد', 'dashboard', 'داشبورد', NULL, NULL, NULL, NULL, NULL, '1786043727639722-b48907d', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x6260fd89, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 22:45:27.000', '2026-08-06 22:45:29.373'),
+(160, 67, 27, 'profile_view', 'مشاهده پروفایل', 'profile', 'پروفایل', NULL, NULL, NULL, NULL, NULL, '1786043727641248-55c9043d', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x6260fd89, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 22:45:27.000', '2026-08-06 22:45:29.395'),
+(161, 67, 27, 'app_open', 'باز شدن اپلیکیشن', 'dashboard', 'داشبورد', NULL, NULL, NULL, NULL, NULL, '1786043727639461-456737e1', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x6260fd89, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 22:45:27.000', '2026-08-06 22:45:29.438'),
+(162, 67, 27, 'nearby_loads_view', 'مشاهده بارهای اطراف من', 'nearby_loads', 'بارهای اطراف من', NULL, NULL, NULL, NULL, NULL, '1786043727639955-a0845ec1', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x6260fd89, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-06 22:45:27.000', '2026-08-06 22:45:29.678'),
+(163, 67, 27, 'nearby_loads_view', 'مشاهده بارهای اطراف من', 'nearby_loads', 'بارهای اطراف من', NULL, NULL, NULL, NULL, NULL, '1786959908369011-78f359d1', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x6260fe2b, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-17 13:15:08.000', '2026-08-17 13:15:10.294'),
+(164, 67, 27, 'dashboard_view', 'مشاهده داشبورد', 'dashboard', 'داشبورد', NULL, NULL, NULL, NULL, NULL, '1786959908368743-e5ab73a', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x6260fe2b, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-17 13:15:08.000', '2026-08-17 13:15:10.516'),
+(165, 67, 27, 'profile_view', 'مشاهده پروفایل', 'profile', 'پروفایل', NULL, NULL, NULL, NULL, NULL, '1786959908369374-71fe1500', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x6260fe2b, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-17 13:15:08.000', '2026-08-17 13:15:10.521'),
+(166, 67, 27, 'app_open', 'باز شدن اپلیکیشن', 'dashboard', 'داشبورد', NULL, NULL, NULL, NULL, NULL, '1786959908368384-7f9d7b85', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x6260fe2b, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-17 13:15:08.000', '2026-08-17 13:15:10.549'),
+(167, 67, 27, 'nearby_loads_view', 'مشاهده بارهای اطراف من', 'nearby_loads', 'بارهای اطراف من', NULL, NULL, NULL, NULL, NULL, '1786959916327235-ddc80fb5', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x6260fe2b, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-17 13:15:16.000', '2026-08-17 13:15:18.173'),
+(168, 67, 27, 'tab_change', 'تغییر تب پایین اپ', 'nearby_loads', 'بارهای اطراف من', NULL, NULL, NULL, NULL, NULL, '1786959916310683-71792b6c', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x6260fe2b, 'Dart/3.12 (dart:io)', '{\"tab_index\":1,\"tab_title\":\"بارهای اطراف من\",\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-17 13:15:16.000', '2026-08-17 13:15:18.498'),
+(169, 67, 27, 'load_detail_view', 'مشاهده جزئیات بار', 'load_details', 'جزئیات بار', 'load', 12, 12, NULL, NULL, '1786959929980925-7f533bca', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x6260fe2b, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-17 13:15:29.000', '2026-08-17 13:15:31.881'),
+(170, 67, 27, 'load_card_open', 'باز کردن کارت بار', 'loads_list', 'لیست بارها', 'load', 12, 12, NULL, NULL, '1786959929979261-d4ef15e6', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x6260fe2b, 'Dart/3.12 (dart:io)', '{\"origin\":\"تهران (تهران)\",\"destination\":\"اصفهان (اصفهان)\",\"cargo_title\":\"مواد - کیسه: کود شیمیایی\",\"price\":\"4,500,000\",\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-17 13:15:29.000', '2026-08-17 13:15:31.927'),
+(171, 67, 27, 'call_button_tap', 'کلیک روی برقراری تماس', 'load_details', 'جزئیات بار', 'load', 12, 12, 10, NULL, '1786959933970310-2611d484', 1, 4, '1.0.3', 'd96ef18e5f4b6ce496952452052ecb92', 0x6260fe2b, 'Dart/3.12 (dart:io)', '{\"public_code\":\"885502099707\",\"origin\":\"تهران (تهران)\",\"destination\":\"اصفهان (اصفهان)\",\"_client\":{\"platform\":\"android\",\"version_code\":4,\"version_name\":\"1.0.3\",\"device_id\":\"d96ef18e5f4b6ce496952452052ecb92\"}}', '2026-08-17 13:15:33.000', '2026-08-17 13:15:34.849'),
+(172, 72, 28, 'app_open', 'باز شدن اپلیکیشن', 'dashboard', 'داشبورد', NULL, NULL, NULL, NULL, NULL, '1787384119289863-503bf405', 1, 6, '1.0.5', '0d428e43530d637e642b300640dc4a1f', 0x02b0e72f, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":6,\"version_name\":\"1.0.5\",\"device_id\":\"0d428e43530d637e642b300640dc4a1f\"}}', '2026-08-22 11:05:19.000', '2026-08-22 11:05:01.463'),
+(173, 72, 28, 'nearby_loads_view', 'مشاهده بارهای اطراف من', 'nearby_loads', 'بارهای اطراف من', NULL, NULL, NULL, NULL, NULL, '1787384119292002-56261f53', 1, 6, '1.0.5', '0d428e43530d637e642b300640dc4a1f', 0x02b0e72f, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":6,\"version_name\":\"1.0.5\",\"device_id\":\"0d428e43530d637e642b300640dc4a1f\"}}', '2026-08-22 11:05:19.000', '2026-08-22 11:05:01.464'),
+(174, 72, 28, 'profile_view', 'مشاهده پروفایل', 'profile', 'پروفایل', NULL, NULL, NULL, NULL, NULL, '1787384119293231-b2772986', 1, 6, '1.0.5', '0d428e43530d637e642b300640dc4a1f', 0x02b0e72f, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":6,\"version_name\":\"1.0.5\",\"device_id\":\"0d428e43530d637e642b300640dc4a1f\"}}', '2026-08-22 11:05:19.000', '2026-08-22 11:05:01.489'),
+(175, 72, 28, 'dashboard_view', 'مشاهده داشبورد', 'dashboard', 'داشبورد', NULL, NULL, NULL, NULL, NULL, '1787384119291127-660819cd', 1, 6, '1.0.5', '0d428e43530d637e642b300640dc4a1f', 0x02b0e72f, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":6,\"version_name\":\"1.0.5\",\"device_id\":\"0d428e43530d637e642b300640dc4a1f\"}}', '2026-08-22 11:05:19.000', '2026-08-22 11:05:01.501'),
+(176, 72, 28, 'profile_view', 'مشاهده پروفایل', 'profile', 'پروفایل', NULL, NULL, NULL, NULL, NULL, '1787384138730408-8a3e5395', 1, 6, '1.0.5', '0d428e43530d637e642b300640dc4a1f', 0x02b0e72f, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":6,\"version_name\":\"1.0.5\",\"device_id\":\"0d428e43530d637e642b300640dc4a1f\"}}', '2026-08-22 11:05:38.000', '2026-08-22 11:05:20.951'),
+(177, 72, 28, 'app_open', 'باز شدن اپلیکیشن', 'dashboard', 'داشبورد', NULL, NULL, NULL, NULL, NULL, '1787384138726533-85360c56', 1, 6, '1.0.5', '0d428e43530d637e642b300640dc4a1f', 0x02b0e72f, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":6,\"version_name\":\"1.0.5\",\"device_id\":\"0d428e43530d637e642b300640dc4a1f\"}}', '2026-08-22 11:05:38.000', '2026-08-22 11:05:20.967'),
+(178, 72, 28, 'dashboard_view', 'مشاهده داشبورد', 'dashboard', 'داشبورد', NULL, NULL, NULL, NULL, NULL, '1787384138727666-80dd93a2', 1, 6, '1.0.5', '0d428e43530d637e642b300640dc4a1f', 0x02b0e72f, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":6,\"version_name\":\"1.0.5\",\"device_id\":\"0d428e43530d637e642b300640dc4a1f\"}}', '2026-08-22 11:05:38.000', '2026-08-22 11:05:21.009'),
+(179, 72, 28, 'nearby_loads_view', 'مشاهده بارهای اطراف من', 'nearby_loads', 'بارهای اطراف من', NULL, NULL, NULL, NULL, NULL, '1787384138728823-61ddb425', 1, 6, '1.0.5', '0d428e43530d637e642b300640dc4a1f', 0x02b0e72f, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":6,\"version_name\":\"1.0.5\",\"device_id\":\"0d428e43530d637e642b300640dc4a1f\"}}', '2026-08-22 11:05:38.000', '2026-08-22 11:05:21.017'),
+(180, 72, 28, 'app_open', 'باز شدن اپلیکیشن', 'dashboard', 'داشبورد', NULL, NULL, NULL, NULL, NULL, '1787384830803601-70c11363', 1, 6, '1.0.5', '0d428e43530d637e642b300640dc4a1f', 0xcc12174c, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":6,\"version_name\":\"1.0.5\",\"device_id\":\"0d428e43530d637e642b300640dc4a1f\"}}', '2026-08-22 11:17:10.000', '2026-08-22 11:16:53.734'),
+(181, 72, 28, 'dashboard_view', 'مشاهده داشبورد', 'dashboard', 'داشبورد', NULL, NULL, NULL, NULL, NULL, '1787384830803954-e6013a65', 1, 6, '1.0.5', '0d428e43530d637e642b300640dc4a1f', 0xcc12174c, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":6,\"version_name\":\"1.0.5\",\"device_id\":\"0d428e43530d637e642b300640dc4a1f\"}}', '2026-08-22 11:17:10.000', '2026-08-22 11:16:53.737'),
+(182, 72, 28, 'nearby_loads_view', 'مشاهده بارهای اطراف من', 'nearby_loads', 'بارهای اطراف من', NULL, NULL, NULL, NULL, NULL, '1787384830804160-13184365', 1, 6, '1.0.5', '0d428e43530d637e642b300640dc4a1f', 0xcc12174c, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":6,\"version_name\":\"1.0.5\",\"device_id\":\"0d428e43530d637e642b300640dc4a1f\"}}', '2026-08-22 11:17:10.000', '2026-08-22 11:16:53.765'),
+(183, 72, 28, 'profile_view', 'مشاهده پروفایل', 'profile', 'پروفایل', NULL, NULL, NULL, NULL, NULL, '1787384830837783-4d87a6c2', 1, 6, '1.0.5', '0d428e43530d637e642b300640dc4a1f', 0xcc12174c, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":6,\"version_name\":\"1.0.5\",\"device_id\":\"0d428e43530d637e642b300640dc4a1f\"}}', '2026-08-22 11:17:10.000', '2026-08-22 11:16:53.780'),
+(184, 72, 28, 'tab_change', 'تغییر تب پایین اپ', 'nearby_loads', 'بارهای اطراف من', NULL, NULL, NULL, NULL, NULL, '1787384832255324-2838422f', 1, 6, '1.0.5', '0d428e43530d637e642b300640dc4a1f', 0xcc12174c, 'Dart/3.12 (dart:io)', '{\"tab_index\":1,\"tab_title\":\"بارهای اطراف من\",\"_client\":{\"platform\":\"android\",\"version_code\":6,\"version_name\":\"1.0.5\",\"device_id\":\"0d428e43530d637e642b300640dc4a1f\"}}', '2026-08-22 11:17:12.000', '2026-08-22 11:16:54.904'),
+(185, 72, 28, 'nearby_loads_view', 'مشاهده بارهای اطراف من', 'nearby_loads', 'بارهای اطراف من', NULL, NULL, NULL, NULL, NULL, '1787384832256488-5e1fa435', 1, 6, '1.0.5', '0d428e43530d637e642b300640dc4a1f', 0xcc12174c, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":6,\"version_name\":\"1.0.5\",\"device_id\":\"0d428e43530d637e642b300640dc4a1f\"}}', '2026-08-22 11:17:12.000', '2026-08-22 11:16:54.913'),
+(186, 72, 28, 'nearby_loads_view', 'مشاهده بارهای اطراف من', 'nearby_loads', 'بارهای اطراف من', NULL, NULL, NULL, NULL, NULL, '1787394448096258-a02f6c09', 1, 6, '1.0.5', '0d428e43530d637e642b300640dc4a1f', 0x681cd958, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":6,\"version_name\":\"1.0.5\",\"device_id\":\"0d428e43530d637e642b300640dc4a1f\"}}', '2026-08-22 13:57:28.000', '2026-08-22 13:57:11.522'),
+(187, 72, 28, 'app_open', 'باز شدن اپلیکیشن', 'dashboard', 'داشبورد', NULL, NULL, NULL, NULL, NULL, '1787394448093940-33e8ef34', 1, 6, '1.0.5', '0d428e43530d637e642b300640dc4a1f', 0x681cd958, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":6,\"version_name\":\"1.0.5\",\"device_id\":\"0d428e43530d637e642b300640dc4a1f\"}}', '2026-08-22 13:57:28.000', '2026-08-22 13:57:11.531'),
+(188, 72, 28, 'dashboard_view', 'مشاهده داشبورد', 'dashboard', 'داشبورد', NULL, NULL, NULL, NULL, NULL, '1787394448095073-e350dc87', 1, 6, '1.0.5', '0d428e43530d637e642b300640dc4a1f', 0x681cd958, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":6,\"version_name\":\"1.0.5\",\"device_id\":\"0d428e43530d637e642b300640dc4a1f\"}}', '2026-08-22 13:57:28.000', '2026-08-22 13:57:11.533'),
+(189, 72, 28, 'profile_view', 'مشاهده پروفایل', 'profile', 'پروفایل', NULL, NULL, NULL, NULL, NULL, '1787394448097814-289e4acf', 1, 6, '1.0.5', '0d428e43530d637e642b300640dc4a1f', 0x681cd958, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":6,\"version_name\":\"1.0.5\",\"device_id\":\"0d428e43530d637e642b300640dc4a1f\"}}', '2026-08-22 13:57:28.000', '2026-08-22 13:57:11.549'),
+(190, 72, 28, 'tab_change', 'تغییر تب پایین اپ', 'profile', 'پروفایل', NULL, NULL, NULL, NULL, NULL, '1787394449890000-57d26c43', 1, 6, '1.0.5', '0d428e43530d637e642b300640dc4a1f', 0x681cd958, 'Dart/3.12 (dart:io)', '{\"tab_index\":3,\"tab_title\":\"پروفایل\",\"_client\":{\"platform\":\"android\",\"version_code\":6,\"version_name\":\"1.0.5\",\"device_id\":\"0d428e43530d637e642b300640dc4a1f\"}}', '2026-08-22 13:57:29.000', '2026-08-22 13:57:12.608'),
+(191, 72, 28, 'profile_view', 'مشاهده پروفایل', 'profile', 'پروفایل', NULL, NULL, NULL, NULL, NULL, '1787394449896233-3573a4b3', 1, 6, '1.0.5', '0d428e43530d637e642b300640dc4a1f', 0x681cd958, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":6,\"version_name\":\"1.0.5\",\"device_id\":\"0d428e43530d637e642b300640dc4a1f\"}}', '2026-08-22 13:57:29.000', '2026-08-22 13:57:12.625'),
+(192, 72, 28, 'support_view', 'مشاهده پشتیبانی', 'support', 'پشتیبانی و پیام‌ها', NULL, NULL, NULL, NULL, NULL, '1787394694497504-4490e248', 1, 6, '1.0.5', '0d428e43530d637e642b300640dc4a1f', 0x681cf959, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":6,\"version_name\":\"1.0.5\",\"device_id\":\"0d428e43530d637e642b300640dc4a1f\"}}', '2026-08-22 14:01:34.000', '2026-08-22 14:01:17.814'),
+(193, 72, 28, 'support_view', 'مشاهده پشتیبانی', 'support', 'پشتیبانی و پیام‌ها', NULL, NULL, NULL, NULL, NULL, '1787394694495674-443b8454', 1, 6, '1.0.5', '0d428e43530d637e642b300640dc4a1f', 0x681cf959, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":6,\"version_name\":\"1.0.5\",\"device_id\":\"0d428e43530d637e642b300640dc4a1f\"}}', '2026-08-22 14:01:34.000', '2026-08-22 14:01:17.869'),
+(194, 72, 28, 'tab_change', 'تغییر تب پایین اپ', 'dashboard', 'داشبورد', NULL, NULL, NULL, NULL, NULL, '1787395145153198-81af49b6', 1, 6, '1.0.5', '0d428e43530d637e642b300640dc4a1f', 0x681cd959, 'Dart/3.12 (dart:io)', '{\"tab_index\":0,\"tab_title\":\"داشبورد\",\"_client\":{\"platform\":\"android\",\"version_code\":6,\"version_name\":\"1.0.5\",\"device_id\":\"0d428e43530d637e642b300640dc4a1f\"}}', '2026-08-22 14:09:05.000', '2026-08-22 14:08:47.881'),
+(195, 72, 28, 'dashboard_view', 'مشاهده داشبورد', 'dashboard', 'داشبورد', NULL, NULL, NULL, NULL, NULL, '1787395145156037-8586f5f2', 1, 6, '1.0.5', '0d428e43530d637e642b300640dc4a1f', 0x681cd959, 'Dart/3.12 (dart:io)', '{\"_client\":{\"platform\":\"android\",\"version_code\":6,\"version_name\":\"1.0.5\",\"device_id\":\"0d428e43530d637e642b300640dc4a1f\"}}', '2026-08-22 14:09:05.000', '2026-08-22 14:08:48.428');
 
 -- --------------------------------------------------------
 
@@ -2401,8 +2529,10 @@ CREATE TABLE `driver_documents` (
 --
 
 INSERT INTO `driver_documents` (`id`, `driver_id`, `doc_type`, `file_key`, `status`, `reviewed_by_user_id`, `reviewed_at`, `reject_reason`, `created_at`, `updated_at`) VALUES
-(1, 16, 3, 'storage/uploads/images/user_55_6a5f51f62575b.jpg', 0, NULL, NULL, NULL, '2026-07-21 14:33:18.162', '2026-07-21 14:33:18.162'),
-(2, 16, 4, 'storage/uploads/images/user_55_6a5f51f628d75.jpg', 0, NULL, NULL, NULL, '2026-07-21 14:33:18.179', '2026-07-21 14:33:18.179');
+(3, 27, 3, 'storage/uploads/images/user_67_875eae4ab578f4ba49010605.jpg', 0, NULL, NULL, NULL, '2026-08-06 16:18:45.771', '2026-08-06 16:18:45.771'),
+(4, 27, 4, 'storage/uploads/images/user_67_d263d37af245148f36360b68.jpg', 0, NULL, NULL, NULL, '2026-08-06 16:18:45.787', '2026-08-06 16:18:45.787'),
+(5, 28, 3, 'storage/uploads/images/user_72_7e0b662021877f288782d98c.jpg', 0, NULL, NULL, NULL, '2026-08-22 11:05:00.870', '2026-08-22 11:05:00.870'),
+(6, 28, 4, 'storage/uploads/images/user_72_5a74830e4bf0f96bde25811d.jpg', 0, NULL, NULL, NULL, '2026-08-22 11:05:00.889', '2026-08-22 11:05:00.889');
 
 -- --------------------------------------------------------
 
@@ -2454,19 +2584,6 @@ CREATE TABLE `driver_verification_events` (
   `note` varchar(255) DEFAULT NULL,
   `created_at` datetime(3) NOT NULL DEFAULT current_timestamp(3)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `driver_verification_events`
---
-
-INSERT INTO `driver_verification_events` (`id`, `driver_id`, `old_status`, `new_status`, `actor_user_id`, `note`, `created_at`) VALUES
-(1, 15, 0, 2, 1, 'تست', '2026-05-18 14:50:59.745'),
-(2, 15, 1, 2, 1, 'عکس کارت ملی ندارید', '2026-05-18 17:12:03.151'),
-(3, 15, 2, 1, 1, 'عکس کارت ملی ندارید', '2026-05-18 17:12:33.250'),
-(4, 15, 1, 2, 1, 'تست', '2026-05-18 17:55:53.514'),
-(5, 15, 1, 2, 1, '', '2026-05-18 17:59:08.601'),
-(6, 15, 1, 2, 1, '', '2026-05-18 18:04:48.712'),
-(7, 15, 1, 2, 1, '', '2026-05-18 18:07:54.320');
 
 -- --------------------------------------------------------
 
@@ -2648,7 +2765,92 @@ INSERT INTO `external_api_request_logs` (`id`, `provider_id`, `credential_id`, `
 (77, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '\"{\\\"mobile\\\":\\\"09129248289\\\",\\\"nationalCode\\\":\\\"0312449348\\\"}\"', '\"{\\\"data\\\":true,\\\"success\\\":true,\\\"code\\\":0,\\\"error\\\":null,\\\"message\\\":\\\"\\\"}\"', '2026-05-18 18:05:27.395'),
 (78, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '\"{\\\"mobile\\\":\\\"09129248289\\\",\\\"nationalCode\\\":\\\"0312449348\\\"}\"', '\"{\\\"data\\\":true,\\\"success\\\":true,\\\"code\\\":0,\\\"error\\\":null,\\\"message\\\":\\\"\\\"}\"', '2026-05-18 18:08:24.444');
 INSERT INTO `external_api_request_logs` (`id`, `provider_id`, `credential_id`, `operation`, `http_method`, `url_path`, `request_id`, `http_status`, `latency_ms`, `error_code`, `request_redacted_json`, `response_redacted_json`, `created_at`) VALUES
-(79, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '\"{\\\"mobile\\\":\\\"09192994069\\\",\\\"nationalCode\\\":\\\"4190412147\\\"}\"', '\"{\\\"data\\\":true,\\\"success\\\":true,\\\"code\\\":0,\\\"message\\\":\\\"\\u0627\\u0633\\u062a\\u0639\\u0644\\u0627\\u0645 \\u0627\\u0646\\u062c\\u0627\\u0645 \\u0634\\u062f\\\"}\"', '2026-07-21 14:31:43.108');
+(79, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '\"{\\\"mobile\\\":\\\"09192994069\\\",\\\"nationalCode\\\":\\\"4190412147\\\"}\"', '\"{\\\"data\\\":true,\\\"success\\\":true,\\\"code\\\":0,\\\"message\\\":\\\"\\u0627\\u0633\\u062a\\u0639\\u0644\\u0627\\u0645 \\u0627\\u0646\\u062c\\u0627\\u0645 \\u0634\\u062f\\\"}\"', '2026-07-21 14:31:43.108'),
+(80, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-08-01 19:04:10.251'),
+(81, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-08-01 19:36:39.765'),
+(82, 1, 1, 'PersonImage', 'POST', '/api/sw1/PersonImage', NULL, 200, NULL, NULL, '{\"birthDate\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\",\"serialNumber\":\"[REDACTED]\"}', '{\"data\":null,\"success\":false,\"code\":404,\"message\":\"service is not active | سرویس فعال نمی باشد\"}', '2026-08-01 19:36:39.868'),
+(83, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-08-01 19:36:45.044'),
+(84, 1, 1, 'PersonImage', 'POST', '/api/sw1/PersonImage', NULL, 200, NULL, NULL, '{\"birthDate\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\",\"serialNumber\":\"[REDACTED]\"}', '{\"data\":null,\"success\":false,\"code\":404,\"message\":\"service is not active | سرویس فعال نمی باشد\"}', '2026-08-01 19:36:45.156'),
+(85, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-08-01 19:37:31.683'),
+(86, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-08-01 19:37:47.381'),
+(87, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-08-01 19:37:56.686'),
+(88, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-08-01 20:22:28.824'),
+(89, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-08-01 20:54:08.293'),
+(90, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-08-01 20:57:27.901'),
+(91, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-08-01 20:57:30.109'),
+(92, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-08-01 20:57:33.383'),
+(93, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-08-01 20:57:40.717'),
+(94, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-08-01 20:57:43.186'),
+(95, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-08-01 21:00:50.327'),
+(96, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-08-01 21:01:03.979'),
+(97, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":false,\"success\":true,\"code\":0,\"message\":\"عدم انطباق اطلاعات وارد شده\"}', '2026-08-01 21:01:27.003'),
+(98, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-08-01 21:06:05.307'),
+(99, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-08-01 21:06:38.665'),
+(100, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-08-01 21:34:11.694'),
+(101, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-08-06 15:59:36.573'),
+(102, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-08-06 16:07:40.297'),
+(103, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-08-06 16:17:04.669'),
+(104, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-08-17 12:10:08.377'),
+(105, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":false,\"success\":true,\"code\":0,\"message\":\"اطلاعات ارسالی با مرجع تطبیق در یکی یا بیشتر از فیلدهای زیر مشابهت ندارد.(نام،نام خانوادگی،نام پدر،تاریخ تولد،جنسیت برای حقیقی ) (شماره ثبت شرکت،نام شرکت،تاریخ ثبت،فعال یا غیر فعال بودن برای حقوقی ایرانی)\"}', '2026-08-17 13:39:09.441'),
+(106, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":false,\"success\":true,\"code\":0,\"message\":\"اطلاعات ارسالی با مرجع تطبیق در یکی یا بیشتر از فیلدهای زیر مشابهت ندارد.(نام،نام خانوادگی،نام پدر،تاریخ تولد،جنسیت برای حقیقی ) (شماره ثبت شرکت،نام شرکت،تاریخ ثبت،فعال یا غیر فعال بودن برای حقوقی ایرانی)\"}', '2026-08-17 13:40:10.242'),
+(107, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":false,\"success\":true,\"code\":0,\"message\":\"اطلاعات ارسالی با مرجع تطبیق در یکی یا بیشتر از فیلدهای زیر مشابهت ندارد.(نام،نام خانوادگی،نام پدر،تاریخ تولد،جنسیت برای حقیقی ) (شماره ثبت شرکت،نام شرکت،تاریخ ثبت،فعال یا غیر فعال بودن برای حقوقی ایرانی)\"}', '2026-08-17 13:44:01.925'),
+(108, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-08-22 11:04:21.438');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `faq_categories`
+--
+
+CREATE TABLE `faq_categories` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `target_app_id` tinyint(3) UNSIGNED NOT NULL COMMENT '1 = Driver app, 2 = Cargo-owner app',
+  `title` varchar(160) NOT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `icon_key` varchar(40) NOT NULL DEFAULT 'general',
+  `sort_order` int(10) UNSIGNED NOT NULL DEFAULT 100,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_by_user_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `created_at` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  `updated_at` datetime(3) NOT NULL DEFAULT current_timestamp(3) ON UPDATE current_timestamp(3)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `faq_categories`
+--
+
+INSERT INTO `faq_categories` (`id`, `target_app_id`, `title`, `description`, `icon_key`, `sort_order`, `is_active`, `created_by_user_id`, `created_at`, `updated_at`) VALUES
+(1, 1, 'نصب', 'راهنمای دانلود برنامه، نسخه اندروید یا آیفون و...', 'install', 1, 1, 1, '2026-08-30 22:00:08.162', '2026-08-30 22:00:08.162');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `faq_items`
+--
+
+CREATE TABLE `faq_items` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `category_id` bigint(20) UNSIGNED NOT NULL,
+  `question` varchar(255) NOT NULL,
+  `answer` text NOT NULL,
+  `link_label` varchar(120) DEFAULT NULL,
+  `link_url` varchar(2048) DEFAULT NULL,
+  `image_key` varchar(512) DEFAULT NULL,
+  `video_key` varchar(512) DEFAULT NULL,
+  `video_url` varchar(2048) DEFAULT NULL,
+  `sort_order` int(10) UNSIGNED NOT NULL DEFAULT 100,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_by_user_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `created_at` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  `updated_at` datetime(3) NOT NULL DEFAULT current_timestamp(3) ON UPDATE current_timestamp(3)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `faq_items`
+--
+
+INSERT INTO `faq_items` (`id`, `category_id`, `question`, `answer`, `link_label`, `link_url`, `image_key`, `video_key`, `video_url`, `sort_order`, `is_active`, `created_by_user_id`, `created_at`, `updated_at`) VALUES
+(1, 1, 'چگونه میتوانم برنامه ترابرنت رانندگان را نصب کنم؟', 'تست', NULL, NULL, NULL, NULL, NULL, 1, 1, 1, '2026-08-30 22:00:49.355', '2026-08-30 22:00:49.355');
 
 -- --------------------------------------------------------
 
@@ -2791,34 +2993,42 @@ CREATE TABLE `jwt_refresh_tokens` (
 --
 
 INSERT INTO `jwt_refresh_tokens` (`id`, `user_id`, `jti_hash`, `device_id`, `platform`, `ip_address`, `user_agent`, `parent_id`, `rotated_at`, `revoked_at`, `expires_at`, `created_at`) VALUES
-(32, 53, '070bb3159eb7e2e7e647a81566a35e70ed38435f47130139efd4e3cbb97d88be', 'CP21.260330.005', 1, '127.0.0.1', 'Dart/3.11 (dart:io)', NULL, '2026-05-16 21:40:22.395', '2026-05-16 21:40:22.395', '2026-08-14 21:19:20.000', '2026-05-16 21:19:20.070'),
-(33, 53, '3ee9aba76f6a56bea8fe8df9c1fd20cbcfa3107a2cc228347e143a889ac8f813', 'CP21.260330.005', 1, '127.0.0.1', 'Dart/3.11 (dart:io)', 32, '2026-05-16 21:57:46.450', '2026-05-16 21:57:46.450', '2026-08-14 21:40:22.000', '2026-05-16 21:40:22.396'),
-(34, 53, 'c2a4d1a4232128fee2b4eb87e62cd825bd8fc018a414c9601ee980917602fa51', 'CP21.260330.005', 1, '127.0.0.1', 'Dart/3.11 (dart:io)', 33, '2026-05-18 13:52:08.709', '2026-05-18 13:52:08.709', '2026-08-14 21:57:46.000', '2026-05-16 21:57:46.451'),
-(35, 53, 'f72a00cf9f2bb1be694e941af7edbd7bec5d31b5990dd39fa6c78ecccf6f38e3', 'CP21.260330.005', 1, '127.0.0.1', 'Dart/3.11 (dart:io)', 34, '2026-05-18 14:07:23.309', '2026-05-18 14:07:23.309', '2026-08-16 13:52:08.000', '2026-05-18 13:52:08.712'),
-(36, 53, '746da6cc0261f4f4deaa2d705ea06f780f9b28b51c8bf7321c8f9679060d606c', 'CP21.260330.005', 1, '127.0.0.1', 'Dart/3.11 (dart:io)', 35, '2026-05-18 14:32:39.633', '2026-05-18 14:32:39.633', '2026-08-16 14:07:23.000', '2026-05-18 14:07:23.310'),
-(37, 53, '0ba9366df17a66e6181f7e08b16229f454393e92f8b1d2fe67b1f9c13ee87e98', 'CP21.260330.005', 1, '127.0.0.1', 'Dart/3.11 (dart:io)', 36, '2026-05-18 14:50:05.640', '2026-05-18 14:50:05.640', '2026-08-16 14:32:39.000', '2026-05-18 14:32:39.634'),
-(38, 53, '60298c1813fb2e15f78dec4ed7519e9741afb6c9880b8f667d01ea171227a9ba', 'CP21.260330.005', 1, '127.0.0.1', 'Dart/3.11 (dart:io)', 37, '2026-05-18 15:14:25.446', '2026-05-18 15:14:25.446', '2026-08-16 14:50:05.000', '2026-05-18 14:50:05.640'),
-(39, 53, '2da2fb5b641d575fa91d37d7c0e7fa5e56782bc82080f172ea2a3343d2ead6c3', 'CP21.260330.005', 1, '127.0.0.1', 'Dart/3.11 (dart:io)', 38, '2026-05-18 15:30:00.310', '2026-05-18 15:30:00.310', '2026-08-16 15:14:25.000', '2026-05-18 15:14:25.447'),
-(40, 53, '20567b17da32fa468082352ab0c613e34ed41d3a4d78c3177cc850259094c33c', 'CP21.260330.005', 1, '127.0.0.1', 'Dart/3.11 (dart:io)', 39, '2026-05-18 15:46:00.719', '2026-05-18 15:46:00.719', '2026-08-16 15:30:00.000', '2026-05-18 15:30:00.311'),
-(41, 53, '70f10cfb8b1ada0696c1e681a33f01910529fda25edd13f6a83f5a338b100183', 'CP21.260330.005', 1, '127.0.0.1', 'Dart/3.11 (dart:io)', 40, '2026-05-18 16:07:50.811', '2026-05-18 16:07:50.811', '2026-08-16 15:46:00.000', '2026-05-18 15:46:00.720'),
-(42, 53, 'e41e9109c4375c4948fda3ae472098c2b0cba956282d51b99d5680dba7209614', 'CP21.260330.005', 1, '127.0.0.1', 'Dart/3.11 (dart:io)', 41, '2026-05-18 16:23:15.174', '2026-05-18 16:23:15.174', '2026-08-16 16:07:50.000', '2026-05-18 16:07:50.812'),
-(43, 53, '6a2be9b7936e55c399ffe8b72f0369863061bfbaea1c5ab20a8cf33df7054c34', 'CP21.260330.005', 1, '127.0.0.1', 'Dart/3.11 (dart:io)', 42, NULL, NULL, '2026-08-16 16:23:15.000', '2026-05-18 16:23:15.175'),
-(44, 53, '4d00ecd1558559822027ad41c663d933ec951d8f5412904e9a3e538452b820ff', 'CP21.260330.005', 1, '127.0.0.1', 'Dart/3.11 (dart:io)', NULL, '2026-05-18 16:45:27.766', '2026-05-18 16:45:27.766', '2026-08-16 16:30:17.000', '2026-05-18 16:30:17.818'),
-(45, 53, '8d9784149de43c3c18eb7cf6fa82c3355b619cccc8aef61971373a03d022d8ab', 'CP21.260330.005', 1, '127.0.0.1', 'Dart/3.11 (dart:io)', 44, '2026-05-18 17:00:50.539', '2026-05-18 17:00:50.539', '2026-08-16 16:45:27.000', '2026-05-18 16:45:27.767'),
-(46, 53, '85593e5a0841f765910bab504cacb448764084e20954cf3b99945ed179a205f8', 'CP21.260330.005', 1, '127.0.0.1', 'Dart/3.11 (dart:io)', 45, '2026-05-18 17:16:01.593', '2026-05-18 17:16:01.593', '2026-08-16 17:00:50.000', '2026-05-18 17:00:50.540'),
-(47, 53, '0ca5c291b5730fe85a9c5e2c50568a2fcbdcf6049216aa7dd963ff3c461d45d8', 'CP21.260330.005', 1, '127.0.0.1', 'Dart/3.11 (dart:io)', 46, '2026-05-18 17:31:17.321', '2026-05-18 17:31:17.321', '2026-08-16 17:16:01.000', '2026-05-18 17:16:01.594'),
-(48, 53, '1d0d911310f22240f01dcd1b99de72f2ebf0e7fd428ccf2699b567b5f9f64e04', 'CP21.260330.005', 1, '127.0.0.1', 'Dart/3.11 (dart:io)', 47, '2026-05-18 17:46:38.756', '2026-05-18 17:46:38.756', '2026-08-16 17:31:17.000', '2026-05-18 17:31:17.322'),
-(49, 53, '1b22af4411e3fb72deba99a171fd7a133c87ce33f92e2cd47f8baf897c21882e', 'CP21.260330.005', 1, '127.0.0.1', 'Dart/3.11 (dart:io)', 48, '2026-05-18 18:04:42.032', '2026-05-18 18:04:42.032', '2026-08-16 17:46:38.000', '2026-05-18 17:46:38.757'),
-(50, 53, '804bd2d14d448be9051a15b41e7505e383080cf37b6eaa348057d574b8c5ec8b', 'CP21.260330.005', 1, '127.0.0.1', 'Dart/3.11 (dart:io)', 49, '2026-05-18 18:19:59.474', '2026-05-18 18:19:59.474', '2026-08-16 18:04:42.000', '2026-05-18 18:04:42.033'),
-(51, 53, '73167014805cefddb9c563a54d39c4e1934250e324041d59c2f52365081ad1d4', 'CP21.260330.005', 1, '127.0.0.1', 'Dart/3.11 (dart:io)', 50, '2026-05-18 18:35:14.120', '2026-05-18 18:35:14.120', '2026-08-16 18:19:59.000', '2026-05-18 18:19:59.475'),
-(52, 53, 'fac414adf45132bb57b70a711df9cb06c145452b792c6101cebe0f757b7cc52c', 'CP21.260330.005', 1, '127.0.0.1', 'Dart/3.11 (dart:io)', 51, '2026-05-18 18:50:29.301', '2026-05-18 18:50:29.301', '2026-08-16 18:35:14.000', '2026-05-18 18:35:14.121'),
-(53, 53, '7a21f9153d5584d46c5217ae5e1ac610599196a8cb1a871e410a97a2774e9724', 'CP21.260330.005', 1, '127.0.0.1', 'Dart/3.11 (dart:io)', 52, '2026-05-18 19:05:44.335', '2026-05-18 19:05:44.335', '2026-08-16 18:50:29.000', '2026-05-18 18:50:29.302'),
-(54, 53, '5b9bbb860f5b5aef7b31198233b641f426321f517fb3cc3b0edd60c27df54b90', 'CP21.260330.005', 1, '127.0.0.1', 'Dart/3.11 (dart:io)', 53, '2026-05-18 19:20:59.249', '2026-05-18 19:20:59.249', '2026-08-16 19:05:44.000', '2026-05-18 19:05:44.336'),
-(55, 53, '33f6425e3ea702da672ddbb115e32d438c155015a0628b49ec01aac5367cc6dd', 'CP21.260330.005', 1, '127.0.0.1', 'Dart/3.11 (dart:io)', 54, NULL, NULL, '2026-08-16 19:20:59.000', '2026-05-18 19:20:59.249'),
-(56, 53, '337a99326006624a54b6062412a7dfc6df2874b90a6558b98b25d34b306670ac', NULL, NULL, '204.18.109.91', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', NULL, NULL, NULL, '2026-10-15 22:19:12.000', '2026-07-17 22:19:12.135'),
-(57, 53, '8a3edd0951fbb405f4879d98452abba94b9936d3b3b9a93382f01fd4418c25a4', 'R16NW', 1, '204.18.109.91', 'Dart/3.12 (dart:io)', NULL, NULL, NULL, '2026-10-15 22:37:10.000', '2026-07-17 22:37:10.974'),
-(58, 55, '7c891bb3377ae912e1f9feb7befdf60c7c862309dc14b86efa266b2435b1e801', 'SP1A.210812.016', 1, '93.118.127.162', 'Dart/3.12 (dart:io)', NULL, '2026-07-21 14:46:25.397', '2026-07-21 14:46:25.397', '2026-10-19 14:31:15.000', '2026-07-21 14:31:15.649'),
-(59, 55, 'd177b8b40f2768dbce9cd8f5fbd85b80c8a45635eeb448c655aaf00f7cd1d49f', 'SP1A.210812.016', 1, '93.118.127.162', 'Dart/3.12 (dart:io)', 58, NULL, NULL, '2026-10-19 14:46:25.000', '2026-07-21 14:46:25.400');
+(60, 56, 'd129df223e132fecbb25ee6397be1a404ff37d42b469b01f5081003e19f1876c', NULL, NULL, '5.74.139.30', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', NULL, NULL, '2026-08-01 19:34:48.930', '2026-10-30 19:03:41.000', '2026-08-01 19:03:41.187'),
+(61, 56, 'd9b79f4b5328cadc26319e5425edaf4b5d2e2a630ae91389e4a3be43052aa36c', 'chrome|Win32|Google Inc.', 3, '5.74.139.30', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', NULL, NULL, '2026-08-01 19:34:48.930', '2026-10-30 19:29:23.000', '2026-08-01 19:29:23.496'),
+(62, 56, '55bd6707582597899e6a9f73f1f98c9b1a299d219f362523c2ff8e44da7928d8', 'chrome|Win32|Google Inc.', 3, '5.74.139.30', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', NULL, NULL, '2026-08-01 19:34:48.930', '2026-10-30 19:32:00.000', '2026-08-01 19:32:00.968'),
+(63, 57, 'c284dac951c2a68e0aa7dabbc409258705fc8e7c8b695ea90c865c54811e4cf4', 'chrome|Win32|Google Inc.', 3, '5.74.139.30', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', NULL, NULL, '2026-08-01 20:20:28.205', '2026-10-30 19:35:13.000', '2026-08-01 19:35:13.823'),
+(64, 58, '344e12c23eebcc91a23669d4a9bb540eeafa9c7b15332ae4b4ce9cd1898a2058', 'chrome|Win32|Google Inc.', 3, '5.74.139.30', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', NULL, NULL, NULL, '2026-10-30 20:20:47.000', '2026-08-01 20:20:47.291'),
+(65, 59, '860fd54ccfca9ef674e90e6da6f91978459545e112705bf4b15acd4be2d45d0b', 'chrome|Win32|Google Inc.', 3, '5.74.139.30', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', NULL, '2026-08-01 21:09:08.984', '2026-08-01 21:09:08.984', '2026-10-30 20:53:55.000', '2026-08-01 20:53:55.671'),
+(66, 60, 'bc1971570c5844c701da0ff869bd5966a25a0fae1987398bd895e435025a97cd', 'R16NW', 1, '5.74.139.30', 'Dart/3.12 (dart:io)', NULL, NULL, '2026-08-01 21:02:39.154', '2026-10-30 20:57:04.000', '2026-08-01 20:57:04.422'),
+(67, 61, 'fa354a3bf232cd4b817be2a63eb43660a233732ac8e32983e91455606ea04ca5', NULL, NULL, '5.74.139.30', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0', NULL, NULL, '2026-08-01 21:30:01.978', '2026-10-30 21:05:35.000', '2026-08-01 21:05:35.230'),
+(68, 59, '70950a060651b3aa187319d873db4bc93578ec168539cfb177abadbabdb85968', 'chrome|Win32|Google Inc.', 3, '5.74.139.30', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 65, '2026-08-01 21:24:23.699', '2026-08-01 21:24:23.699', '2026-10-30 21:09:08.000', '2026-08-01 21:09:08.987'),
+(69, 59, '9c7acd2dd724ee3cd5c882a17d85d820642151e3f07650e08ce9caebc6159a25', 'chrome|Win32|Google Inc.', 3, '5.74.139.30', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 68, NULL, NULL, '2026-10-30 21:24:23.000', '2026-08-01 21:24:23.702'),
+(70, 62, '7ebc5fa830edc06c289b5db5cd961a05dd40e3200ff971b51b5a0fdda1b009be', 'R16NW', 1, '5.74.139.30', 'Dart/3.12 (dart:io)', NULL, NULL, '2026-08-01 21:32:27.685', '2026-10-30 21:30:36.000', '2026-08-01 21:30:36.037'),
+(71, 62, '37d2a6a0bffe75a9b5ba2f453f7ba9cbe02e0ccd86dbeafa9b7dfe1e092cbf71', NULL, NULL, '5.74.139.30', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0', NULL, NULL, '2026-08-01 21:32:27.685', '2026-10-30 21:32:00.000', '2026-08-01 21:32:00.521'),
+(72, 63, '70b32231fa6424290788a7ae80499a9d24081de0a241d5fc5514c23070278cb6', NULL, NULL, '5.74.139.30', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0', NULL, NULL, NULL, '2026-10-30 21:33:35.000', '2026-08-01 21:33:35.299'),
+(73, 63, '4346e193590f1755132a361ce1a9e3a0720c5d66ce0aaaad7ce989efce73f451', NULL, NULL, '5.74.139.30', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0', NULL, NULL, NULL, '2026-10-30 21:36:32.000', '2026-08-01 21:36:32.958'),
+(74, 64, '5566c837c7c42d1ce644caec88f18d3de27e9ded6043db8b4afd1488ad066b3a', 'R16NW', 1, '93.118.127.162', 'Dart/3.12 (dart:io)', NULL, '2026-08-06 16:29:04.970', '2026-08-06 16:29:04.970', '2026-11-04 15:58:34.000', '2026-08-06 15:58:34.901'),
+(75, 65, 'faf4102103e3c3df634ad1a3eca32fc0306718593e613b85e1ea02158a6f415d', 'R16NW', 1, '93.118.127.162', 'Dart/3.12 (dart:io)', NULL, '2026-08-06 16:28:54.224', '2026-08-06 16:28:54.224', '2026-11-04 16:06:32.000', '2026-08-06 16:06:32.130'),
+(76, 66, 'ad181cfbc99a3b49312a34346338150c5161f08e1ba2d4aaa7b0323d63482896', 'BP4A.251205.006', 1, '46.51.97.12', 'Dart/3.12 (dart:io)', NULL, '2026-08-06 16:30:59.991', '2026-08-06 16:30:59.991', '2026-11-04 16:06:51.000', '2026-08-06 16:06:51.813'),
+(77, 67, 'b2d79bdcb3afccab70fca0354a59dac9bdaf441eaf6f280c507444eb5f5b8611', 'SP1A.210812.016', 1, '5.215.203.227', 'Dart/3.12 (dart:io)', NULL, '2026-08-06 22:43:14.991', '2026-08-06 22:43:14.991', '2026-11-04 16:16:34.000', '2026-08-06 16:16:34.689'),
+(78, 65, 'ff2d02213387e8634a8fd5287f060ddf35fd167445cec8b4cfc1dccc8ead9098', 'R16NW', 1, '93.118.127.162', 'Dart/3.12 (dart:io)', 75, '2026-08-06 18:07:30.848', '2026-08-06 18:07:30.848', '2026-11-04 16:28:54.000', '2026-08-06 16:28:54.227'),
+(79, 64, '811690116d92ec4caa38f39c4a2975ce1f828abd20542c3d08928166061eafc6', 'R16NW', 1, '93.118.127.162', 'Dart/3.12 (dart:io)', 74, NULL, '2026-08-22 11:04:19.313', '2026-11-04 16:29:04.000', '2026-08-06 16:29:04.974'),
+(80, 66, '140e147f97d69c6fe4de42cfbe45a0b275698e8c52fa8b79ac20370b84f62b66', 'BP4A.251205.006', 1, '46.51.97.12', 'Dart/3.12 (dart:io)', 76, '2026-08-16 13:41:06.464', '2026-08-16 13:41:06.464', '2026-11-04 16:30:59.000', '2026-08-06 16:30:59.994'),
+(81, 65, '2cc1910a385ad02cbc39ac9fe1d5dd314ef95b91acdfd2bd8966ec0d7dc416de', 'R16NW', 1, '89.198.8.78', 'Dart/3.12 (dart:io)', 78, '2026-08-12 11:33:22.759', '2026-08-12 11:33:22.759', '2026-11-04 18:07:30.000', '2026-08-06 18:07:30.851'),
+(82, 67, '69af127b3eb8eb70126f15a1a6cebdf1872a6281f2871d40078867064ab9f332', 'SP1A.210812.016', 1, '98.96.253.137', 'Dart/3.12 (dart:io)', 77, '2026-08-17 13:15:07.710', '2026-08-17 13:15:07.710', '2026-11-04 22:43:14.000', '2026-08-06 22:43:14.994'),
+(83, 65, '0950efceb0d04853566bcea824ead3390a7894387ce0f7ed5d69c22fda3420eb', 'R16NW', 1, '2.190.233.211', 'Dart/3.12 (dart:io)', 81, '2026-08-22 11:02:20.437', '2026-08-22 11:02:20.437', '2026-11-10 11:33:22.000', '2026-08-12 11:33:22.762'),
+(84, 66, '2017b90a2b83a1cb1aa7294836e128591255b4d91ef8acf3835de60ccd0028f9', 'BP4A.251205.006', 1, '46.164.106.206', 'Dart/3.12 (dart:io)', 80, '2026-08-16 16:08:21.589', '2026-08-16 16:08:21.589', '2026-11-14 13:41:06.000', '2026-08-16 13:41:06.467'),
+(85, 66, '04fdeb174ba32389e39e6c61c8f9a3eabdd8f4bbff6ab1fa160941c8f061875b', 'BP4A.251205.006', 1, '46.164.106.206', 'Dart/3.12 (dart:io)', 84, NULL, NULL, '2026-11-14 16:08:21.000', '2026-08-16 16:08:21.593'),
+(86, 68, 'ffadd576999b2c799f243bb1f37af888b25450c7c0e9f1ef0e05455d495684f5', 'SP1A.210812.016', 1, '2.176.251.101', 'Dart/3.12 (dart:io)', NULL, '2026-08-17 12:51:39.992', '2026-08-17 12:51:39.992', '2026-11-15 12:08:20.000', '2026-08-17 12:08:20.036'),
+(87, 68, '50bf97afc80ad6e18430edc81ce1583bc818fbab0a137ffbb8da84cd0fae21eb', 'SP1A.210812.016', 1, '2.176.251.101', 'Dart/3.12 (dart:io)', 86, NULL, NULL, '2026-11-15 12:51:39.000', '2026-08-17 12:51:39.996'),
+(88, 67, 'f9a53788837556a68143f148b6abf3e64c4704a780f5a973cb4ec764b72a8f64', 'SP1A.210812.016', 1, '98.96.254.43', 'Dart/3.12 (dart:io)', 82, NULL, NULL, '2026-11-15 13:15:07.000', '2026-08-17 13:15:07.713'),
+(89, 69, 'f82306d4ef6fd4d2725a11177a757ae059099fd13a2e6582a0ba5b071ec95114', 'SP1A.210812.016', 1, '2.176.251.101', 'Dart/3.12 (dart:io)', NULL, '2026-08-17 13:40:09.120', '2026-08-17 13:40:09.120', '2026-11-15 13:24:53.000', '2026-08-17 13:24:53.241'),
+(90, 70, '06ff09db7e9a62af0d0d467d1d44ec136451467c9543a7eb7c5e7d55f8bf8832', 'SP1A.210812.016', 1, '98.96.254.43', 'Dart/3.12 (dart:io)', NULL, NULL, NULL, '2026-11-15 13:37:39.000', '2026-08-17 13:37:39.350'),
+(91, 69, '1a263bc6979c31e13205d15621b406d081bc26f2a260cea7cf886b405ad289bc', 'SP1A.210812.016', 1, '2.176.251.101', 'Dart/3.12 (dart:io)', 89, NULL, NULL, '2026-11-15 13:40:09.000', '2026-08-17 13:40:09.124'),
+(92, 71, '9823a35a7ee27aa52dadec951d6179bbbb378cec68a0f6cc592cc98ae4d7e92b', 'SP1A.210812.016', 1, '2.176.251.101', 'Dart/3.12 (dart:io)', NULL, NULL, NULL, '2026-11-15 13:43:05.000', '2026-08-17 13:43:05.039'),
+(93, 65, '36a6d49219ec748ff236468261ec74c0fceac64f7826aa0c36404b5b254e17ac', 'R16NW', 1, '104.28.217.89', 'Dart/3.12 (dart:io)', 83, NULL, '2026-08-22 11:03:37.338', '2026-11-20 11:02:20.000', '2026-08-22 11:02:20.441'),
+(94, 72, '0a5146a53492693fecf1e548428499b614351bfd730c3ac606141d62c36b509f', 'R16NW', 1, '2.176.231.47', 'Dart/3.12 (dart:io)', NULL, '2026-08-22 13:57:09.831', '2026-08-22 13:57:09.831', '2026-11-20 11:03:57.000', '2026-08-22 11:03:57.205'),
+(95, 72, 'ee6e13784f328f5ff635f4c0948990cb275e8ded9ca8de9ac1fecfa85ac740ae', 'R16NW', 1, '104.28.217.88', 'Dart/3.12 (dart:io)', 94, NULL, NULL, '2026-11-20 13:57:09.000', '2026-08-22 13:57:09.834');
 
 -- --------------------------------------------------------
 
@@ -2878,7 +3088,10 @@ CREATE TABLE `loads` (
 --
 
 INSERT INTO `loads` (`id`, `public_code`, `company_id`, `created_by_user_id`, `phone_coordination`, `load_status`, `load_type`, `title`, `cargo_type_id`, `description`, `weight_kg`, `is_tonnage_free`, `volume_m3`, `package_count`, `origin_province_id`, `origin_city_id`, `origin_address`, `origin_lat`, `origin_lng`, `origin_geohash`, `dest_province_id`, `dest_city_id`, `dest_address`, `dest_lat`, `dest_lng`, `dest_geohash`, `pickup_window_start`, `pickup_window_end`, `delivery_window_start`, `delivery_window_end`, `price_type`, `proposed_price`, `primary_vehicle_type_id`, `assigned_driver_id`, `published_at`, `assigned_at`, `delivered_at`, `cancelled_at`, `expires_at`, `created_at`, `updated_at`, `deleted_at`, `has_insurance`, `insurance_value`) VALUES
-(9, '358597326497', 1, 1, '09351794610', 1, 1, NULL, 121, 'تست', 1.00, 0, NULL, NULL, 123, 1230001001576, 'تهران ای', NULL, NULL, NULL, 103, 1030006001223, 'مراغه ای', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 5000000.00, 1, NULL, '2026-05-18 21:14:38.982', NULL, NULL, NULL, NULL, '2026-05-18 21:14:38.982', '2026-05-18 21:15:06.368', NULL, 1, 10000000.00);
+(9, '358597326497', 1, 1, '09351794610', 1, 1, NULL, 121, 'تست', 1.00, 0, NULL, NULL, 123, 1230001001576, 'تهران ای', NULL, NULL, NULL, 103, 1030006001223, 'مراغه ای', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 5000000.00, 1, NULL, '2026-05-18 21:14:38.982', NULL, NULL, NULL, NULL, '2026-05-18 21:14:38.982', '2026-05-18 21:15:06.368', NULL, 1, 10000000.00),
+(10, '300772862700', 7, 59, '09129248289', 1, 1, NULL, 73, 'سلام تسته', 1.00, 0, NULL, NULL, 123, 1230001001576, NULL, NULL, NULL, NULL, 109, 10900016001392, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 5000000.00, 2, NULL, '2026-08-01 20:55:10.482', NULL, NULL, NULL, NULL, '2026-08-01 20:55:10.482', '2026-08-01 20:55:10.482', NULL, 0, NULL),
+(11, '489035311573', 9, 66, '09121407123', 1, 1, NULL, 121, 'بار کیسه مواد خوراکی', 1.00, 0, NULL, NULL, 123, 1230001001576, NULL, NULL, NULL, NULL, 110, 1100002001406, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 3800000.00, 2, NULL, '2026-08-06 16:12:58.922', NULL, NULL, NULL, NULL, '2026-08-06 16:12:58.922', '2026-08-06 16:12:58.922', NULL, 0, NULL),
+(12, '885502099707', 10, 68, '09192999873', 1, 1, NULL, 6, NULL, 1.00, 0, NULL, NULL, 123, 1230001001576, NULL, NULL, NULL, NULL, 110, 1100002001406, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 4500000.00, 1, NULL, '2026-08-17 12:58:09.246', NULL, NULL, NULL, NULL, '2026-08-17 12:58:09.246', '2026-08-17 12:58:09.246', NULL, 0, NULL);
 
 -- --------------------------------------------------------
 
@@ -2960,25 +3173,6 @@ CREATE TABLE `notifications` (
   `read_at` datetime(3) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Dumping data for table `notifications`
---
-
-INSERT INTO `notifications` (`id`, `user_id`, `type`, `title`, `body`, `data_json`, `is_read`, `created_at`, `read_at`) VALUES
-(1, 53, 'ticket_reply', 'پاسخ به تیکت', 'پشتیبانی به تیکت شما پاسخ داد.', NULL, 1, '2026-05-18 15:31:40.842', '2026-05-18 17:06:24.964'),
-(2, 53, 'ticket_reply', 'پاسخ به تیکت', 'پشتیبانی به تیکت شما پاسخ داد.', NULL, 1, '2026-05-18 15:38:21.587', '2026-05-18 17:06:24.964'),
-(3, 53, 'ticket_reply', 'پاسخ به تیکت', 'پشتیبانی به تیکت شما پاسخ داد.', NULL, 1, '2026-05-18 15:38:24.254', '2026-05-18 17:06:24.964'),
-(4, 53, 'ticket_reply', 'پاسخ به تیکت', 'پشتیبانی به تیکت شما پاسخ داد.', NULL, 1, '2026-05-18 15:38:27.993', '2026-05-18 17:06:24.964'),
-(5, 53, 'ticket_reply', 'پاسخ به تیکت', 'پشتیبانی به تیکت شما پاسخ داد.', NULL, 1, '2026-05-18 15:38:40.051', '2026-05-18 17:06:24.964'),
-(6, 53, 'ticket_reply', 'پاسخ به تیکت', 'پشتیبانی به تیکت شما پاسخ داد.', NULL, 1, '2026-05-18 15:46:13.973', '2026-05-18 17:06:24.964'),
-(7, 53, 'ticket_reply', 'پاسخ به تیکت', 'پشتیبانی به تیکت شما پاسخ داد.', NULL, 1, '2026-05-18 16:07:59.179', '2026-05-18 17:06:24.964'),
-(8, 53, 'ticket_reply', 'پاسخ به تیکت', 'پشتیبانی به تیکت شما پاسخ داد.', NULL, 1, '2026-05-18 16:08:30.358', '2026-05-18 17:06:24.964'),
-(9, 53, 'ticket_reply', 'پاسخ به تیکت', 'پشتیبانی به تیکت شما پاسخ داد.', NULL, 1, '2026-05-18 16:18:04.589', '2026-05-18 17:06:24.964'),
-(10, 53, 'ticket_reply', 'پاسخ به تیکت', 'پشتیبانی به تیکت شما پاسخ داد.', '{\"ticket_id\": 2}', 1, '2026-05-18 17:15:33.688', '2026-05-18 17:16:10.545'),
-(11, 53, 'ticket_reply', 'پاسخ به تیکت', 'پشتیبانی به تیکت شما پاسخ داد.', '{\"ticket_id\": 2}', 1, '2026-05-18 17:16:00.555', '2026-05-18 17:16:10.545'),
-(12, 53, 'ticket_reply', 'پاسخ به تیکت', 'پشتیبانی به تیکت شما پاسخ داد.', '{\"ticket_id\": 1}', 1, '2026-05-18 17:41:11.046', '2026-05-18 17:41:16.552'),
-(13, 53, 'ticket_reply', 'پاسخ به تیکت', 'پشتیبانی به تیکت شما پاسخ داد.', '{\"ticket_id\":3}', 1, '2026-07-17 22:20:03.396', '2026-07-17 22:37:13.949');
-
 -- --------------------------------------------------------
 
 --
@@ -3031,7 +3225,33 @@ INSERT INTO `otp_codes` (`id`, `phone`, `purpose`, `code_hash`, `expires_at`, `c
 (52, '09129248289', 1, '2f2d93970c4340380edcb64e5f0a82f45256195b53b0e8fc3fae597b8d3ffd5c', '2026-05-18 16:32:00.079', '2026-05-18 16:30:17.815', 0, '127.0.0.1', '2026-05-18 16:30:00.079'),
 (53, '09129248289', 1, '4009dc94c5477add24a2c5c00655d7fbbb8ce6f2ee8fb5fee1a8b99fced450a2', '2026-07-17 22:21:04.515', '2026-07-17 22:19:12.129', 0, '204.18.109.91', '2026-07-17 22:19:04.515'),
 (54, '09129248289', 1, 'df783e70e6de489375d06a155d1010fe4aa4b44feb3361446b0c8ef5562edd88', '2026-07-17 22:39:01.372', '2026-07-17 22:37:10.960', 0, '204.18.109.91', '2026-07-17 22:37:01.372'),
-(55, '09192994069', 1, 'c885da0b7117a976f448c23c759e825085ebd8e1cce100d01d11aea15b1335fe', '2026-07-21 14:32:57.884', '2026-07-21 14:31:15.632', 0, '93.118.127.162', '2026-07-21 14:30:57.884');
+(55, '09192994069', 1, 'c885da0b7117a976f448c23c759e825085ebd8e1cce100d01d11aea15b1335fe', '2026-07-21 14:32:57.884', '2026-07-21 14:31:15.632', 0, '93.118.127.162', '2026-07-21 14:30:57.884'),
+(56, '09129248289', 1, 'e62fa91546efbcc898bbc532c762f9c51bb41dac4c58fff3371003a14cd47cc9', '2026-08-01 19:05:30.511', '2026-08-01 19:03:41.174', 0, 'J?', '2026-08-01 19:03:30.511'),
+(57, '09129248289', 1, '404af415fd0dab63c31ed5688d9e17614b0dcfebd49e03d2a4d023eac4374234', '2026-08-01 19:31:09.984', '2026-08-01 19:29:23.488', 0, 'J?', '2026-08-01 19:29:09.984'),
+(58, '09129248289', 1, '0b8c184aff95d30a95b9eb1387279f6da60d6af5d5a003114aff4bcc9a0d7787', '2026-08-01 19:33:52.662', '2026-08-01 19:32:00.961', 0, 'J?', '2026-08-01 19:31:52.662'),
+(59, '09129248289', 1, '276aff1065c2696ee30de5013a6d2f2a6ea15cfc110807dd330f98fd39281fda', '2026-08-01 19:37:04.516', '2026-08-01 19:35:13.809', 0, 'J?', '2026-08-01 19:35:04.516'),
+(60, '09129248289', 1, '4ad1899957e7f1488776d8ba497880288fa063c67c397312c015a496a31f1d93', '2026-08-01 20:22:30.666', '2026-08-01 20:20:47.276', 0, 'J?', '2026-08-01 20:20:30.666'),
+(61, '09129248289', 1, 'd496061c746a55d17a58fc9d0e693a5f67f0cf86f6e985ae977215874bfb3d67', '2026-08-01 20:55:45.540', '2026-08-01 20:53:55.659', 0, 'J?', '2026-08-01 20:53:45.540'),
+(62, '09351794610', 1, '60c96cdf229bd9b17b84287f55572e49eeccbabe33d4ec0d30444e960407f98b', '2026-08-01 20:57:27.942', '2026-08-01 20:56:17.436', 0, 'J?', '2026-08-01 20:55:27.942'),
+(63, '09125805766', 1, 'db01f46e355a59a6dd9610059cf722fcab294cadfb7e74c5d914ead9e42518d6', '2026-08-01 20:58:29.366', '2026-08-01 20:57:04.410', 0, 'J?', '2026-08-01 20:56:29.366'),
+(64, '09351794610', 1, 'e96a66569571535c45d5c02f35474c4da135ee4a222d71d692edc0c6f313163b', '2026-08-01 21:07:22.602', '2026-08-01 21:05:35.216', 0, 'J?', '2026-08-01 21:05:22.602'),
+(65, '09351794610', 1, '02a1a685251d491bba8a58a80dd6a01fbff7a2d4380117719fb6df3e72c57790', '2026-08-01 21:32:09.671', '2026-08-01 21:30:36.025', 0, 'J?', '2026-08-01 21:30:09.671'),
+(66, '09351794610', 1, 'e3c0e0fb683f24a469bab9d8a62410de376673476b11520d5788577321f936e3', '2026-08-01 21:33:50.400', '2026-08-01 21:32:00.514', 0, 'J?', '2026-08-01 21:31:50.400'),
+(67, '09351794610', 1, 'f63c39a16b514228a2360d6ba5d842da7b0ecb5d6cd4d4145c0acdef9de8dff3', '2026-08-01 21:35:21.756', '2026-08-01 21:33:35.287', 0, 'J?', '2026-08-01 21:33:21.756'),
+(68, '09351794610', 1, 'fd8f255778b720f3044e402b4e1f6bc6358a3d5e6a10e2275a0dfb6a1203ce95', '2026-08-01 21:38:16.759', '2026-08-01 21:36:32.950', 0, 'J?', '2026-08-01 21:36:16.759'),
+(69, '09129248289', 1, 'e03a4c9f86a0fb4efc69559c02b2e6b06effa7b6e1cea877bd24e3d2ca19d3cb', '2026-08-06 16:00:25.531', '2026-08-06 15:58:34.886', 0, ']v?', '2026-08-06 15:58:25.531'),
+(70, '09351794610', 1, '05e4cad74476f12afdf0f34df688c51219823b2fd8ac44acc71f8e619734e312', '2026-08-06 16:07:31.832', '2026-08-06 16:06:32.118', 0, ']v?', '2026-08-06 16:05:31.832'),
+(71, '09120654653', 1, 'a5e9cda8af2e6384e2b69f6e40287b1a9c459a34c2b923c8dd570369b9f8a280', '2026-08-06 16:08:34.397', '2026-08-06 16:06:51.790', 0, '.3a', '2026-08-06 16:06:34.397'),
+(72, '09192994069', 1, '475b708efaf86dd7ceae332f91c601beda96c14f0e177f2348a018caa39e6e34', '2026-08-06 16:18:20.423', '2026-08-06 16:16:34.674', 0, '???', '2026-08-06 16:16:20.423'),
+(73, '09120654653', 1, 'bedb717357ce70bbc0276dce23bf9c73558d421464b9cd0f1d92f4fe2b4c46d4', '2026-08-16 16:10:36.140', '2026-08-16 16:08:43.908', 0, '.?j?', '2026-08-16 16:08:36.140'),
+(74, '09358223323', 1, '0345bf001215d6d031654c69a8ab1bd27e3f44e5b5aeeb3bc9ed7c430a3277b7', '2026-08-17 12:10:04.027', '2026-08-17 12:08:20.021', 0, '??e', '2026-08-17 12:08:04.027'),
+(75, '09192999719', 1, '30d6fa2fd40afacdfd451e3930315c7cccf920b1dc0240d2f9839a69ac8654d7', '2026-08-17 13:26:41.615', '2026-08-17 13:24:53.228', 0, '??e', '2026-08-17 13:24:41.615'),
+(76, '09192994069', 1, '7a269c0c3df0e086c9e15f781159da06e8bc898c012570ea8722828fc10f6b7f', '2026-08-17 13:34:21.983', '2026-08-17 13:32:44.112', 0, 'b`?+', '2026-08-17 13:32:21.983'),
+(77, '09192994069', 1, '14ca3c38bf8e5e2bf7d97abb92f8a99bb6152d09a051931de71a45ca09ac56f1', '2026-08-17 13:36:28.094', '2026-08-17 13:34:41.766', 0, 'b`?+', '2026-08-17 13:34:28.094'),
+(78, '09123598357', 1, '47e6805825f8b5137eac1998032d7f12a7b361ca120965aaaddb52c3c04fa36a', '2026-08-17 13:39:14.479', '2026-08-17 13:37:39.332', 0, 'b`?+', '2026-08-17 13:37:14.479'),
+(79, '09358223323', 1, 'a35f2b51fa99b19e317cc6463b4fa4c88fbe7a319c0d9e7483fb7da07dad6728', '2026-08-17 13:42:20.537', '2026-08-17 13:40:32.344', 0, '??e', '2026-08-17 13:40:20.537'),
+(80, '09192999873', 1, 'a76ca6df14e95ac430cab161d2b3297748219e3d99be88dbc0f478bfa7214d49', '2026-08-17 13:44:47.212', '2026-08-17 13:43:05.020', 0, '??e', '2026-08-17 13:42:47.212'),
+(81, '09351794610', 1, '81f10b31d3dcd2f2591326ab9a9e4ae6344532859cfcbd805dd6217e2a13213d', '2026-08-22 11:05:44.753', '2026-08-22 11:03:57.185', 0, '??/', '2026-08-22 11:03:44.753');
 
 -- --------------------------------------------------------
 
@@ -3131,7 +3351,7 @@ CREATE TABLE `remember_tokens` (
 --
 
 INSERT INTO `remember_tokens` (`id`, `user_id`, `token_hash`, `expires_at`, `created_at`, `updated_at`) VALUES
-(20, 1, 'ddf246675fe8860c3791657138924b957f53fbf668c267f8990b7b40f73dd981', '2026-07-24 22:19:48.000', '2026-07-17 22:19:48.402', '2026-07-17 22:19:48.402');
+(22, 1, '0c95f71d732c2e7fd04a54f1197051d67f524483964384db8a19f93765548ad4', '2026-08-13 16:16:16.000', '2026-08-06 16:16:16.665', '2026-08-06 16:16:16.665');
 
 -- --------------------------------------------------------
 
@@ -3193,17 +3413,6 @@ CREATE TABLE `support_tickets` (
   `updated_at` datetime(3) NOT NULL DEFAULT current_timestamp(3) ON UPDATE current_timestamp(3)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Dumping data for table `support_tickets`
---
-
-INSERT INTO `support_tickets` (`id`, `user_id`, `subject`, `status`, `created_at`, `updated_at`) VALUES
-(1, 53, 'test', 2, '2026-05-18 15:05:08.055', '2026-05-18 17:41:11.046'),
-(2, 53, 'test2', 2, '2026-05-18 17:15:12.262', '2026-05-18 17:16:00.555'),
-(3, 53, 'سلام', 2, '2026-07-08 20:58:14.670', '2026-07-17 22:20:03.395'),
-(4, 53, 'یه تست', 1, '2026-07-17 22:20:40.276', '2026-07-17 22:20:40.276'),
-(5, 55, 'بارهای بیشتری نشان دهید', 1, '2026-07-21 14:47:17.330', '2026-07-21 14:47:17.330');
-
 -- --------------------------------------------------------
 
 --
@@ -3220,36 +3429,6 @@ CREATE TABLE `support_ticket_messages` (
   `attachment_name` varchar(255) DEFAULT NULL,
   `created_at` datetime(3) NOT NULL DEFAULT current_timestamp(3)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `support_ticket_messages`
---
-
-INSERT INTO `support_ticket_messages` (`id`, `ticket_id`, `sender_user_id`, `message`, `message_type`, `attachment_key`, `attachment_name`, `created_at`) VALUES
-(1, 1, 53, 'salam in ye test ticket hast', 1, NULL, NULL, '2026-05-18 15:05:08.055'),
-(2, 1, 1, 'سلام دوست عزیز امیدوارم حالت عالی باشه؟ چه کاری از دستم برمیاد؟', 1, NULL, NULL, '2026-05-18 15:14:21.692'),
-(3, 1, 53, 'mishe pool bedidi?', 1, NULL, NULL, '2026-05-18 15:31:24.810'),
-(4, 1, 1, 'نه نمیشه', 1, NULL, NULL, '2026-05-18 15:31:40.841'),
-(5, 1, 53, 'khob be man che', 1, NULL, NULL, '2026-05-18 15:35:18.164'),
-(6, 1, 1, 'سلام سلام', 1, NULL, NULL, '2026-05-18 15:38:21.587'),
-(7, 1, 1, 'چطوری؟', 1, NULL, NULL, '2026-05-18 15:38:24.253'),
-(8, 1, 1, 'خب نمیشه دیگه', 1, NULL, NULL, '2026-05-18 15:38:27.993'),
-(9, 1, 1, 'بابا ول کن دیگه', 1, NULL, NULL, '2026-05-18 15:38:40.051'),
-(10, 1, 1, 'خب یه تست دیگه', 1, NULL, NULL, '2026-05-18 15:46:13.972'),
-(11, 1, 1, 'دادشا یه تست دیه', 1, NULL, NULL, '2026-05-18 16:07:59.178'),
-(12, 1, 1, 'تست', 1, NULL, NULL, '2026-05-18 16:08:30.357'),
-(13, 1, 1, 'تست', 1, NULL, NULL, '2026-05-18 16:18:04.589'),
-(14, 1, 53, 'ok', 1, NULL, NULL, '2026-05-18 16:27:59.279'),
-(15, 2, 53, 'salam man moshkel daram', 1, NULL, NULL, '2026-05-18 17:15:12.262'),
-(16, 2, 1, 'سلام', 1, NULL, NULL, '2026-05-18 17:15:33.688'),
-(17, 2, 53, 'slm', 1, NULL, NULL, '2026-05-18 17:15:44.821'),
-(18, 2, 1, 'خوبی؟', 1, NULL, NULL, '2026-05-18 17:16:00.555'),
-(19, 1, 1, 'پاسخ دادن', 1, NULL, NULL, '2026-05-18 17:41:11.045'),
-(20, 3, 53, 'سلام تست', 1, NULL, NULL, '2026-07-08 20:58:14.670'),
-(21, 3, 53, 'سلام', 1, NULL, NULL, '2026-07-17 22:19:29.409'),
-(22, 3, 1, 'خب خوبی؟', 1, NULL, NULL, '2026-07-17 22:20:03.394'),
-(23, 4, 53, 'درود', 1, NULL, NULL, '2026-07-17 22:20:40.276'),
-(24, 5, 55, 'با از سمت تهران به شیراز', 1, NULL, NULL, '2026-07-21 14:47:17.331');
 
 -- --------------------------------------------------------
 
@@ -3269,14 +3448,20 @@ CREATE TABLE `system_settings` (
 --
 
 INSERT INTO `system_settings` (`setting_key`, `setting_value`, `updated_by_user_id`, `updated_at`) VALUES
-('app.android.latest_version_code', '', 1, '2026-05-18 17:57:40.158'),
-('app.android.min_supported_code', '', 1, '2026-05-18 17:57:40.158'),
-('app.android.update_url', '', 1, '2026-05-18 17:57:40.158'),
-('app.ios.latest_version_code', '', 1, '2026-05-18 17:57:40.158'),
-('app.ios.min_supported_code', '', 1, '2026-05-18 17:57:40.158'),
-('app.ios.update_url', '', 1, '2026-05-18 17:57:40.159'),
-('auth.require_national_serial', '0', 1, '2026-05-18 17:57:40.159'),
-('company.name', 'آموت‌بار', 1, '2026-05-18 17:57:40.156'),
+('app.android.latest_version_code', '', 1, '2026-08-22 14:13:23.153'),
+('app.android.min_supported_code', '', 1, '2026-08-22 14:13:23.154'),
+('app.android.update_url', '', 1, '2026-08-22 14:13:23.154'),
+('app.ios.latest_version_code', '', 1, '2026-08-22 14:13:23.155'),
+('app.ios.min_supported_code', '', 1, '2026-08-22 14:13:23.156'),
+('app.ios.update_url', '', 1, '2026-08-22 14:13:23.156'),
+('auth.require_national_serial', '0', 1, '2026-08-22 14:13:23.162'),
+('cargo.app.android.latest_version_code', '', 1, '2026-08-22 14:13:23.157'),
+('cargo.app.android.min_supported_code', '', 1, '2026-08-22 14:13:23.157'),
+('cargo.app.android.update_url', '', 1, '2026-08-22 14:13:23.158'),
+('cargo.app.ios.latest_version_code', '', 1, '2026-08-22 14:13:23.158'),
+('cargo.app.ios.min_supported_code', '', 1, '2026-08-22 14:13:23.159'),
+('cargo.app.ios.update_url', '', 1, '2026-08-22 14:13:23.160'),
+('company.name', 'آموت‌بار', 1, '2026-08-22 14:13:23.148'),
 ('internal_api.endpoint.enabled.api.auth.logout', '1', 1, '2026-05-16 19:15:20.624'),
 ('internal_api.endpoint.enabled.api.auth.refresh', '1', 1, '2026-05-16 19:15:20.624'),
 ('internal_api.endpoint.enabled.api.auth.request_otp', '1', 1, '2026-05-16 19:15:20.624'),
@@ -3299,27 +3484,27 @@ INSERT INTO `system_settings` (`setting_key`, `setting_value`, `updated_by_user_
 ('internal_api.otp.max_per_phone_day', '20', 1, '2026-05-16 19:15:20.623'),
 ('internal_api.otp.max_per_phone_hour', '15', 1, '2026-05-16 19:15:20.623'),
 ('internal_api.otp.ttl_sec', '120', 1, '2026-05-16 19:15:20.623'),
-('links.app_download_url', '', 1, '2026-05-18 17:57:40.157'),
-('links.terms_text', 'تست', 1, '2026-05-18 17:57:40.157'),
-('links.terms_url', 'http://amutbar-admin.test/terms', 1, '2026-05-18 17:57:40.157'),
-('maintenance.enabled', '0', 1, '2026-05-18 17:57:40.159'),
-('maintenance.message', '', 1, '2026-05-18 17:57:40.159'),
-('onboarding.require_verification_video', '0', 1, '2026-05-18 17:57:40.159'),
+('links.app_download_url', 'https://amutapp.com/amutadmin/app.php', 1, '2026-08-22 14:13:23.151'),
+('links.terms_text', 'شرایط و ضوابط عمومی استفاده از خدمات سامانه هوشمند «آموت بار»\nبخش اول: تعاریف و اصطلاحات\nدر این سند، واژه‌ها و اصطلاحات زیر در معانی مشروح ذیل به کار می‌روند:\n\nآموت بار: شرکت حمل و نقل آموت بار (دارای مجوزهای قانونی مربوطه) که به عنوان ارائه‌دهنده و مالک انحصاری بستر نرم‌افزاری و سامانه هوشمند ارتباطی آموت بار شناخته می‌شود.\n\nسامانه / اپلیکیشن: مجموعه نرم‌افزارها، وب‌اپلیکیشن، پنل‌های تحت وب و زیرساخت‌های برخط متعلق به شرکت حمل و نقل آموت بار که دسترسی به خدمات اعلان و مدیریت بار را فراهم می‌سازد.\n\nکاربر: هر شخص حقیقی یا نماینده شخص حقوقی که پس از تکمیل فرایند ثبت‌نام، از بستر و ابزارهای آموت بار بهره‌برداری می‌نماید.\n\nصاحب بار (فرستنده): شخص حقیقی یا حقوقی ثبت‌نام‌شده در سامانه که تقاضای جابه‌جایی و حمل محموله خود را در بستر آموت بار ثبت و اعلام می‌کند.\n\nراننده (متصدی حمل): شخص حقیقی دارای مدارک و صلاحیت‌های قانونی رانندگی و حمل بار که به منظور پذیرش درخواست‌های حمل کالا و ارائه خدمات در سامانه رانندگان آموت بار عضویت دارد.\n\nبار (محموله): انواع کالا، وسایل و مرسولاتی که بنا به درخواست صاحب بار و بر اساس توافق فی‌مابین، توسط ناوگان تحت هدایت راننده از نقطه مبدأ بارگیری و به مقصد مشخص تحویل می‌گردد.\n\nحساب کاربری: شناسه و پنل اختصاصی که پس از ثبت مشخصات هویتی و شماره همراه، به هر کاربر در سامانه اختصاص می‌یابد.\n\nبارنامه رسمی: سند قانونی و ثبتی تحت نظارت سازمان راهداری و حمل‌ونقل جاده‌ای با شناسه رهگیری معتبر که منحصراً توسط شرکت‌های مجاز باربری صادر شده و حدود تعهدات بیمه‌ای و حمل را معین می‌کند.\n\nتوافق‌نامه کاربری: مجموعه شروط، الزامات و مقررات حاضر که نحوه بهره‌برداری از خدمات سامانه را میان کاربر و آموت بار تنظیم می‌نماید.\n\nبخش دوم: موارد سلب مسئولیت و حدود تعهدات\n۱. لزوم صدور بارنامه: حمل هرگونه محموله برون‌شهری بدون اخذ بارنامه رسمی، مغایر با ضوابط قانونی راهداری است. اخذ و صدور بارنامه بر عهده صاحب کالا و راننده از طریق مراجع و شرکت‌های حمل مجاز بوده و جابه‌جایی بدون بارنامه تخلف محسوب می‌شود.\n\n۲. توافقی بودن مبالغ کرایه: هزینه حمل بار بر مبنای نرخ اعلامی و توافق مستقیم میان صاحب کالا و راننده تعیین می‌گردد؛ بنابراین پس از نهایی شدن توافق و تایید حمل، هیچ‌یک از طرفین حق طرح ادعا یا مطالبه وجه مازاد بر توافق را نخواهند داشت.\n\n۳. کالاهای ممنوعه و غیرمجاز: بارگیری و حمل هرگونه اقلام غیرقانونی، مواد محترقه و منفجره، کالاهای قاچاق، سلاح، مشروبات الکلی، مواد مخدر یا احشام بدون مجوز دامپزشکی اکیداً ممنوع است. مسئولیت کامل حقوقی و کیفری ناشی از اظهار خلاف واقع یا حمل این قبیل اقلام منحصراً متوجه اعلام‌کننده و در صورت اطلاع، متوجه راننده خواهد بود.\n\n۴. پرداخت‌های خارج از سامانه: شرکت حمل و نقل آموت بار هیچ‌گونه نظارت، تضمین یا مسئولیتی در قبال مبالغی که خارج از درگاه‌های معتبر و رسمی ثبت‌شده در سامانه رد و بدل می‌گردد بر عهده ندارد و این قبیل تراکنش‌ها غیرقابل پیگیری از سوی سامانه خواهد بود.\n\nبخش سوم: کلیات و احکام قرارداد\n۱. چارچوب حاکم: مفاد این سند تماماً بر اساس قوانین و مقررات جمهوری اسلامی ایران، قانون تجارت الکترونیک و آیین‌نامه‌های حمل‌ونقل جاده‌ای تنظیم شده است. در صورت بروز هرگونه اختلاف، اولویت بر حل مسالمت‌آمیز بوده و در غیر این صورت، مراجع ذی‌صلاح قضایی مرجع رسیدگی نهایی خواهند بود.\n\n۲. پذیرش بی‌قید و شرط: ورود به سامانه، ایجاد حساب کاربری و استفاده مستمر از ابزارهای آموت بار به منزله مطالعه دقیق و قبولی کامل تمامی بندهای این توافق‌نامه است.\n\n۳. تغییرات مقررات: آموت بار این حق را دارد که در هر زمان نسبت به بازبینی و به‌روزرسانی ضوابط اقدام نماید. انتشار نسخه جدید در سامانه به منزله ابلاغ رسمی تلقی شده و ادامه فعالیت کاربران به معنای پذیرش نسخه به‌روزشده است.\n\n۴. خسارت به اعتبار تجاری: هرگونه اقدام عمدی یا غیرعمدی از سوی کاربران که موجب ورود ضرر و زیان مادی، معنوی یا خدشه به نام و نشان تجاری آموت بار گردد، حق پیگیری کیفری، مطالبه خسارت و انسداد دائم حساب کاربری را برای شرکت محفوظ می‌دارد.\n\nبخش چهارم: مقررات ثبت‌نام و امنیت حساب کاربری\n۱. شرط سنی و اهلیت: ایجاد حساب کاربری منوط به داشتن حداقل ۱۸ سال تمام خورشیدی و برخورداری از اهلیت قانونی برای انجام معاملات است.\n\n۲. اشخاص حقوقی: اشخاص حقوقی و نهادها تنها از طریق معرفی کتبی نماینده رسمی خود امکان ایجاد و مدیریت حساب کاربری را خواهند داشت و مسئولیت کلیه اقدامات نماینده بر عهده آن شرکت یا سازمان می‌باشد.\n\n۳. صحت اطلاعات: کاربر ملزم است اطلاعات هویتی، مشخصات فردی، کدملی، شماره تماس فعال و اسناد بارگیر/خودرو را منطبق بر واقعیت و به صورت کامل ثبت کند. هرگونه عدم تطابق اطلاعات بر عهده کاربر بوده و موجب سلب خدمات خواهد شد.\n\n۴. احراز هویت: آموت بار مجاز است در مراحل مختلف فعالیت، مدارک احراز هویت تکمیلی (نظیر مدارک مالکیتی، گواهینامه، کارت هوشمند و...) را از رانندگان و صاحبان بار مطالبه کند. امتناع از ارائه مدارک منجر به غیرفعال شدن حساب خواهد شد.\n\n۵. عدم واگذاری حساب: هر کاربر مجاز به داشتن تنها یک حساب کاربری است. واگذاری، اجاره یا انتقال حساب به اشخاص ثالث ممنوع بوده و دارنده حساب، پاسخگوی تمامی اعمال ثبت‌شده از طریق آن خواهد بود.\n\n۶. حفاظت از کلمات عبور: کاربر مسئول حفظ محرمانگی نام کاربری، رمز عبور و کدهای تایید موقت است. در صورت سرقت اطلاعات یا مفقودی تلفن همراه، کاربر موظف است فوراً تیم پشتیبانی آموت بار را مطلع نماید.\n\nبخش پنجم: قوانین عملیاتی و حمل محموله\n۱. نقش واسطه‌ای سامانه: آموت بار به عنوان بستری هوشمند و تسهیل‌کننده پیوند میان فرستنده بار و راننده عمل می‌کند و خود مستقیماً متصدی حمل، مالک بار یا ضامن نهایی روابط طرفین نمی‌باشد.\n\n۲. تطابق ناوگان و راننده: اعزام راننده یا خودرویی مغایر با اطلاعات ثبت‌شده در پنل آموت بار برای بارگیری ممنوع است و پذیرش بار منحصراً توسط شخص و ناوگان تاییدشده مجاز می‌باشد.\n\n۳. رعایت ظرفیت و تناژ مجاز: میزان بارگیری باید کاملاً مطابق با ظرفیت اسمی درج‌شده در کارت خودرو باشد. بارگیری مازاد بر ظرفیت قانونی (اضافه بار) تحت هیچ شرایطی، حتی با توافق طرفین، مجاز نبوده و عواقب آن متوجه متخلفین است.\n\n۴. اعلام شرایط خاص محموله: چنانچه بار دارای ابعاد غیرمتعارف، شرایط فسادپذیری یا حساسیت ویژه باشد، صاحب کالا موظف است پیش از نهایی‌سازی درخواست، جزئیات را به اطلاع راننده برساند.\n\n۵. لغو غیرموجه بارگیری: در صورتی که پس از تایید سفر و اعزام ناوگان به سمت مبدأ، درخواست از طرف صاحب بار بدون دلیل موجه ابطال شود، حق مطالبه حق توقف یا خسارت ورود به مبدأ برای راننده بر اساس عرف باربری محفوظ بوده و پیگیری آن مستقیماً میان طرفین انجام می‌گیرد.\n\n۶. سوانح و خسارات جاده‌ای: در زمان رخداد تصادفات، واژگونی، آتش‌سوزی، سرقت یا تلف شدن محموله در طول مسیر، جبران خسارت بر اساس بیمه‌نامه‌های معتبر، بارنامه رسمی و گزارشات پلیس راهور صورت پذیرفته و مسئولیتی از این حیث متوجه شرکت آموت بار نخواهد بود.\n\n۷. همراهان غیررسمی: مسئولیت حقوقی و ایمنی افرادی که به عنوان شاگرد یا همراه به همراه راننده در فرایند حمل حضور می‌یابند، منحصراً بر عهده خود راننده است.\n\n۸. مالیات و تکالیف صنفی: انجام تکالیف مالیاتی، عوارض قانونی و امور صنفی بر عهده هر یک از کاربران بوده و آموت بار مسئولیتی در قبال تعهدات انفرادی کاربران به مراجع قانونی ندارد.\n\nبخش ششم: حریم خصوصی و امنیت داده‌ها\n۱. محرمانگی اطلاعات هویتی: کلیه اسناد و مشخصات هویتی کاربران نزد آموت بار محرمانه نگهداری می‌شود؛ مگر در مواردی که به موجب دستور کتبی مراجع قضایی یا مراجع ذی‌صلاح قانونی درخواست گردد.\n\n۲. اطلاعات فرآیند حمل: اطلاعات مربوط به جزئیات بار، شماره تماس هماهنگی و لوکیشن بارگیری و تخلیه به منظور تسهیل فرایند عملیات، صرفاً در اختیار طرفین همان سفارش قرار می‌گیرد.\n\n۳. ممنوعیت سوءاستفاده از اطلاعات: ذخیره‌سازی، افشا، فروش یا هرگونه استفاده تجاری از اطلاعات تماس رانندگان یا فرستندگان خارج از چارچوب سرویس آموت بار تخلف محسوب شده و مستوجب پیگرد قانونی است.\n\n۴. دسترسی‌های سیستمی: سامانه ممکن است جهت ارائه قابلیت‌هایی مانند ردیابی موقعیت بار و ارسال اعلانات، دسترسی‌های مکانی و ارتباطی (پیامک/نوتیفیکیشن) را با اجازه کاربر از سیستم عامل دریافت کند.\n\nبخش هفتم: تعرفه‌ها، هدایا و امتیازات\n۱. کدهای تخفیف و جوایز اعتباری: کدهای تبلیغاتی، تخفیف‌ها یا اعتبارات هدیه‌ای که از سوی آموت بار ارائه می‌شوند غیرقابل فروش، غیرقابل انتقال به غیر و فاقد قابلیت تبدیل به وجه نقد هستند.\n\n۲. ابطال و تغییر طرح‌های تشویقی: آموت بار این اختیار را دارد که مهلت زمانی، مبلغ یا شرایط اعتبارات هدیه را در هر زمان اصلاح یا باطل نماید و یا در صورت بروز تخلف یا ایرادات نرم‌افزاری، موجودی‌های نامعتبر را حذف کند.\n\n۳. عدم استرداد هزینه‌های خدمات: مبالغی که بابت کارمزد خدمات فناوری یا اشتراک‌های نرم‌افزاری به آموت بار واریز می‌گردد، پس از نهایی شدن غیرقابل بازگشت خواهد بود.\n\nبخش هشتم: الزامات فنی و صیانت از مالکیت فکری\n۱. ممنوعیت مداخله سیستمی: استفاده از ربات‌های نرم‌افزاری، اسکریپت‌های خودکار، برنامه‌های داده‌کاوی، فریمینگ (Framing) یا ایجاد سرورهای آینه‌ای (Mirroring) به منظور نفوذ، استخراج داده یا اخلال در سامانه آموت بار ممنوع است.\n\n۲. مالکیت کدها: کلیه حقوق مادی و معنوی سورس‌کدها، علائم تجاری، طراحی‌های بصری، محتوا و پایگاه‌های داده منحصراً متعلق به شرکت حمل و نقل آموت بار است. هرگونه تلاش برای مهندسی معکوس (Reverse Engineering)، دیکامپایل یا کپی‌برداری غیرمجاز با پیگرد شدید قانونی همراه خواهد بود.\n\nبخش نهم: مسدودسازی و تعلیق دسترسی\n۱. اختیار صلاحدیدی: در صورتی که کاربری با رفتار، اظهارات یا نقض تعهدات، موجب تهدید امنیت سامانه، تضییع حقوق سایر اعضا یا افت کیفیت شبکه حمل‌ونقل گردد، آموت بار مجاز است بدون نیاز به اخطار قبلی، حساب کاربری وی را به شکل موقت یا دائم مسدود سازد.\n\n۲. سلب حق ادعا: در صورت انسداد حساب کاربری به دلیل تخلف از شروط این توافق‌نامه، کاربر متخلف حق هرگونه اعتراض یا ادعای خسارت را از خود سلب می‌نماید.\n\nبخش دهم: توافقات از راه دور و استنادپذیری الکترونیکی\n۱. امضای الکترونیکی: هرگونه فشردن دکمه تایید، ورود رمز یکبار مصرف یا ثبت تعهدات در داخل محیط اپلیکیشن، بر اساس قانون تجارت الکترونیک به منزله امضای الکترونیک معتبر و اعلام اراده صریح کاربر تلقی می‌گردد.\n\n۲. اعتبار مبادلات دیجیتال: طرفین اذعان دارند که این قرارداد و تعهدات ناشی از آن، یک سند الزام‌آور حقوقی بوده و داده‌پیام‌های ثبت‌شده در سامانه آموت بار در مراجع قانونی و قضایی به عنوان ادله الکترونیکی قابل استناد خواهد بود.', 1, '2026-08-22 14:13:23.150'),
+('links.terms_url', 'https://amutapp.com/amutadmin/terms.php', 1, '2026-08-22 14:13:23.150'),
+('maintenance.enabled', '0', 1, '2026-08-22 14:13:23.160'),
+('maintenance.message', '', 1, '2026-08-22 14:13:23.161'),
+('onboarding.require_verification_video', '0', 1, '2026-08-22 14:13:23.162'),
 ('site.favicon_path', 'storage/uploads/system/site-favicon.png', 1, '2026-02-10 00:37:41.291'),
 ('site.logo_path', 'storage/uploads/system/site-logo.png', 1, '2026-02-21 21:31:16.179'),
-('site.name', 'آموت‌بار', 1, '2026-05-18 17:57:40.157'),
-('site.url', 'http://amutbar-admin.test', 1, '2026-05-18 17:57:40.157'),
-('support.phone', '09351794610', 1, '2026-05-18 17:57:40.157'),
-('support.telegram', '', 1, '2026-05-18 17:57:40.158'),
-('support.whatsapp', '', 1, '2026-05-18 17:57:40.157'),
-('verification.api_ir.liveness_threshold', '80', 1, '2026-05-18 17:57:40.160'),
-('verification.api_ir.matching_threshold', '90', 1, '2026-05-18 17:57:40.160'),
-('verification.api_ir.speech_threshold', '50', 1, '2026-05-18 17:57:40.160'),
-('verification.video_guide_text', 'تصویر شما باید در مرکز صفحه باشد.\nپس زمینه شما باید سفید باشد.\nنور به صورت مناسب به صورت شما بتابد.\nصورت شما در ویدئو باید واضح باشد.', 1, '2026-05-18 17:57:40.160'),
-('verification.video_guide_url', 'https://amutapp.com/assets/help-1080p.mp4', 1, '2026-05-18 17:57:40.160'),
-('verification.video_max_mb', '5', 1, '2026-05-18 17:57:40.160'),
-('verification.video_max_seconds', '10', 1, '2026-05-18 17:57:40.160'),
-('verification.video_phrase_template', 'اینجانب {full_name} با قوانین {company_name} موافقت می‌کنم.', 1, '2026-05-18 17:57:40.159');
+('site.name', 'آموت‌بار', 1, '2026-08-22 14:13:23.148'),
+('site.url', 'https://amutapp.com/amutadmin', 1, '2026-08-22 14:13:23.149'),
+('support.phone', '09351794610', 1, '2026-08-22 14:13:23.152'),
+('support.telegram', '', 1, '2026-08-22 14:13:23.153'),
+('support.whatsapp', '', 1, '2026-08-22 14:13:23.152'),
+('verification.api_ir.liveness_threshold', '80', 1, '2026-08-22 14:13:23.166'),
+('verification.api_ir.matching_threshold', '90', 1, '2026-08-22 14:13:23.166'),
+('verification.api_ir.speech_threshold', '50', 1, '2026-08-22 14:13:23.167'),
+('verification.video_guide_text', 'تصویر شما باید در مرکز صفحه باشد.\nپس زمینه شما باید سفید باشد.\nنور به صورت مناسب به صورت شما بتابد.\nصورت شما در ویدئو باید واضح باشد.', 1, '2026-08-22 14:13:23.163'),
+('verification.video_guide_url', 'https://amutapp.com/assets/help-1080p.mp4', 1, '2026-08-22 14:13:23.164'),
+('verification.video_max_mb', '5', 1, '2026-08-22 14:13:23.165'),
+('verification.video_max_seconds', '10', 1, '2026-08-22 14:13:23.164'),
+('verification.video_phrase_template', 'اینجانب {full_name} با قوانین {company_name} موافقت می‌کنم.', 1, '2026-08-22 14:13:23.163');
 
 -- --------------------------------------------------------
 
@@ -3360,10 +3545,43 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `full_name`, `code_meli`, `birth_date`, `national_card_serial`, `phone`, `email`, `password_hash`, `father_name`, `gender`, `user_type`, `status`, `display_name`, `avatar_key`, `theme_mode`, `last_login_at`, `failed_login_attempts`, `locked_until`, `jwt_token_version`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 'شایان', '1552027384', '1380/10/04', NULL, '09351794610', 'namayandeshayan@gmail.com', '$2y$10$vN.AaYKqXdy5GJdsbPCZVegqerAiwO5C9ntCWvm8eLBMDG7cuiahO', 'یعقوب', '1', 3, 1, 'عمو شایان', 'storage/uploads/avatars/avatar_1_1770674071.webp', 'light', '2026-07-17 22:56:54.185', 0, NULL, 1, '2025-12-18 15:06:36.758', '2026-07-17 22:56:54.185', NULL),
-(53, 'شایان نماینده', '0312449348', '1380/10/04', NULL, '09129248289', 'sudoshayanna@gmail.com', '$2y$10$8rX5HKMO/u3NvtvAsm3VgOGd64nQyglY6GeBtG3BLuvbm.4c5QCQa', 'یعقوب', '1', 1, 1, 'الیار', 'storage/uploads/avatars/avatar_53_1779100693.jpg', NULL, '2026-07-17 22:37:10.980', 0, NULL, 1, '2026-05-16 21:19:20.067', '2026-07-17 22:37:10.980', NULL),
-(54, 'آموت بار', '1551956039', '1405/02/28', NULL, '09120654653', NULL, NULL, NULL, '1', 2, 1, NULL, NULL, NULL, NULL, 0, NULL, 1, '2026-05-18 20:55:24.231', '2026-05-18 20:55:31.588', NULL),
-(55, 'رسول درویشی نیا', '4190412147', '1374/08/03', NULL, '09192994069', NULL, NULL, NULL, '1', 1, 1, NULL, NULL, NULL, '2026-07-21 14:31:15.656', 0, NULL, 1, '2026-07-21 14:31:15.639', '2026-07-21 14:33:16.169', NULL);
+(1, 'شایان', '1111111111', '1380/10/04', NULL, '09123456789', 'namayandeshayan@gmail.com', '$2y$10$RqKeGtk7M20hxcqSLXkpwedIxMvwRVhsAXC3OiEdZ0nKQ3u7dD3U2', 'یعقوب', '1', 3, 1, 'عمو شایان', 'storage/uploads/avatars/avatar_1_1770674071.webp', 'light', '2026-08-30 21:57:58.762', 0, NULL, 1, '2025-12-18 15:06:36.758', '2026-08-30 21:57:58.762', NULL),
+(64, 'شایان نماینده', '0312449348', '1380/10/04', NULL, '09129248289', NULL, NULL, NULL, '1', 2, 2, NULL, NULL, NULL, '2026-08-06 15:58:34.909', 0, NULL, 2, '2026-08-06 15:58:34.894', '2026-08-22 11:04:19.316', '2026-08-22 11:04:19.316'),
+(65, 'کاربر', NULL, NULL, NULL, '09351794610', NULL, NULL, NULL, '1', 1, 2, NULL, NULL, NULL, '2026-08-06 16:06:32.136', 0, NULL, 2, '2026-08-06 16:06:32.124', '2026-08-22 11:03:37.341', '2026-08-22 11:03:37.341'),
+(66, 'محمد درویشی نیا', '4190260975', '1371/10/02', NULL, '09120654653', NULL, NULL, NULL, '1', 2, 1, NULL, NULL, NULL, '2026-08-06 16:06:51.830', 0, NULL, 1, '2026-08-06 16:06:51.797', '2026-08-06 16:07:40.312', NULL),
+(67, 'رسول درویشی نیا', '4190412147', '1384/08/03', NULL, '09192994069', NULL, NULL, NULL, '1', 1, 1, NULL, NULL, NULL, '2026-08-06 16:16:34.694', 0, NULL, 1, '2026-08-06 16:16:34.680', '2026-08-06 16:18:29.655', NULL),
+(68, 'علیرضا درویشی نیا', '4190718335', '1382/01/27', NULL, '09358223323', NULL, NULL, NULL, '1', 2, 1, NULL, NULL, NULL, '2026-08-17 12:08:20.044', 0, NULL, 1, '2026-08-17 12:08:20.029', '2026-08-17 12:10:08.387', NULL),
+(69, 'کاربر', NULL, NULL, NULL, '09192999719', NULL, NULL, NULL, '1', 1, 1, NULL, NULL, NULL, '2026-08-17 13:24:53.246', 0, NULL, 1, '2026-08-17 13:24:53.234', '2026-08-17 13:24:53.246', NULL),
+(70, 'کاربر', NULL, NULL, NULL, '09123598357', NULL, NULL, NULL, '1', 2, 1, NULL, NULL, NULL, '2026-08-17 13:37:39.361', 0, NULL, 1, '2026-08-17 13:37:39.338', '2026-08-17 13:37:39.361', NULL),
+(71, 'کاربر', NULL, NULL, NULL, '09192999873', NULL, NULL, NULL, '1', 1, 1, NULL, NULL, NULL, '2026-08-17 13:43:05.045', 0, NULL, 1, '2026-08-17 13:43:05.028', '2026-08-17 13:43:05.045', NULL),
+(72, 'شایان نماینده', '0312449348', '1380/10/04', NULL, '09351794610', NULL, NULL, NULL, '1', 1, 1, NULL, NULL, NULL, '2026-08-22 11:03:57.218', 0, NULL, 1, '2026-08-22 11:03:57.190', '2026-08-22 11:04:58.753', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_app_roles`
+--
+
+CREATE TABLE `user_app_roles` (
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `app_role` tinyint(3) UNSIGNED NOT NULL COMMENT '1 = Driver, 2 = Company/Cargo owner',
+  `status` tinyint(3) UNSIGNED NOT NULL DEFAULT 1 COMMENT '1 = Active, 2 = Disabled',
+  `created_at` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  `updated_at` datetime(3) NOT NULL DEFAULT current_timestamp(3) ON UPDATE current_timestamp(3)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `user_app_roles`
+--
+
+INSERT INTO `user_app_roles` (`user_id`, `app_role`, `status`, `created_at`, `updated_at`) VALUES
+(66, 2, 1, '2026-08-06 16:06:51.797', '2026-08-30 21:57:22.502'),
+(67, 1, 1, '2026-08-06 16:16:34.680', '2026-08-30 21:57:22.502'),
+(68, 2, 1, '2026-08-17 12:08:20.029', '2026-08-30 21:57:22.502'),
+(69, 1, 1, '2026-08-17 13:24:53.234', '2026-08-30 21:57:22.502'),
+(70, 2, 1, '2026-08-17 13:37:39.338', '2026-08-30 21:57:22.502'),
+(71, 1, 1, '2026-08-17 13:43:05.028', '2026-08-30 21:57:22.502'),
+(72, 1, 1, '2026-08-22 11:03:57.190', '2026-08-30 21:57:22.502');
 
 -- --------------------------------------------------------
 
@@ -3388,10 +3606,10 @@ CREATE TABLE `user_files` (
 --
 
 INSERT INTO `user_files` (`id`, `user_id`, `file_type`, `file_key`, `mime_type`, `file_size`, `metadata`, `created_at`, `updated_at`) VALUES
-(24, 53, 3, 'storage/uploads/images/user_53_6a08af0311397.jpg', 'image/jpeg', 28533, '{\"related_id\": null, \"uploaded_at\": \"2026-05-16 21:23:07\", \"original_name\": \"scaled_a5e66be6-d6b8-4971-9533-a9223cc6d4d22198326230025605945.jpg\"}', '2026-05-16 21:23:07.071', '2026-05-16 21:23:07.071'),
-(25, 53, 4, 'storage/uploads/images/user_53_6a08af031219b.jpg', 'image/jpeg', 29115, '{\"related_id\": null, \"uploaded_at\": \"2026-05-16 21:23:07\", \"original_name\": \"scaled_2e9cd3fb-f742-4c7e-b762-9d6bb1eee8558696384595994916074.jpg\"}', '2026-05-16 21:23:07.074', '2026-05-16 21:23:07.074'),
-(26, 55, 3, 'storage/uploads/images/user_55_6a5f51f62575b.jpg', 'image/jpeg', 536858, '{\"related_id\":null,\"original_name\":\"scaled_CamScanner ۲۰۲۶-۰۵-۲۶ ۱۲.۱۳_1.jpg\",\"uploaded_at\":\"2026-07-21 14:33:18\"}', '2026-07-21 14:33:18.157', '2026-07-21 14:33:18.157'),
-(27, 55, 4, 'storage/uploads/images/user_55_6a5f51f628d75.jpg', 'image/jpeg', 765114, '{\"related_id\":null,\"original_name\":\"scaled_CamScanner ۲۰۲۶-۰۵-۲۶ ۱۲.۱۳_2.jpg\",\"uploaded_at\":\"2026-07-21 14:33:18\"}', '2026-07-21 14:33:18.171', '2026-07-21 14:33:18.171');
+(28, 67, 3, 'storage/uploads/images/user_67_875eae4ab578f4ba49010605.jpg', 'image/jpeg', 205103, '{\"related_id\":null,\"original_name\":\"scaled_۲۰۲۶۰۶۰۹_۱۴۳۹۲۹.jpg\",\"uploaded_at\":\"2026-08-06 16:18:45\"}', '2026-08-06 16:18:45.762', '2026-08-06 16:18:45.762'),
+(29, 67, 4, 'storage/uploads/images/user_67_d263d37af245148f36360b68.jpg', 'image/jpeg', 59719, '{\"related_id\":null,\"original_name\":\"scaled_IMG_20260521_192142_168.jpg\",\"uploaded_at\":\"2026-08-06 16:18:45\"}', '2026-08-06 16:18:45.780', '2026-08-06 16:18:45.780'),
+(30, 72, 3, 'storage/uploads/images/user_72_7e0b662021877f288782d98c.jpg', 'image/jpeg', 402817, '{\"related_id\":null,\"original_name\":\"scaled_f6dab14a-32bd-43c4-8657-24edd2a627747993297603800577870.jpg\",\"uploaded_at\":\"2026-08-22 11:05:00\"}', '2026-08-22 11:05:00.865', '2026-08-22 11:05:00.865'),
+(31, 72, 4, 'storage/uploads/images/user_72_5a74830e4bf0f96bde25811d.jpg', 'image/jpeg', 326263, '{\"related_id\":null,\"original_name\":\"scaled_20dca4b6-06bc-4976-be38-b530c71a185b6822419593613764612.jpg\",\"uploaded_at\":\"2026-08-22 11:05:00\"}', '2026-08-22 11:05:00.881', '2026-08-22 11:05:00.881');
 
 -- --------------------------------------------------------
 
@@ -3648,6 +3866,22 @@ ALTER TABLE `external_api_request_logs`
   ADD KEY `fk_external_api_logs_cred` (`credential_id`);
 
 --
+-- Indexes for table `faq_categories`
+--
+ALTER TABLE `faq_categories`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `ix_faq_categories_app_active_sort` (`target_app_id`,`is_active`,`sort_order`,`id`),
+  ADD KEY `fk_faq_categories_creator` (`created_by_user_id`);
+
+--
+-- Indexes for table `faq_items`
+--
+ALTER TABLE `faq_items`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `ix_faq_items_category_active_sort` (`category_id`,`is_active`,`sort_order`,`id`),
+  ADD KEY `fk_faq_items_creator` (`created_by_user_id`);
+
+--
 -- Indexes for table `field_settings`
 --
 ALTER TABLE `field_settings`
@@ -3835,11 +4069,18 @@ ALTER TABLE `system_settings`
 --
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uq_users_code_meli_active` (`code_meli_active`),
   ADD UNIQUE KEY `uq_users_phone_active` (`phone_active`),
   ADD UNIQUE KEY `uq_users_email_active` (`email_active`),
+  ADD UNIQUE KEY `uq_users_code_meli_active` (`code_meli_active`),
   ADD KEY `ix_users_type_status` (`user_type`,`status`),
   ADD KEY `ix_users_created` (`created_at`);
+
+--
+-- Indexes for table `user_app_roles`
+--
+ALTER TABLE `user_app_roles`
+  ADD PRIMARY KEY (`user_id`,`app_role`),
+  ADD KEY `ix_user_app_roles_role_status` (`app_role`,`status`);
 
 --
 -- Indexes for table `user_files`
@@ -3881,7 +4122,7 @@ ALTER TABLE `vehicle_types`
 -- AUTO_INCREMENT for table `admin_audit_logs`
 --
 ALTER TABLE `admin_audit_logs`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=84;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=95;
 
 --
 -- AUTO_INCREMENT for table `api_tokens`
@@ -3899,7 +4140,7 @@ ALTER TABLE `app_versions`
 -- AUTO_INCREMENT for table `auth_events`
 --
 ALTER TABLE `auth_events`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2078;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2107;
 
 --
 -- AUTO_INCREMENT for table `banners`
@@ -3911,7 +4152,7 @@ ALTER TABLE `banners`
 -- AUTO_INCREMENT for table `call_logs`
 --
 ALTER TABLE `call_logs`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `cargos_list`
@@ -3929,7 +4170,7 @@ ALTER TABLE `cities`
 -- AUTO_INCREMENT for table `companies`
 --
 ALTER TABLE `companies`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `company_documents`
@@ -3953,19 +4194,19 @@ ALTER TABLE `conversations`
 -- AUTO_INCREMENT for table `drivers`
 --
 ALTER TABLE `drivers`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
 -- AUTO_INCREMENT for table `driver_activity_logs`
 --
 ALTER TABLE `driver_activity_logs`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=126;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=196;
 
 --
 -- AUTO_INCREMENT for table `driver_documents`
 --
 ALTER TABLE `driver_documents`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `driver_location_logs`
@@ -3995,7 +4236,19 @@ ALTER TABLE `external_api_providers`
 -- AUTO_INCREMENT for table `external_api_request_logs`
 --
 ALTER TABLE `external_api_request_logs`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=80;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=109;
+
+--
+-- AUTO_INCREMENT for table `faq_categories`
+--
+ALTER TABLE `faq_categories`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `faq_items`
+--
+ALTER TABLE `faq_items`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `field_settings`
@@ -4019,13 +4272,13 @@ ALTER TABLE `identity_verification_services`
 -- AUTO_INCREMENT for table `jwt_refresh_tokens`
 --
 ALTER TABLE `jwt_refresh_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=96;
 
 --
 -- AUTO_INCREMENT for table `loads`
 --
 ALTER TABLE `loads`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `load_applications`
@@ -4055,7 +4308,7 @@ ALTER TABLE `notifications`
 -- AUTO_INCREMENT for table `otp_codes`
 --
 ALTER TABLE `otp_codes`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=56;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=82;
 
 --
 -- AUTO_INCREMENT for table `permissions`
@@ -4073,7 +4326,7 @@ ALTER TABLE `ratings`
 -- AUTO_INCREMENT for table `remember_tokens`
 --
 ALTER TABLE `remember_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT for table `reports`
@@ -4103,13 +4356,13 @@ ALTER TABLE `support_ticket_messages`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=56;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=73;
 
 --
 -- AUTO_INCREMENT for table `user_files`
 --
 ALTER TABLE `user_files`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
 
 --
 -- AUTO_INCREMENT for table `user_relations`
@@ -4253,6 +4506,19 @@ ALTER TABLE `external_api_request_logs`
   ADD CONSTRAINT `fk_external_api_logs_provider` FOREIGN KEY (`provider_id`) REFERENCES `external_api_providers` (`id`) ON UPDATE CASCADE;
 
 --
+-- Constraints for table `faq_categories`
+--
+ALTER TABLE `faq_categories`
+  ADD CONSTRAINT `fk_faq_categories_creator` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Constraints for table `faq_items`
+--
+ALTER TABLE `faq_items`
+  ADD CONSTRAINT `fk_faq_items_category` FOREIGN KEY (`category_id`) REFERENCES `faq_categories` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_faq_items_creator` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
 -- Constraints for table `identity_verification_jobs`
 --
 ALTER TABLE `identity_verification_jobs`
@@ -4371,6 +4637,12 @@ ALTER TABLE `support_ticket_messages`
 --
 ALTER TABLE `system_settings`
   ADD CONSTRAINT `fk_system_settings_user` FOREIGN KEY (`updated_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Constraints for table `user_app_roles`
+--
+ALTER TABLE `user_app_roles`
+  ADD CONSTRAINT `fk_user_app_roles_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `user_files`

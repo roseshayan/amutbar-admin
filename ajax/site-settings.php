@@ -138,12 +138,8 @@ try {
         }
 
         // استفاده از کلید جدید API که در env قرار دادی
-        $apiKey = trim((string)env('PAYAMAK_APIKEY_CONSOLE', ''));
-        if ($apiKey === '') {
-            echo json_encode(['ok' => false, 'message' => 'کلید PAYAMAK_APIKEY_CONSOLE در فایل .env تنظیم نشده است']);
-            exit;
-        }
-        $url = 'https://console.melipayamak.com/api/send/simple/' . rawurlencode($apiKey);
+        $apiKey = env('PAYAMAK_APIKEY_CONSOLE', '2ca7e34c99a14308aa5fd0c69e441dea');
+        $url = 'https://console.melipayamak.com/api/send/simple/' . $apiKey;
 
         $data = [
             'from' => $from,
@@ -155,10 +151,7 @@ try {
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
         curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Content-Type: application/json',
@@ -188,19 +181,12 @@ try {
     // --- دریافت اعتبار پنل پیامکی ---
     if ($action === 'get_sms_credit') {
         // کلید API را از فایل env می‌خوانیم، در غیر این صورت از کلیدی که دادی استفاده می‌کند
-        $apiKey = trim((string)env('PAYAMAK_APIKEY_CONSOLE', ''));
-        if ($apiKey === '') {
-            echo json_encode(['ok' => false, 'message' => 'کلید PAYAMAK_APIKEY_CONSOLE در فایل .env تنظیم نشده است']);
-            exit;
-        }
-        $url = "https://console.melipayamak.com/api/receive/credit/" . rawurlencode($apiKey);
+        $apiKey = env('PAYAMAK_APIKEY_CONSOLE', '2ca7e34c99a14308aa5fd0c69e441dea');
+        $url = "https://console.melipayamak.com/api/receive/credit/" . $apiKey;
 
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Content-Type: application/json',

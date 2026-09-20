@@ -40,8 +40,7 @@ final class IdentityVerificationRunner
         int $serviceId,
         int $subjectUserId,
         ?int $actorAdminId = null,
-        array $payloadOverrides = [],
-        ?int $subjectUserTypeOverride = null
+        array $payloadOverrides = []
     ): array {
         $svc = $this->getServiceById($serviceId);
         if (!$svc || (int)$svc['is_active'] !== 1) {
@@ -50,11 +49,6 @@ final class IdentityVerificationRunner
 
         $user = $this->getUserCore($subjectUserId);
         if (!$user) return $this->fail('کاربر یافت نشد');
-        if ($subjectUserTypeOverride !== null && in_array($subjectUserTypeOverride, [1, 2, 3], true)) {
-            // In multi-app accounts users.user_type is only the legacy/primary role.
-            // API callers can scope the verification job to the currently active app role.
-            $user['user_type'] = $subjectUserTypeOverride;
-        }
 
         // payload پایه از اطلاعات کاربر
         $payload = $this->buildBasePayloadFromUser($user);

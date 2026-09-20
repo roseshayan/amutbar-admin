@@ -23,86 +23,6 @@ function api_path(): string
     return '/' . trim($uri, '/');
 }
 
-function api_user_with_profile(array $u): array
-{
-    $pdo = db();
-    $publicUser = api_public_user_payload($u);
-    if ($publicUser) $u = $publicUser;
-
-    require_once __DIR__ . '/../../includes/settings.php';
-
-    $requireVideo = (string)settings_get('onboarding.require_verification_video', '0') === '1';
-
-    $driver = null;
-    $company = null;
-
-    if ((int)$u['user_type'] === 1) {
-        // فیلدهای ماشین (vin, chassis, engine, insurance) اضافه شد
-        $st = $pdo->prepare("SELECT id, full_name, national_code, vehicle_type_id, plate_number, smart_card_number, model_year, color, capacity_kg, province_id, city_id, verification_status, reject_reason, rating_avg, rating_count, vin_number, insurance_number, insurance_expiry, engine_number, chassis_number, created_at, updated_at FROM drivers WHERE user_id=? AND deleted_at IS NULL LIMIT 1");
-        $st->execute([(int)$u['id']]);
-        $driver = $st->fetch() ?: null;
-    }
-
-    if ((int)$u['user_type'] === 2) {
-        $st = $pdo->prepare("SELECT id, company_name, owner_full_name, owner_national_code, registration_no, registration_date, economic_code, province_id, city_id, address, postal_code, verification_status, reject_reason, created_at, updated_at FROM companies WHERE user_id=? AND deleted_at IS NULL LIMIT 1");
-        $st->execute([(int)$u['id']]);
-        $company = $st->fetch() ?: null;
-        if ($company !== null) {
-            $company['entity_type'] = trim((string)($company['registration_no'] ?? '')) !== '' ? 2 : 1;
-        }
-    }
-
-    // onboarding flags
-    $needsVehicleInfo = false;
-    if ($driver !== null) {
-        $needsVehicleInfo = ((int)($driver['vehicle_type_id'] ?? 0) <= 0) || (trim((string)($driver['plate_number'] ?? '')) === '');
-    }
-
-    $videoVerified = false;
-    if ($requireVideo && (int)($u['user_type'] ?? 0) === 1) {
-        // آخرین نتیجه VideoVerify (یا VideoMatch در صورت نبود) را بررسی می‌کنیم
-        $st = $pdo->prepare("SELECT response_redacted_json, status FROM identity_verification_jobs WHERE subject_user_id=? AND check_type IN ('VideoVerify','VideoMatch') ORDER BY id DESC LIMIT 1");
-        $st->execute([(int)$u['id']]);
-        $jr = $st->fetch();
-        if ($jr && (int)($jr['status'] ?? 0) === 2) {
-            $resp = json_decode((string)($jr['response_redacted_json'] ?? ''), true);
-            if (is_array($resp) && !empty($resp['success']) && isset($resp['data']) && is_array($resp['data'])) {
-                $d = $resp['data'];
-                // برای VideoVerify باید هر سه مورد true باشند؛ برای VideoMatch حداقل isMatch
-                $isMatch = (bool)($d['isMatch'] ?? false);
-                $isLive = array_key_exists('isLiveness', $d) ? (bool)$d['isLiveness'] : true;
-                $isSpeech = array_key_exists('isSpeechMatched', $d) ? (bool)$d['isSpeechMatched'] : true;
-                if ($isMatch && $isLive && $isSpeech) {
-                    $videoVerified = true;
-                }
-            }
-        }
-    }
-
-    $needsVideo = false;
-    if ($requireVideo && $driver !== null) {
-        $needsVideo = !$videoVerified;
-    }
-
-    return [
-        'user' => $publicUser ?: $u,
-        'driver' => $driver,
-        'company' => $company,
-        'onboarding' => [
-            // برای صاحب بار، اطلاعات مکانی بخشی اختیاری از پروفایل است و
-            // نباید مسیر ثبت‌نام را متوقف کند.
-            'profile_completed' => $driver !== null || $company !== null,
-            'identity_verified' => $driver !== null
-                ? ((int)($driver['verification_status'] ?? 0) === 1)
-                : ($company !== null && (int)($company['verification_status'] ?? 0) === 1),
-            'verification_status' => $driver['verification_status'] ?? ($company['verification_status'] ?? null),
-            'needs_vehicle_info' => $needsVehicleInfo,
-            'require_verification_video' => $requireVideo,
-            'needs_verification_video' => $needsVideo,
-        ],
-    ];
-}
-
 $method = api_method();
 $path = api_path();
 
@@ -147,7 +67,6 @@ elseif ($path === '/driver/verification-video') $endpointKey = 'api.driver.verif
 
 // Content
 elseif ($path === '/banners') $endpointKey = 'api.content.banners';
-elseif ($path === '/faqs') $endpointKey = 'api.content.faqs';
 
 // Support
 elseif ($path === '/support/tickets') {
@@ -418,48 +337,9 @@ if ($method === 'POST' && $path === '/auth/verify-otp') {
     $check = otp_consume($phone, 1, $code, api_otp_max_attempts(), $otpId);
     if (!$check['ok']) api_err($check['message'], (int)$check['status']);
 
-    $pdo = db();
-    $pdo->beginTransaction();
-    try {
-        $st = $pdo->prepare("SELECT id, user_type, status, full_name, phone, email FROM users WHERE phone_active=? LIMIT 1");
-        $st->execute([$phone]);
-        $u = $st->fetch();
-
-        if ($u) {
-            if ((int)$u['status'] === 4) {
-                $pdo->rollBack();
-                api_err('حساب کاربری مسدود است', 403);
-            }
-            if ((int)$u['status'] === 2) {
-                $pdo->rollBack();
-                api_err('حساب کاربری غیرفعال است', 403);
-            }
-
-            // If pending, activate on successful OTP.
-            if ((int)$u['status'] === 3) {
-                $pdo->prepare("UPDATE users SET status=1, updated_at=NOW(3) WHERE id=?")
-                    ->execute([(int)$u['id']]);
-            }
-
-            $userId = (int)$u['id'];
-            // یک حساب هویتی می‌تواند هم‌زمان نقش راننده و صاحب بار داشته باشد.
-            api_ensure_app_role($userId, $userType);
-        } else {
-            // Minimal placeholder; profile endpoints will complete.
-            // users.user_type فقط نقش اولیه/legacy را نگه می‌دارد؛ نقش‌های واقعی موبایل
-            // در user_app_roles نگهداری می‌شوند.
-            $pdo->prepare("INSERT INTO users (full_name, phone, user_type, status, created_at, updated_at) VALUES (?, ?, ?, 1, NOW(3), NOW(3))")
-                ->execute(['کاربر', $phone, $userType]);
-            $userId = (int)$pdo->lastInsertId();
-            api_ensure_app_role($userId, $userType);
-        }
-
-        $pdo->commit();
-    } catch (Throwable $e) {
-        $pdo->rollBack();
-        error_log('auth.verify_otp failed: ' . $e->getMessage());
-        api_err('ورود انجام نشد. لطفاً دوباره تلاش کنید.', 500);
-    }
+    $account = api_login_mobile_account($phone, $userType);
+    if (!$account['ok']) api_err($account['message'], $account['status']);
+    $userId = $account['user_id'];
 
     $deviceId = api_str($in, 'device_id', 64);
     $platform = api_platform_from_string(api_str($in, 'platform', 16));
@@ -475,12 +355,10 @@ if ($method === 'POST' && $path === '/auth/verify-otp') {
     $st = db()->prepare("SELECT * FROM users WHERE id=? LIMIT 1");
     $st->execute([$userId]);
     $user = $st->fetch();
-    if (is_array($user)) {
-        $user['user_type'] = $userType;
-        $user['_active_user_type'] = $userType;
-    }
 
-    $profile = api_user_with_profile($user ?: ['id' => $userId, 'user_type' => $userType, '_active_user_type' => $userType]);
+    if (!$token['ok']) api_err('صدور توکن انجام نشد', 403);
+    $user['user_type'] = $userType;
+    $profile = api_user_with_profile($user);
 
     // اطلاعات باربری اختیاری است؛ فقط احراز هویت مسیر ثبت‌نام را تعیین می‌کند.
     $next = ($profile['onboarding']['identity_verified'] ?? false) ? 'dashboard' : 'onboarding';
@@ -658,8 +536,7 @@ if ($method === 'POST' && $path === '/auth/verify-identity') {
         $st = db()->prepare("SELECT * FROM users WHERE id=? LIMIT 1");
         $st->execute([(int)$u['id']]);
         $uFull = $st->fetch() ?: $u;
-        $uFull['user_type'] = 1;
-        $uFull['_active_user_type'] = 1;
+        $uFull['user_type'] = $u['user_type'];
         $me = api_user_with_profile($uFull);
     } catch (Throwable $e) {
         // ذخیره commit شده است؛ شکست ساخت پاسخ نباید فرم را دوباره ارسال کند.
@@ -776,8 +653,7 @@ if ($method === 'GET' && $path === '/me') {
     $st = db()->prepare("SELECT * FROM users WHERE id=? LIMIT 1");
     $st->execute([$u['id']]);
     $uFull = $st->fetch() ?: $u;
-    $uFull['user_type'] = (int)$u['user_type'];
-    $uFull['_active_user_type'] = (int)$u['user_type'];
+    $uFull['user_type'] = $u['user_type'];
 
     api_ok(api_user_with_profile($uFull));
 }
@@ -1060,7 +936,7 @@ if ($method === 'POST' && $path === '/driver/verification-video') {
     }
 
     $runner = new IdentityVerificationRunner($pdo);
-    $run = $runner->runServiceForUser($svcId, (int)$u['id'], null, $overrides, 1);
+    $run = $runner->runServiceForUser($svcId, (int)$u['id'], null, $overrides);
     if (empty($run['ok'])) {
         api_ok([
             'uploaded' => true,
@@ -1140,77 +1016,6 @@ if ($method === 'GET' && $path === '/banners') {
         'items' => $banners,
         'target_app_id' => $targetAppId,
         'fallback_target_app_id' => $fallbackTargetAppId,
-    ]);
-}
-
-// دریافت سوالات متداول، مستقل برای هر اپلیکیشن
-if ($method === 'GET' && $path === '/faqs') {
-    $targetAppId = isset($_GET['target_app_id']) ? (int)$_GET['target_app_id'] : 1;
-    if (!in_array($targetAppId, [1, 2], true)) {
-        api_err('target_app_id نامعتبر است', 422);
-    }
-
-    $pdo = db();
-    $st = $pdo->prepare("\n        SELECT\n            c.id AS category_id, c.title AS category_title, c.description AS category_description,\n            c.icon_key, c.sort_order AS category_sort,\n            i.id AS item_id, i.question, i.answer, i.link_label, i.link_url,\n            i.image_key, i.video_key, i.video_url, i.sort_order AS item_sort\n        FROM faq_categories c\n        LEFT JOIN faq_items i\n          ON i.category_id = c.id AND i.is_active = 1\n        WHERE c.target_app_id = ? AND c.is_active = 1\n        ORDER BY c.sort_order ASC, c.id ASC, i.sort_order ASC, i.id ASC\n    ");
-    $st->execute([$targetAppId]);
-    $rows = $st->fetchAll();
-
-    $siteUrl = rtrim((string)settings_get('site.url', ''), '/');
-    if ($siteUrl === '') {
-        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-        $host = (string)($_SERVER['HTTP_HOST'] ?? 'localhost');
-        $scriptDir = str_replace('\\', '/', dirname(dirname(dirname((string)($_SERVER['SCRIPT_NAME'] ?? '/api/v1/index.php')))));
-        $scriptDir = $scriptDir === '/' ? '' : rtrim($scriptDir, '/');
-        $siteUrl = $scheme . '://' . $host . $scriptDir;
-    }
-
-    $absoluteMedia = static function (?string $key) use ($siteUrl): ?string {
-        $key = trim((string)$key);
-        if ($key === '') return null;
-        if (preg_match('~^https?://~i', $key)) return $key;
-        return $siteUrl . '/' . ltrim($key, '/');
-    };
-
-    $categories = [];
-    foreach ($rows as $row) {
-        $categoryId = (int)$row['category_id'];
-        if (!isset($categories[$categoryId])) {
-            $categories[$categoryId] = [
-                'id' => $categoryId,
-                'title' => (string)$row['category_title'],
-                'description' => $row['category_description'] !== null ? (string)$row['category_description'] : null,
-                'icon_key' => (string)($row['icon_key'] ?: 'general'),
-                'questions' => [],
-            ];
-        }
-        if ($row['item_id'] === null) continue;
-
-        $link = null;
-        if (!empty($row['link_url'])) {
-            $link = [
-                'label' => (string)($row['link_label'] ?: 'مشاهده لینک'),
-                'url' => (string)$row['link_url'],
-            ];
-        }
-        $videoUrl = !empty($row['video_key'])
-            ? $absoluteMedia((string)$row['video_key'])
-            : (!empty($row['video_url']) ? (string)$row['video_url'] : null);
-
-        $categories[$categoryId]['questions'][] = [
-            'id' => (int)$row['item_id'],
-            'question' => (string)$row['question'],
-            'answer' => (string)$row['answer'],
-            'link' => $link,
-            'image_url' => $absoluteMedia($row['image_key'] !== null ? (string)$row['image_key'] : null),
-            'video_url' => $videoUrl,
-        ];
-    }
-
-    // دسته‌بندی بدون سوال فعال به اپ ارسال نمی‌شود تا UI خالی نمایش داده نشود.
-    $items = array_values(array_filter($categories, static fn(array $category): bool => !empty($category['questions'])));
-    api_ok([
-        'target_app_id' => $targetAppId,
-        'items' => $items,
     ]);
 }
 

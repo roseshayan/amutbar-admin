@@ -98,8 +98,7 @@ if (!function_exists('company_routes')) {
             $st = db()->prepare("SELECT * FROM users WHERE id=? LIMIT 1");
             $st->execute([(int)$u['id']]);
             $uFull = $st->fetch() ?: $u;
-            $uFull['user_type'] = 2;
-            $uFull['_active_user_type'] = 2;
+            $uFull['user_type'] = $u['user_type'];
             api_ok(company_profile_payload($uFull));
         }
 
@@ -256,8 +255,7 @@ if (!function_exists('company_routes')) {
                 $st = db()->prepare("SELECT * FROM users WHERE id=? LIMIT 1");
                 $st->execute([(int)$u['id']]);
                 $uFull = $st->fetch() ?: $u;
-                $uFull['user_type'] = 2;
-                $uFull['_active_user_type'] = 2;
+                $uFull['user_type'] = $u['user_type'];
                 $me = company_profile_payload($uFull);
             } catch (Throwable $e) {
                 // ذخیره قبلاً commit شده است؛ خطای ساخت پاسخ نباید باعث ارسال
@@ -365,8 +363,7 @@ if (!function_exists('company_routes')) {
             $st = db()->prepare("SELECT * FROM users WHERE id=? LIMIT 1");
             $st->execute([(int)$u['id']]);
             $uFull = $st->fetch() ?: $u;
-            $uFull['user_type'] = 2;
-            $uFull['_active_user_type'] = 2;
+            $uFull['user_type'] = $u['user_type'];
             api_ok(['company' => company_profile_payload($uFull)]);
         }
 
