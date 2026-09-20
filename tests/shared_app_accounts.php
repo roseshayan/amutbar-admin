@@ -115,6 +115,7 @@ try {
     $replacement = api_login_mobile_account('09120000005', 2);
     check($replacement['ok'] && $replacement['user_id'] !== $legacyId, 'Archived accounts are not revived');
     echo "PASS: $checks shared-account integration checks\n";
+    if (isset($afterSharedAccountChecks)) $afterSharedAccountChecks();
 } finally {
     // Name is generated here, never supplied by the environment/user.
     $server->exec("DROP DATABASE `$testDatabase`");

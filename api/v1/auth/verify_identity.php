@@ -24,7 +24,8 @@ $card_serial = trim($in['card_serial'] ?? '');
 
 // اضافه کردن تنظیمات برای بررسی الزامی بودن سریال کارت
 require_once __DIR__ . '/../../../includes/settings.php';
-$requireSerial = (settings_get('auth.require_national_serial') === '1');
+$policy = verification_policy(1);
+$requireSerial = $policy['require_national_serial'];
 
 // بررسی خالی بودن فیلدهای پایه
 if (empty($full_name) || empty($national_code) || empty($birth_date)) {
@@ -43,28 +44,31 @@ try {
     $apiHelper = new ExternalApiHelper($pdo);
     $providerSlug = 'api_ir';
 
-    // --- 1. استعلام شاهکار لایت (همیشه اجرا می‌شود) ---
-    $shahkarBody = [
-        'mobile' => $user_mobile,
-        'nationalCode' => $national_code
-    ];
+    if ($policy['require_shahkar']) {
+        // --- 1. استعلام شاهکار لایت (همیشه اجرا می‌شود) ---
+        $shahkarBody = [
+            'mobile' => $user_mobile,
+            'nationalCode' => $national_code
+        ];
 
-    try {
-        $shahkarRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/ShahkarLite', 'POST', $shahkarBody);
-    } catch (Exception $e) {
-        error_log('legacy.verify_identity shahkar failed: ' . $e->getMessage());
-        api_err('در حال حاضر ارتباط با سرویس احراز هویت ممکن نیست', 502);
+        try {
+            $shahkarRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/ShahkarLite', 'POST', $shahkarBody);
+        } catch (Exception $e) {
+            error_log('legacy.verify_identity shahkar failed: ' . $e->getMessage());
+            api_err('در حال حاضر ارتباط با سرویس احراز هویت ممکن نیست', 502);
+        }
+
+        if (empty($shahkarRes['success']) || $shahkarRes['success'] !== true) {
+            error_log('legacy.verify_identity shahkar rejected: ' . (string)($shahkarRes['message'] ?? 'provider rejected request'));
+            api_err('استعلام اطلاعات هویتی انجام نشد. لطفاً اطلاعات را بررسی و دوباره تلاش کنید.');
+        }
+
+        if (($shahkarRes['data'] ?? false) !== true) {
+            api_err('کد ملی وارد شده متعلق به این شماره موبایل نیست.');
+        }
+
+
     }
-
-    if (empty($shahkarRes['success']) || $shahkarRes['success'] !== true) {
-        error_log('legacy.verify_identity shahkar rejected: ' . (string)($shahkarRes['message'] ?? 'provider rejected request'));
-        api_err('استعلام اطلاعات هویتی انجام نشد. لطفاً اطلاعات را بررسی و دوباره تلاش کنید.');
-    }
-
-    if (($shahkarRes['data'] ?? false) !== true) {
-        api_err('کد ملی وارد شده متعلق به این شماره موبایل نیست.');
-    }
-
 
     // --- 2. استعلام عکس هویتی (فقط اگر سریال کارت فعال باشد) ---
     $avatarFilename = null;

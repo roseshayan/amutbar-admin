@@ -40,6 +40,7 @@ function internal_api_endpoints_catalog(): array
         // ---------- Onboarding ----------
         'api.driver.upsert' => ['ثبت/ویرایش پروفایل راننده', 'Onboarding', true, false],
         'api.driver.docs' => ['آپلود مدارک راننده', 'Onboarding', true, false],
+        'api.company.verification_video' => ['احراز هویت ویدیویی صاحب بار', 'Onboarding', true, false],
         'api.driver.verification_video' => ['احراز هویت ویدیویی راننده', 'Onboarding', true, false],
         'api.company.upsert' => ['ثبت/ویرایش پروفایل باربری', 'Onboarding', true, false],
         'api.company.me' => ['دریافت پروفایل باربری', 'Onboarding', true, false],

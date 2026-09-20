@@ -39,6 +39,8 @@ if (!function_exists('company_profile_payload')) {
             'user'    => api_public_user_payload($u),
             'company' => $company,
             'onboarding' => [
+                'require_verification_video' => verification_policy(2)['require_video'],
+                'needs_verification_video' => verification_needs_video((int)$u['id'], 2),
                 'identity_verified'   => ($company !== null) && ((int)($company['verification_status'] ?? 0) === 1),
                 'verification_status' => $company['verification_status'] ?? null,
                 'profile_completed'   => $company !== null,
@@ -140,7 +142,8 @@ if (!function_exists('company_routes')) {
             }
 
             require_once __DIR__ . '/../../includes/settings.php';
-            $requireSerial = (settings_get('auth.require_national_serial') === '1');
+            $policy = verification_policy(2);
+            $requireSerial = $policy['require_national_serial'];
             if ($requireSerial && !$cardSerial) {
                 api_err('card_serial الزامی است', 422);
             }
@@ -149,22 +152,25 @@ if (!function_exists('company_routes')) {
             $apiHelper = new ExternalApiHelper($pdo);
             $providerSlug = 'api_ir';
 
-            // 1) شاهکار لایت: تطبیق موبایل و کد ملی
-            try {
-                $shahkarRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/ShahkarLite', 'POST', [
-                    'mobile'       => (string)$u['phone'],
-                    'nationalCode' => $nationalCode,
-                ]);
-            } catch (Throwable $e) {
-                error_log('company.verify_identity shahkar failed: ' . $e->getMessage());
-                api_err('در حال حاضر ارتباط با سرویس احراز هویت ممکن نیست', 502);
-            }
-            if (empty($shahkarRes['success']) || $shahkarRes['success'] !== true) {
-                error_log('company.verify_identity shahkar rejected: ' . (string)($shahkarRes['message'] ?? 'provider rejected request'));
-                api_err('استعلام اطلاعات هویتی انجام نشد. لطفاً اطلاعات را بررسی و دوباره تلاش کنید.', 400);
-            }
-            if (($shahkarRes['data'] ?? false) !== true) {
-                api_err('کد ملی وارد شده متعلق به این شماره موبایل نیست.', 422);
+            if ($policy['require_shahkar']) {
+                // 1) شاهکار لایت: تطبیق موبایل و کد ملی
+                try {
+                    $shahkarRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/ShahkarLite', 'POST', [
+                        'mobile'       => (string)$u['phone'],
+                        'nationalCode' => $nationalCode,
+                    ]);
+                } catch (Throwable $e) {
+                    error_log('company.verify_identity shahkar failed: ' . $e->getMessage());
+                    api_err('در حال حاضر ارتباط با سرویس احراز هویت ممکن نیست', 502);
+                }
+                if (empty($shahkarRes['success']) || $shahkarRes['success'] !== true) {
+                    error_log('company.verify_identity shahkar rejected: ' . (string)($shahkarRes['message'] ?? 'provider rejected request'));
+                    api_err('استعلام اطلاعات هویتی انجام نشد. لطفاً اطلاعات را بررسی و دوباره تلاش کنید.', 400);
+                }
+                if (($shahkarRes['data'] ?? false) !== true) {
+                    api_err('کد ملی وارد شده متعلق به این شماره موبایل نیست.', 422);
+                }
+
             }
 
             // 2) استعلام عکس (فقط اگر سریال کارت ملی فعال باشد)

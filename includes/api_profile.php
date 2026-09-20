@@ -9,7 +9,8 @@ function api_user_with_profile(array $u): array
 
     require_once __DIR__ . '/settings.php';
 
-    $requireVideo = (string)settings_get('onboarding.require_verification_video', '0') === '1';
+    $mobileRole = in_array((int)$u['user_type'], [1, 2], true);
+    $requireVideo = $mobileRole && verification_policy((int)$u['user_type'])['require_video'];
 
     $driver = null;
     $company = null;
@@ -36,31 +37,7 @@ function api_user_with_profile(array $u): array
         $needsVehicleInfo = ((int)($driver['vehicle_type_id'] ?? 0) <= 0) || (trim((string)($driver['plate_number'] ?? '')) === '');
     }
 
-    $videoVerified = false;
-    if ($requireVideo && (int)($u['user_type'] ?? 0) === 1) {
-        // آخرین نتیجه VideoVerify (یا VideoMatch در صورت نبود) را بررسی می‌کنیم
-        $st = $pdo->prepare("SELECT response_redacted_json, status FROM identity_verification_jobs WHERE subject_user_id=? AND check_type IN ('VideoVerify','VideoMatch') ORDER BY id DESC LIMIT 1");
-        $st->execute([(int)$u['id']]);
-        $jr = $st->fetch();
-        if ($jr && (int)($jr['status'] ?? 0) === 2) {
-            $resp = json_decode((string)($jr['response_redacted_json'] ?? ''), true);
-            if (is_array($resp) && !empty($resp['success']) && isset($resp['data']) && is_array($resp['data'])) {
-                $d = $resp['data'];
-                // برای VideoVerify باید هر سه مورد true باشند؛ برای VideoMatch حداقل isMatch
-                $isMatch = (bool)($d['isMatch'] ?? false);
-                $isLive = array_key_exists('isLiveness', $d) ? (bool)$d['isLiveness'] : true;
-                $isSpeech = array_key_exists('isSpeechMatched', $d) ? (bool)$d['isSpeechMatched'] : true;
-                if ($isMatch && $isLive && $isSpeech) {
-                    $videoVerified = true;
-                }
-            }
-        }
-    }
-
-    $needsVideo = false;
-    if ($requireVideo && $driver !== null) {
-        $needsVideo = !$videoVerified;
-    }
+    $needsVideo = $mobileRole && verification_needs_video((int)$u['id'], (int)$u['user_type']);
 
     return [
         'user' => $publicUser ?: $u,

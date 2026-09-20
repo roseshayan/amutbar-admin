@@ -64,6 +64,7 @@ elseif ($path === '/company/verify-identity') $endpointKey = 'api.company.verify
 elseif ($path === '/company/docs') $endpointKey = 'api.company.docs';
 elseif ($path === '/driver/docs') $endpointKey = 'api.driver.docs';
 elseif ($path === '/driver/verification-video') $endpointKey = 'api.driver.verification_video';
+elseif ($path === '/company/verification-video') $endpointKey = 'api.company.verification_video';
 
 // Content
 elseif ($path === '/banners') $endpointKey = 'api.content.banners';
@@ -95,6 +96,16 @@ elseif ($path === '/driver/activity') $endpointKey = 'api.driver.activity_log';
 api_guard_global($endpointKey);
 if ($endpointKey !== 'api.unknown') {
     api_guard_endpoint($endpointKey);
+}
+
+// Required biometric verification is enforced on business APIs, not only navigation.
+if ($path === '/loads' || str_starts_with($path, '/company/loads')
+    || str_starts_with($path, '/driver/loads') || $path === '/driver/calls/log') {
+    $activityUser = api_require_auth();
+    $activityRole = (int)$activityUser['user_type'];
+    if (in_array($activityRole, [1, 2], true) && verification_needs_video((int)$activityUser['id'], $activityRole)) {
+        api_err('ابتدا احراز هویت ویدئویی را تکمیل کنید', 403, ['code' => 'video_verification_required']);
+    }
 }
 
 company_routes($method, $path);
@@ -214,6 +225,7 @@ if ($method === 'GET' && $path === '/meta/app-config') {
         return $it['app.' . $suffix] ?? null;
     };
 
+    $policy = verification_policy($targetAppId);
     api_ok([
         'target_app_id' => $targetAppId,
         'company_name' => $it['company.name'] !== null ? (string)$it['company.name'] : null,
@@ -249,17 +261,18 @@ if ($method === 'GET' && $path === '/meta/app-config') {
         ],
 
         'onboarding' => [
-            'require_verification_video' => (string)($it['onboarding.require_verification_video'] ?? '0') === '1',
+            'require_verification_video' => $policy['require_video'],
         ],
 
         'auth' => [
-            'require_national_serial' => ($it['auth.require_national_serial'] === '1')
+            'require_national_serial' => $policy['require_national_serial'],
+            'require_shahkar' => $policy['require_shahkar']
         ],
 
         'verification' => [
             'video_phrase_template' => $it['verification.video_phrase_template'] !== null ? (string)$it['verification.video_phrase_template'] : null,
-            'video_guide_text' => $it['verification.video_guide_text'] !== null ? (string)$it['verification.video_guide_text'] : null,
-            'video_guide_url' => $it['verification.video_guide_url'] !== null ? (string)$it['verification.video_guide_url'] : null,
+            'video_guide_text' => $policy['video_guide_text'],
+            'video_guide_url' => $policy['video_guide_url'],
             'video_max_seconds' => $it['verification.video_max_seconds'] !== null ? (int)$it['verification.video_max_seconds'] : 10,
             'video_max_mb' => $it['verification.video_max_mb'] !== null ? (int)$it['verification.video_max_mb'] : 5,
             'api_ir' => [
@@ -410,7 +423,8 @@ if ($method === 'POST' && $path === '/auth/verify-identity') {
 
     // --- اصلاح بخش اعتبارسنجی داینامیک بر اساس تنظیمات ادمین ---
     require_once __DIR__ . '/../../includes/settings.php';
-    $requireSerial = (settings_get('auth.require_national_serial') === '1');
+    $policy = verification_policy(1);
+    $requireSerial = $policy['require_national_serial'];
 
     // اگر سریال از پنل ادمین الزامی بود و فرستاده نشده بود، خطا بدهد
     if ($requireSerial && !$cardSerial) {
@@ -422,23 +436,26 @@ if ($method === 'POST' && $path === '/auth/verify-identity') {
     $apiHelper = new ExternalApiHelper($pdo);
     $providerSlug = 'api_ir';
 
-    // 1) شاهکار لایت: تطبیق موبایل و کد ملی (همیشه اجرا می‌شود)
-    $shahkarBody = [
-        'mobile' => (string)$u['phone'],
-        'nationalCode' => $nationalCode,
-    ];
-    try {
-        $shahkarRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/ShahkarLite', 'POST', $shahkarBody);
-    } catch (Throwable $e) {
-        error_log('driver.verify_identity shahkar failed: ' . $e->getMessage());
-        api_err('در حال حاضر ارتباط با سرویس احراز هویت ممکن نیست', 502);
-    }
-    if (empty($shahkarRes['success']) || $shahkarRes['success'] !== true) {
-        error_log('driver.verify_identity shahkar rejected: ' . (string)($shahkarRes['message'] ?? 'provider rejected request'));
-        api_err('استعلام اطلاعات هویتی انجام نشد. لطفاً اطلاعات را بررسی و دوباره تلاش کنید.', 400);
-    }
-    if (($shahkarRes['data'] ?? false) !== true) {
-        api_err('کد ملی وارد شده متعلق به این شماره موبایل نیست.', 422);
+    if ($policy['require_shahkar']) {
+        // 1) شاهکار لایت: تطبیق موبایل و کد ملی (طبق تنظیمات اپ)
+        $shahkarBody = [
+            'mobile' => (string)$u['phone'],
+            'nationalCode' => $nationalCode,
+        ];
+        try {
+            $shahkarRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/ShahkarLite', 'POST', $shahkarBody);
+        } catch (Throwable $e) {
+            error_log('driver.verify_identity shahkar failed: ' . $e->getMessage());
+            api_err('در حال حاضر ارتباط با سرویس احراز هویت ممکن نیست', 502);
+        }
+        if (empty($shahkarRes['success']) || $shahkarRes['success'] !== true) {
+            error_log('driver.verify_identity shahkar rejected: ' . (string)($shahkarRes['message'] ?? 'provider rejected request'));
+            api_err('استعلام اطلاعات هویتی انجام نشد. لطفاً اطلاعات را بررسی و دوباره تلاش کنید.', 400);
+        }
+        if (($shahkarRes['data'] ?? false) !== true) {
+            api_err('کد ملی وارد شده متعلق به این شماره موبایل نیست.', 422);
+        }
+
     }
 
     // 2) استعلام عکس (فقط و فقط اگر سریال کارت ملی در تنظیمات فعال باشد)
@@ -761,9 +778,10 @@ if ($method === 'POST' && $path === '/driver/docs') {
 
 // Driver: upload verification video + call api.ir VideoVerify
 // Driver: upload verification video + call api.ir VideoVerify
-if ($method === 'POST' && $path === '/driver/verification-video') {
+if ($method === 'POST' && in_array($path, ['/driver/verification-video', '/company/verification-video'], true)) {
     $u = api_require_auth();
-    if ((int)$u['user_type'] !== 1) api_err('Forbidden', 403);
+    $appRole = $path === '/driver/verification-video' ? 1 : 2;
+    if ((int)$u['user_type'] !== $appRole) api_err('Forbidden', 403);
 
     require_once __DIR__ . '/../../includes/settings.php';
     require_once __DIR__ . '/../../includes/IdentityVerificationRunner.php';
@@ -796,7 +814,7 @@ if ($method === 'POST' && $path === '/driver/verification-video') {
         return is_file($dst) && filesize($dst) > 0;
     }
 
-    $requireVideo = (string)settings_get('onboarding.require_verification_video', '0') === '1';
+    $requireVideo = verification_policy($appRole)['require_video'];
     if (!$requireVideo) {
         api_ok(['skipped' => true, 'message' => 'احراز هویت ویدئویی توسط ادمین غیرفعال است.']);
     }
@@ -895,6 +913,7 @@ if ($method === 'POST' && $path === '/driver/verification-video') {
     $storedMime = $compressed ? 'video/mp4' : ($mime ?: null);
 
     $meta = json_encode([
+        'app_role' => $appRole,
         'original_name' => (string)($f['name'] ?? ''),
         'uploaded_at' => date('Y-m-d H:i:s'),
         'raw_size' => $rawSize,
@@ -923,20 +942,21 @@ if ($method === 'POST' && $path === '/driver/verification-video') {
 
     // اجرای سرویس VideoVerify اگر در دیتابیس تعریف شده باشد
     $svcId = 0;
-    $st = $pdo->prepare("SELECT id FROM identity_verification_services WHERE code='VideoVerify' AND is_active=1 LIMIT 1");
-    $st->execute();
+    $st = $pdo->prepare("SELECT id FROM identity_verification_services WHERE code='VideoVerify' AND is_active=1 AND subject_kind IN (0, ?) ORDER BY subject_kind DESC LIMIT 1");
+    $st->execute([$appRole]);
     $svcId = (int)($st->fetchColumn() ?: 0);
 
     if ($svcId <= 0) {
         api_ok([
             'uploaded' => true,
+            'verified' => false,
             'file_key' => $fileKey,
-            'message' => 'ویدئو ذخیره شد اما سرویس VideoVerify در پنل تعریف/فعال نیست.',
+            'message' => 'ویدئو ذخیره شد اما تأیید آن در حال حاضر در دسترس نیست. لطفاً با پشتیبانی تماس بگیرید.',
         ]);
     }
 
     $runner = new IdentityVerificationRunner($pdo);
-    $run = $runner->runServiceForUser($svcId, (int)$u['id'], null, $overrides);
+    $run = $runner->runServiceForUser($svcId, (int)$u['id'], null, $overrides, $appRole, $fileKey);
     if (empty($run['ok'])) {
         api_ok([
             'uploaded' => true,
@@ -947,11 +967,7 @@ if ($method === 'POST' && $path === '/driver/verification-video') {
     }
 
     $result = $run['result'] ?? [];
-    $passed = false;
-    if (is_array($result) && !empty($result['success']) && is_array($result['data'] ?? null)) {
-        $d = $result['data'];
-        $passed = (bool)($d['isMatch'] ?? false) && (bool)($d['isLiveness'] ?? false) && (bool)($d['isSpeechMatched'] ?? false);
-    }
+    $passed = is_array($result) && verification_video_passed($result);
 
     api_ok([
         'uploaded' => true,

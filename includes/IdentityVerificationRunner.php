@@ -40,7 +40,9 @@ final class IdentityVerificationRunner
         int $serviceId,
         int $subjectUserId,
         ?int $actorAdminId = null,
-        array $payloadOverrides = []
+        array $payloadOverrides = [],
+        ?int $appRole = null,
+        ?string $videoFileKey = null
     ): array {
         $svc = $this->getServiceById($serviceId);
         if (!$svc || (int)$svc['is_active'] !== 1) {
@@ -49,6 +51,10 @@ final class IdentityVerificationRunner
 
         $user = $this->getUserCore($subjectUserId);
         if (!$user) return $this->fail('کاربر یافت نشد');
+        if ($appRole !== null) {
+            if (!in_array($appRole, [1, 2], true) || !api_user_has_app_role($user, $appRole)) return $this->fail('نقش نامعتبر است');
+            $user['user_type'] = $appRole;
+        }
 
         // payload پایه از اطلاعات کاربر
         $payload = $this->buildBasePayloadFromUser($user);
@@ -87,7 +93,7 @@ final class IdentityVerificationRunner
             }
         }
         if ($videoRequiredKey !== null && (!isset($payload[$videoRequiredKey]) || !$payload[$videoRequiredKey])) {
-            $vb = $this->loadVerificationVideoBase64((int)$user['id']);
+            $vb = $this->loadVerificationVideoBase64((int)$user['id'], $videoFileKey);
             if ($vb !== null) {
                 $payload[$videoRequiredKey] = $vb;
             }
@@ -171,11 +177,11 @@ final class IdentityVerificationRunner
         return $payload;
     }
 
-    private function loadVerificationVideoBase64(int $userId): ?string
+    private function loadVerificationVideoBase64(int $userId, ?string $fileKey = null): ?string
     {
         // file_type=6 => verification_video
-        $st = $this->pdo->prepare("SELECT file_key, file_size FROM user_files WHERE user_id=? AND file_type=6 ORDER BY id DESC LIMIT 1");
-        $st->execute([$userId]);
+        $st = $this->pdo->prepare("SELECT file_key, file_size FROM user_files WHERE user_id=? AND file_type=6 AND (? IS NULL OR file_key=?) ORDER BY id DESC LIMIT 1");
+        $st->execute([$userId, $fileKey, $fileKey]);
         $row = $st->fetch();
         if (!$row || empty($row['file_key'])) return null;
 

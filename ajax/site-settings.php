@@ -8,6 +8,7 @@ require_once '../includes/init.php';
 require_admin();
 
 require_once '../includes/settings.php';
+require_once '../includes/verification_policy.php';
 
 $action = $_GET['action'] ?? ($_POST['action'] ?? '');
 
@@ -61,7 +62,13 @@ try {
             'verification.api_ir.matching_threshold',
             'verification.api_ir.speech_threshold'
         ];
+        $keys = array_merge($keys, verification_policy_keys());
         $vals = settings_get_many($keys);
+        foreach ([1 => 'driver', 2 => 'cargo'] as $role => $app) {
+            foreach (verification_policy($role) as $key => $value) {
+                $vals["verification.$app.$key"] = is_bool($value) ? ($value ? '1' : '0') : $value;
+            }
+        }
         // defaults
         foreach ($keys as $k) {
             if (!array_key_exists($k, $vals)) $vals[$k] = null;
@@ -71,6 +78,7 @@ try {
     }
 
     if ($action === 'save') {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') throw new InvalidArgumentException('روش درخواست نامعتبر است');
         $items = $_POST['items'] ?? [];
         if (is_string($items)) {
             $tmp = json_decode($items, true);
@@ -116,12 +124,14 @@ try {
             'verification.api_ir.matching_threshold',
             'verification.api_ir.speech_threshold'
         ];
+        $allowed = array_merge($allowed, verification_policy_keys());
         $filtered = [];
         foreach ($allowed as $k) {
             if (array_key_exists($k, $items)) {
                 $filtered[$k] = $items[$k];
             }
         }
+        verification_validate_settings($filtered);
         settings_set_many($filtered, $adminId);
         echo json_encode(['ok' => true]);
         exit;
@@ -213,6 +223,28 @@ try {
     }
     // ---------------------------------
 
+    if ($action === 'upload_verification_guide') {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') throw new InvalidArgumentException('روش درخواست نامعتبر است');
+        $file = $_FILES['video'] ?? null;
+        if (!is_array($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            throw new InvalidArgumentException('آپلود ناموفق بود؛ محدودیت حجم آپلود سرور را بررسی کنید');
+        }
+        $tmp = (string)($file['tmp_name'] ?? '');
+        if (!is_uploaded_file($tmp) || filesize($tmp) <= 0 || filesize($tmp) > 50 * 1024 * 1024) {
+            throw new InvalidArgumentException('حداکثر حجم ویدئوی راهنما ۵۰ مگابایت است');
+        }
+        if ((new finfo(FILEINFO_MIME_TYPE))->file($tmp) !== 'video/mp4') {
+            throw new InvalidArgumentException('ویدئوی راهنما باید MP4 باشد');
+        }
+        $directory = BASE_PATH . '/storage/uploads/system';
+        ensure_dir($directory);
+        $name = 'guide_' . bin2hex(random_bytes(16)) . '.mp4';
+        if (!move_uploaded_file($tmp, $directory . '/' . $name)) throw new RuntimeException('ذخیره فایل ناموفق بود');
+        chmod($directory . '/' . $name, 0644);
+        echo json_encode(['ok' => true, 'path' => 'storage/uploads/system/' . $name]);
+        exit;
+    }
+
     if ($action === 'upload_logo') {
         if (!isset($_FILES['logo']) || $_FILES['logo']['error'] !== UPLOAD_ERR_OK) {
             throw new RuntimeException('آپلود ناموفق بود');
@@ -296,5 +328,5 @@ try {
     echo json_encode(['ok' => false, 'message' => 'action نامعتبر است']);
 } catch (Throwable $e) {
     $debug = (string)env('APP_DEBUG', '0') === '1';
-    echo json_encode(['ok' => false, 'message' => $debug ? $e->getMessage() : 'خطای سرور']);
+    echo json_encode(['ok' => false, 'message' => ($e instanceof InvalidArgumentException || $debug) ? $e->getMessage() : 'خطای سرور']);
 }

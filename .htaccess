@@ -5,6 +5,9 @@ Options -Indexes
 </FilesMatch>
 
 <IfModule mod_headers.c>
+  <FilesMatch "^guide_[a-f0-9]{32}\.mp4$">
+    Header always set Access-Control-Allow-Origin "*"
+  </FilesMatch>
   Header always set X-Content-Type-Options "nosniff"
   Header always set X-Frame-Options "SAMEORIGIN"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"

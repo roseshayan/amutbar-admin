@@ -222,29 +222,35 @@ require_once "views/panel/sidebar.php";
                             <!-- Verification -->
                             <div class="tab-pane fade" id="pane-verify" role="tabpanel">
                                 <div class="row g-3">
-                                    <div class="col-md-6 mt-3">
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" id="require_national_serial">
-                                            <label class="form-check-label" for="require_national_serial">
-                                                دریافت «سریال کارت ملی» در احراز هویت رانندگان الزامی باشد
-                                            </label>
+                                    <?php foreach (['driver' => 'اپ رانندگان', 'cargo' => 'اپ اعلام بار'] as $appKey => $appTitle): ?>
+                                    <div class="col-md-6">
+                                        <div class="border rounded p-3 h-100">
+                                            <h5><?= $appTitle ?></h5>
+                                            <?php foreach (['require_shahkar' => 'تطبیق شماره موبایل و کد ملی (شاهکار)', 'require_national_serial' => 'دریافت سریال کارت ملی و استعلام تصویر', 'require_video' => 'الزام احراز هویت ویدئویی'] as $setting => $label): ?>
+                                            <div class="form-check form-switch my-3">
+                                                <input class="form-check-input" type="checkbox" id="<?= $appKey . '_' . $setting ?>" data-verification-setting="verification.<?= $appKey . '.' . $setting ?>">
+                                                <label class="form-check-label" for="<?= $appKey . '_' . $setting ?>"><?= $label ?></label>
+                                            </div>
+                                            <?php endforeach; ?>
+                                            <label class="form-label" for="<?= $appKey ?>_guide_text">متن راهنمای ضبط ویدئو</label>
+                                            <textarea class="form-control mb-3" rows="3" maxlength="4000" id="<?= $appKey ?>_guide_text" data-verification-setting="verification.<?= $appKey ?>.video_guide_text"></textarea>
+                                            <label class="form-label" for="<?= $appKey ?>_guide_url">لینک ویدئوی آموزشی</label>
+                                            <input type="text" dir="ltr" class="form-control" id="<?= $appKey ?>_guide_url" data-verification-setting="verification.<?= $appKey ?>.video_guide_url" placeholder="https://.../guide.mp4">
+                                            <div class="text-muted small my-2">لینک مستقیم MP4 وارد کنید یا ویدئو را آپلود کنید. برای حذف راهنما، لینک را خالی و تنظیمات را ذخیره کنید.</div>
+                                            <input type="file" class="form-control" accept="video/mp4,.mp4" id="<?= $appKey ?>_guide_file">
+                                            <button type="button" class="btn btn-outline-primary mt-2" data-upload-guide="<?= $appKey ?>">آپلود ویدئوی راهنما</button>
+                                            <div class="text-muted small mt-2">حداکثر ۵۰ مگابایت، با توجه به محدودیت آپلود سرور؛ پس از آپلود، تنظیمات را ذخیره کنید.</div>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <label for="require_video" class="form-label">الزام احراز هویت ویدئویی در ثبت‌نام راننده</label>
-                                        <select class="form-control" id="require_video">
-                                            <option value="0">غیرفعال</option>
-                                            <option value="1">فعال</option>
-                                        </select>
-                                        <div class="text-muted small mt-1">اگر فعال باشد، راننده بدون تایید ویدئویی نمی‌تواند ثبت‌نام را کامل کند.</div>
-                                    </div>
+                                    <?php endforeach; ?>
+                                    <div class="col-12 text-muted">ورود پیامکی و دریافت اطلاعات پایه برقرار می‌ماند. هر استعلام فقط در اپی اجرا می‌شود که گزینهٔ آن فعال باشد.</div>
                                     <div class="col-md-6">
                                         <label for="video_max_seconds" class="form-label">حداکثر زمان ویدئو (ثانیه)</label>
                                         <input type="number" class="form-control" id="video_max_seconds" min="1" max="30">
                                     </div>
                                     <div class="col-md-6">
                                         <label for="video_max_mb" class="form-label">حداکثر حجم ویدئو (MB)</label>
-                                        <input type="number" class="form-control" id="video_max_mb" min="1" max="20">
+                                        <input type="number" class="form-control" id="video_max_mb" min="1" max="12">
                                         <div class="text-muted small mt-1">توجه: Base64 حدود 33٪ بزرگ‌تر می‌شود؛ بهتر است فایل کمتر از 4MB باشد.</div>
                                     </div>
 
@@ -254,18 +260,6 @@ require_once "views/panel/sidebar.php";
                                     <div class="col-12">
                                         <textarea class="form-control" id="video_phrase_template" rows="3" placeholder="اینجانب {full_name} با قوانین {company_name} موافقت می‌کنم."></textarea>
                                         <div class="text-muted small mt-1">از {full_name} و {company_name} می‌توانید استفاده کنید.</div>
-                                    </div>
-
-                                    <div class="col-12 mt-4">
-                                        <div class="fw-semibold mb-2">راهنمای کاربر</div>
-                                    </div>
-                                    <div class="col-lg-6">
-                                        <label for="video_guide_text" class="form-label">راهنمای متنی</label>
-                                        <textarea class="form-control" id="video_guide_text" rows="4"></textarea>
-                                    </div>
-                                    <div class="col-lg-6">
-                                        <label for="video_guide_url" class="form-label">لینک ویدئوی آموزشی</label>
-                                        <input type="url" class="form-control" id="video_guide_url" dir="ltr" placeholder="https://...">
                                     </div>
 
                                     <div class="col-12 mt-4">
@@ -381,13 +375,9 @@ require_once "views/panel/footer.php";
             maint_message: document.getElementById('maint_message'),
 
             // verification
-            require_national_serial: document.getElementById('require_national_serial'),
-            require_video: document.getElementById('require_video'),
             video_max_seconds: document.getElementById('video_max_seconds'),
             video_max_mb: document.getElementById('video_max_mb'),
             video_phrase_template: document.getElementById('video_phrase_template'),
-            video_guide_text: document.getElementById('video_guide_text'),
-            video_guide_url: document.getElementById('video_guide_url'),
             liveness_threshold: document.getElementById('liveness_threshold'),
             matching_threshold: document.getElementById('matching_threshold'),
             speech_threshold: document.getElementById('speech_threshold')
@@ -554,11 +544,12 @@ require_once "views/panel/footer.php";
             els.maint_enabled.value = it['maintenance.enabled'] || '0';
             els.maint_message.value = it['maintenance.message'] || '';
 
-            els.require_national_serial.checked = (it['auth.require_national_serial'] === '1');
-            els.require_video.value = it['onboarding.require_verification_video'] || '0';
             els.video_phrase_template.value = it['verification.video_phrase_template'] || 'اینجانب {full_name} با قوانین {company_name} موافقت می‌کنم.';
-            els.video_guide_text.value = it['verification.video_guide_text'] || '';
-            els.video_guide_url.value = it['verification.video_guide_url'] || '';
+            document.querySelectorAll('[data-verification-setting]').forEach(el => {
+                const value = it[el.dataset.verificationSetting];
+                if (el.type === 'checkbox') el.checked = value === '1';
+                else el.value = value || '';
+            });
             els.video_max_seconds.value = it['verification.video_max_seconds'] || '10';
             els.video_max_mb.value = it['verification.video_max_mb'] || '5';
             els.liveness_threshold.value = it['verification.api_ir.liveness_threshold'] || '80';
@@ -592,11 +583,7 @@ require_once "views/panel/footer.php";
                 'maintenance.enabled': els.maint_enabled.value,
                 'maintenance.message': els.maint_message.value,
 
-                'auth.require_national_serial': els.require_national_serial.checked ? '1' : '0',
-                'onboarding.require_verification_video': els.require_video.value,
                 'verification.video_phrase_template': els.video_phrase_template.value,
-                'verification.video_guide_text': els.video_guide_text.value,
-                'verification.video_guide_url': els.video_guide_url.value,
                 'verification.video_max_seconds': els.video_max_seconds.value,
                 'verification.video_max_mb': els.video_max_mb.value,
                 'verification.api_ir.liveness_threshold': els.liveness_threshold.value,
@@ -604,6 +591,9 @@ require_once "views/panel/footer.php";
                 'verification.api_ir.speech_threshold': els.speech_threshold.value
             };
             const fd = new FormData();
+            document.querySelectorAll('[data-verification-setting]').forEach(el => {
+                items[el.dataset.verificationSetting] = el.type === 'checkbox' ? (el.checked ? '1' : '0') : el.value.trim();
+            });
             fd.append('action', 'save');
             fd.append('items', JSON.stringify(items));
             const res = await fetch('ajax/site-settings.php', {
@@ -694,6 +684,35 @@ require_once "views/panel/footer.php";
                 });
             }
         }
+
+        document.querySelectorAll('[data-upload-guide]').forEach(button => {
+            button.addEventListener('click', async () => {
+                const app = button.dataset.uploadGuide;
+                const file = document.getElementById(app + '_guide_file').files[0];
+                if (!file || file.size > 50 * 1024 * 1024) {
+                    Swal.fire('انتخاب فایل', 'یک فایل MP4 با حجم حداکثر ۵۰ مگابایت انتخاب کنید.', 'warning');
+                    return;
+                }
+                button.disabled = true;
+                const oldText = button.textContent;
+                button.textContent = 'در حال آپلود…';
+                try {
+                    const fd = new FormData();
+                    fd.append('action', 'upload_verification_guide');
+                    fd.append('video', file);
+                    const res = await fetch('ajax/site-settings.php', { method: 'POST', body: fd, credentials: 'same-origin' });
+                    const json = await res.json();
+                    if (!res.ok || !json.ok) throw new Error(json.message || 'آپلود ناموفق بود');
+                    document.getElementById(app + '_guide_url').value = json.path;
+                    Swal.fire('آپلود شد', 'برای اعمال ویدئو، تنظیمات را ذخیره کنید.', 'success');
+                } catch (error) {
+                    Swal.fire('خطا', error.message || 'ارتباط با سرور برقرار نشد', 'error');
+                } finally {
+                    button.disabled = false;
+                    button.textContent = oldText;
+                }
+            });
+        });
 
         document.getElementById('btnSaveSettings').addEventListener('click', save);
         document.getElementById('btnUploadLogo').addEventListener('click', uploadLogo);
