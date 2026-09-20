@@ -46,6 +46,7 @@ elseif ($path === '/meta/vehicle-types') $endpointKey = 'api.meta.vehicle_types'
 // Auth
 elseif ($path === '/auth/request-otp') $endpointKey = 'api.auth.request_otp';
 elseif ($path === '/auth/verify-otp') $endpointKey = 'api.auth.verify_otp';
+elseif ($path === '/auth/video-challenge') $endpointKey = 'api.auth.video_challenge';
 elseif ($path === '/auth/verify-identity') $endpointKey = 'api.auth.verify_identity';
 elseif ($path === '/auth/refresh') $endpointKey = 'api.auth.refresh';
 elseif ($path === '/auth/logout') $endpointKey = 'api.auth.logout';
@@ -265,7 +266,8 @@ if ($method === 'GET' && $path === '/meta/app-config') {
         ],
 
         'auth' => [
-            'require_national_serial' => $policy['require_national_serial'],
+            'require_national_serial' => $policy['require_video'],
+            'require_identity_photo' => $policy['require_national_serial'],
             'require_shahkar' => $policy['require_shahkar']
         ],
 
@@ -427,7 +429,7 @@ if ($method === 'POST' && $path === '/auth/verify-identity') {
     $requireSerial = $policy['require_national_serial'];
 
     // اگر سریال از پنل ادمین الزامی بود و فرستاده نشده بود، خطا بدهد
-    if ($requireSerial && !$cardSerial) {
+    if ($policy['require_video'] && mb_strlen((string)$cardSerial) < 5) {
         api_err('card_serial الزامی است', 422);
     }
     // --------------------------------------------------------
@@ -444,6 +446,8 @@ if ($method === 'POST' && $path === '/auth/verify-identity') {
         ];
         try {
             $shahkarRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/ShahkarLite', 'POST', $shahkarBody);
+        } catch (VerificationServiceException $e) {
+            api_verification_error($e);
         } catch (Throwable $e) {
             error_log('driver.verify_identity shahkar failed: ' . $e->getMessage());
             api_err('در حال حاضر ارتباط با سرویس احراز هویت ممکن نیست', 502);
@@ -464,17 +468,19 @@ if ($method === 'POST' && $path === '/auth/verify-identity') {
         $photoBody = [
             'birthDate' => $birthDate,
             'nationalCode' => $nationalCode,
-            'serialNumber' => $cardSerial,
+
         ];
         try {
-            $photoRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/PersonImage', 'POST', $photoBody);
+            $photoRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/PersonData', 'POST', $photoBody);
+        } catch (VerificationServiceException $e) {
+            api_verification_error($e);
         } catch (Throwable $e) {
             error_log('driver.verify_identity photo service failed: ' . $e->getMessage());
             api_err('در حال حاضر ارتباط با سرویس تصویر هویتی ممکن نیست', 502);
         }
         if (empty($photoRes['success']) || $photoRes['success'] !== true) {
             error_log('driver.verify_identity photo rejected: ' . (string)($photoRes['message'] ?? 'provider rejected request'));
-            api_err('تصویر هویتی تأیید نشد. لطفاً تاریخ تولد و سریال کارت ملی را بررسی کنید.', 400);
+            api_err('تصویر هویتی تأیید نشد. لطفاً تاریخ تولد و کد ملی را بررسی کنید.', 400);
         }
 
         // ذخیره عکس به عنوان avatar_key (اگر imageBase64 موجود باشد)
@@ -521,7 +527,7 @@ if ($method === 'POST' && $path === '/auth/verify-identity') {
         }
 
         // در جدول users هم نام و فیلدها را همسان می‌کنیم
-        $pdo->prepare("UPDATE users SET full_name=?, code_meli=?, birth_date=?, national_card_serial=?, updated_at=NOW(3) WHERE id=? LIMIT 1")
+        $pdo->prepare("UPDATE users SET full_name=?, code_meli=?, birth_date=?, national_card_serial=COALESCE(NULLIF(?, ''), national_card_serial), updated_at=NOW(3) WHERE id=? LIMIT 1")
             ->execute([$fullName, $nationalCode, $birthDate, $cardSerial, (int)$u['id']]);
 
         $pdo->commit();
@@ -776,6 +782,18 @@ if ($method === 'POST' && $path === '/driver/docs') {
     api_ok(['uploaded' => true]);
 }
 
+// Fetch a one-use, role-bound speech challenge from the official provider.
+if ($method === 'POST' && $path === '/auth/video-challenge') {
+    $u = api_require_auth();
+    if (!in_array((int)$u['user_type'], [1, 2], true)) api_err('Forbidden', 403);
+    if (!verification_policy((int)$u['user_type'])['require_video']) api_ok(['skipped' => true]);
+    require_once __DIR__ . '/../../includes/video_challenge.php';
+    $in = api_input();
+    try {
+        api_ok(verification_create_challenge($u, trim((string)($in['card_serial'] ?? ''))));
+    } catch (VerificationServiceException $e) { api_verification_error($e); }
+}
+
 // Driver: upload verification video + call api.ir VideoVerify
 // Driver: upload verification video + call api.ir VideoVerify
 if ($method === 'POST' && in_array($path, ['/driver/verification-video', '/company/verification-video'], true)) {
@@ -789,8 +807,10 @@ if ($method === 'POST' && in_array($path, ['/driver/verification-video', '/compa
     // فارسی: فشرده سازی ویدئو با ffmpeg (اگر نصب باشد)
     function _amut_ffmpeg_path(): string
     {
-        $p = trim((string)shell_exec('command -v ffmpeg'));
-        return $p ?: '';
+        if (!is_callable('shell_exec')) return '';
+        $command = PHP_OS_FAMILY === 'Windows' ? 'where ffmpeg 2>NUL' : 'command -v ffmpeg 2>/dev/null';
+        $paths = preg_split('/\r?\n/', trim((string)shell_exec($command)));
+        return $paths[0] ?? '';
     }
 
     function _amut_compress_video(string $src, string $dst): bool
@@ -800,14 +820,14 @@ if ($method === 'POST' && in_array($path, ['/driver/verification-video', '/compa
 
         // فارسی: خروجی mp4 سبک (حداکثر عرض 640)، صدای کم‌حجم، faststart برای استریم بهتر
         $cmd =
-            $ff . ' -y -i ' . escapeshellarg($src) .
+            escapeshellarg($ff) . ' -y -i ' . escapeshellarg($src) .
             ' -vf "scale=\'min(640,iw)\':-2,fps=24" ' .
             ' -c:v libx264 -profile:v baseline -level 3.0 -preset veryfast -crf 28 ' .
             ' -pix_fmt yuv420p ' .
             ' -c:a aac -b:a 64k -ac 1 -ar 16000 ' .
             ' -movflags +faststart ' .
             escapeshellarg($dst) .
-            ' 2>/dev/null';
+            (PHP_OS_FAMILY === 'Windows' ? ' 2>NUL' : ' 2>/dev/null');
 
         shell_exec($cmd);
 
@@ -830,7 +850,7 @@ if ($method === 'POST' && in_array($path, ['/driver/verification-video', '/compa
 
     // فارسی: سقف نهایی فایل (بعد از فشرده سازی) از تنظیمات
     $maxMb = (int)settings_get('verification.video_max_mb', '5');
-    if ($maxMb <= 0) $maxMb = 5;
+    $maxMb = max(1, min(5, $maxMb));
     $maxBytesFinal = $maxMb * 1024 * 1024;
 
     // فارسی: سقف فایل خام برای پذیرش اولیه (می‌توانید در تنظیمات هم بگذارید)
@@ -921,17 +941,14 @@ if ($method === 'POST' && in_array($path, ['/driver/verification-video', '/compa
         'compressed' => $compressed ? 1 : 0,
     ], JSON_UNESCAPED_UNICODE);
 
+    require_once __DIR__ . '/../../includes/video_challenge.php';
+    try {
+        $speechText = verification_consume_challenge($u, (string)($_POST['challenge_token'] ?? ''));
+    } catch (VerificationServiceException $e) { @unlink($usedPath); api_verification_error($e); }
+
+    $meta = json_encode(array_merge(json_decode($meta, true), ['speech_text' => $speechText]), JSON_UNESCAPED_UNICODE);
     $st = $pdo->prepare("INSERT INTO user_files (user_id, file_type, file_key, mime_type, file_size, metadata, created_at, updated_at) VALUES (?, 6, ?, ?, ?, ?, NOW(3), NOW(3))");
     $st->execute([(int)$u['id'], $fileKey, $storedMime, $usedSize, $meta]);
-
-    // ساخت speechText از template
-    $companyName = (string)settings_get('company.name', settings_get('site.name', ''));
-    $tpl = (string)settings_get('verification.video_phrase_template', 'اینجانب {full_name} با قوانین {company_name} موافقت می‌کنم.');
-    $speechText = str_replace(
-        ['{full_name}', '{company_name}'],
-        [(string)($u['full_name'] ?? ''), $companyName],
-        $tpl
-    );
 
     $overrides = [
         'speechText' => $speechText,
@@ -958,11 +975,11 @@ if ($method === 'POST' && in_array($path, ['/driver/verification-video', '/compa
     $runner = new IdentityVerificationRunner($pdo);
     $run = $runner->runServiceForUser($svcId, (int)$u['id'], null, $overrides, $appRole, $fileKey);
     if (empty($run['ok'])) {
-        api_ok([
-            'uploaded' => true,
-            'file_key' => $fileKey,
-            'verified' => false,
-            'verification' => $run,
+        api_err((string)($run['message'] ?? 'استعلام ویدئو انجام نشد.'), (int)($run['status'] ?? 502), [
+            'code' => $run['code'] ?? 'video_provider_error',
+            'retryable' => $run['retryable'] ?? false,
+            'request_id' => $run['request_id'] ?? null,
+            'uploaded' => true, 'verified' => false,
         ]);
     }
 
@@ -973,7 +990,8 @@ if ($method === 'POST' && in_array($path, ['/driver/verification-video', '/compa
         'uploaded' => true,
         'file_key' => $fileKey,
         'verified' => $passed,
-        'verification' => $run,
+        'code' => $passed ? 'video_verified' : 'video_not_verified',
+        'message' => $passed ? 'احراز هویت ویدئویی تأیید شد.' : 'ویدئو تأیید نشد؛ نور، وضوح چهره و خواندن کامل جمله را بررسی کنید.',
     ]);
 }
 

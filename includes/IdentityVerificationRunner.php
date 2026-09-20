@@ -2,6 +2,8 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/ExternalApiHelper.php';
+require_once __DIR__ . '/app_roles.php';
+require_once __DIR__ . '/verification_policy.php';
 
 /**
  * اجرای یکنواخت سرویس‌های احراز هویت (پنل و API اپلیکیشن)
@@ -13,10 +15,10 @@ final class IdentityVerificationRunner
     private PDO $pdo;
     private ExternalApiHelper $api;
 
-    public function __construct(PDO $pdo)
+    public function __construct(PDO $pdo, ?ExternalApiHelper $api = null)
     {
         $this->pdo = $pdo;
-        $this->api = new ExternalApiHelper($pdo);
+        $this->api = $api ?? new ExternalApiHelper($pdo);
     }
 
     public function listActiveServicesForUserType(int $userType): array
@@ -33,7 +35,40 @@ final class IdentityVerificationRunner
         ");
         $st->execute([$subjectKind]);
         $rows = $st->fetchAll();
-        return $rows ?: [];
+        return array_map([self::class, 'currentService'], $rows ?: []);
+    }
+
+    public static function currentService(array $svc): array
+    {
+        $svc['available'] = true;
+        if (($svc['provider_slug'] ?? '') !== 'api_ir') return $svc;
+        $path = '/' . ltrim((string)$svc['endpoint_path'], '/');
+        if ($path === '/api/sw1/PersonImage') {
+            $path = '/api/sw1/PersonData';
+            $svc['code'] = 'PersonData';
+            $svc['title'] = 'استعلام مشخصات و تصویر هویتی';
+        }
+        $svc['endpoint_path'] = $path;
+        $svc['http_method'] = 'POST';
+        $required = match ($path) {
+            '/api/sw1/ShahkarLite', '/api/sw1/Shahkar', '/api/sw1/ShahkarPro' => ['nationalCode', 'mobile'],
+            '/api/sw1/PersonData', '/api/sw1/PersonInfo' => ['nationalCode', 'birthDate'],
+            '/api/sw1/VideoVerify' => ['nationalCode', 'birthDate', 'serialNumber', 'videoBase64', 'speechText'],
+            default => null,
+        };
+        $cfg = json_decode((string)($svc['config_json'] ?? ''), true) ?: [];
+        if (!is_array($cfg)) $cfg = [];
+        if ($required !== null) $cfg['required'] = $required;
+        $svc['config_json'] = json_encode($cfg, JSON_UNESCAPED_UNICODE);
+        if (in_array($path, ['/api/sw1/Shahkar2', '/api/sw1/VideoMatch'], true)) {
+            $svc['available'] = false;
+            $svc['description'] = 'این سرویس در قرارداد فعلی موجود نیست؛ از شاهکار لایت یا VideoVerify استفاده کنید.';
+        } elseif ($path === '/api/sw1/PersonData') {
+            $svc['description'] = 'نیازمند کد ملی و تاریخ تولد ذخیره‌شده؛ بدون نیاز به سریال کارت.';
+        } elseif ($path === '/api/sw1/VideoVerify') {
+            $svc['description'] = 'اجرای مجدد آخرین ویدئوی همین اپ با متن اصلی ضبط؛ استعلام مجدد ممکن است هزینه داشته باشد.';
+        }
+        return $svc;
     }
 
     public function runServiceForUser(
@@ -49,11 +84,27 @@ final class IdentityVerificationRunner
             return $this->fail('سرویس یافت نشد یا غیرفعال است');
         }
 
+        $svc = self::currentService($svc);
+        if (!$svc['available']) return $this->fail($svc['description'], ['code' => 'provider_service_obsolete']);
+
         $user = $this->getUserCore($subjectUserId);
         if (!$user) return $this->fail('کاربر یافت نشد');
         if ($appRole !== null) {
             if (!in_array($appRole, [1, 2], true) || !api_user_has_app_role($user, $appRole)) return $this->fail('نقش نامعتبر است');
             $user['user_type'] = $appRole;
+        }
+
+        if ((int)$svc['subject_kind'] !== 0 && (int)$svc['subject_kind'] !== (int)$user['user_type']) {
+            return $this->fail('این سرویس برای نقش انتخاب‌شده فعال نیست.', ['code' => 'invalid_app_role']);
+        }
+        if ($actorAdminId !== null && $svc['endpoint_path'] === '/api/sw1/VideoVerify') {
+            $st = $this->pdo->prepare("SELECT file_key, metadata FROM user_files WHERE user_id=? AND file_type=6 AND JSON_EXTRACT(metadata, '$.app_role')=? ORDER BY id DESC LIMIT 1");
+            $st->execute([$subjectUserId, (int)$user['user_type']]);
+            $file = $st->fetch();
+            $meta = $file ? json_decode((string)$file['metadata'], true) : null;
+            if (!is_array($meta) || empty($meta['speech_text'])) return $this->fail('ویدئوی دارای متن معتبر برای این اپ موجود نیست؛ کاربر باید در نسخهٔ جدید اپ دوباره ضبط کند.', ['code' => 'video_recording_required']);
+            $videoFileKey = $file['file_key'];
+            $payloadOverrides['speechText'] = $meta['speech_text'];
         }
 
         // payload پایه از اطلاعات کاربر
@@ -79,9 +130,16 @@ final class IdentityVerificationRunner
             }
         }
 
+        if ($svc['provider_slug'] === 'api_ir' && $svc['code'] === 'VideoVerify') {
+            $payload['videoBase64'] = $this->loadVerificationVideoBase64((int)$user['id'], $videoFileKey) ?? '';
+        }
+
         // required
         $required = $cfg['required'] ?? [];
         if (!is_array($required)) $required = [];
+        if ($svc['provider_slug'] === 'api_ir' && in_array($svc['endpoint_path'], ['/api/sw1/PersonImage', '/api/sw1/PersonData', '/api/sw1/PersonInfo'], true)) {
+            $required = ['nationalCode', 'birthDate'];
+        }
 
         // پشتیبانی api.ir biometric: videoBase64 / videobase64
         // اگر سرویس این فیلد را required کرده باشد، از فایل ویدئوی احراز هویت کاربر base64 می‌سازیم.
@@ -120,10 +178,16 @@ final class IdentityVerificationRunner
             $elapsedMs = (int)round((microtime(true) - $startedAt) * 1000);
             $normalized = $this->normalizeApiResponse($resp);
 
-            $this->finishJob($jobId, $normalized, true);
+            $verified = null;
+            if ($svc['provider_slug'] === 'api_ir') {
+                if (in_array($svc['code'], ['ShahkarLite', 'Shahkar', 'ShahkarPro'], true)) $verified = $normalized['data'] === true;
+                if ($svc['code'] === 'VideoVerify') $verified = verification_video_passed($normalized);
+            }
+            $this->finishJob($jobId, $normalized, $verified !== false);
 
             return [
                 'ok' => true,
+                'verified' => $verified,
                 'job_id' => $jobId,
                 'latency_ms' => $elapsedMs,
                 'service' => [
@@ -133,9 +197,13 @@ final class IdentityVerificationRunner
                 ],
                 'result' => $normalized,
             ];
+        } catch (VerificationServiceException $e) {
+            $this->finishJob($jobId, ['success' => false, 'code' => $e->errorCode, 'request_id' => $e->requestId], false);
+            return $this->fail($e->getMessage(), ['job_id' => $jobId, 'status' => $e->httpStatus] + $e->publicPayload());
         } catch (Throwable $e) {
             $this->finishJob($jobId, ['success' => false, 'error' => $e->getMessage()], false);
-            return $this->fail($e->getMessage(), ['job_id' => $jobId]);
+            error_log('verification.runner unexpected type=' . get_class($e));
+            return $this->fail('خطایی در پردازش احراز هویت رخ داد.', ['job_id' => $jobId, 'code' => 'verification_internal_error', 'status' => 500]);
         }
     }
 
@@ -187,7 +255,7 @@ final class IdentityVerificationRunner
 
         $size = (int)($row['file_size'] ?? 0);
         // سقف برای جلوگیری از فشار حافظه/CPU (base64 حدود 33% بزرگ‌تر می‌شود)
-        if ($size <= 0 || $size > 12 * 1024 * 1024) {
+        if ($size <= 0 || $size > ApiIrContract::MAX_VIDEO_BYTES) {
             return null;
         }
 

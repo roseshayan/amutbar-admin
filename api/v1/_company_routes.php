@@ -144,7 +144,7 @@ if (!function_exists('company_routes')) {
             require_once __DIR__ . '/../../includes/settings.php';
             $policy = verification_policy(2);
             $requireSerial = $policy['require_national_serial'];
-            if ($requireSerial && !$cardSerial) {
+            if ($policy['require_video'] && mb_strlen((string)$cardSerial) < 5) {
                 api_err('card_serial الزامی است', 422);
             }
 
@@ -159,6 +159,8 @@ if (!function_exists('company_routes')) {
                         'mobile'       => (string)$u['phone'],
                         'nationalCode' => $nationalCode,
                     ]);
+                } catch (VerificationServiceException $e) {
+            api_verification_error($e);
                 } catch (Throwable $e) {
                     error_log('company.verify_identity shahkar failed: ' . $e->getMessage());
                     api_err('در حال حاضر ارتباط با سرویس احراز هویت ممکن نیست', 502);
@@ -177,18 +179,20 @@ if (!function_exists('company_routes')) {
             $avatarKey = null;
             if ($requireSerial) {
                 try {
-                    $photoRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/PersonImage', 'POST', [
+                    $photoRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/PersonData', 'POST', [
                         'birthDate'    => $birthDate,
                         'nationalCode' => $nationalCode,
-                        'serialNumber' => $cardSerial,
+
                     ]);
+                } catch (VerificationServiceException $e) {
+            api_verification_error($e);
                 } catch (Throwable $e) {
                     error_log('company.verify_identity photo service failed: ' . $e->getMessage());
                     api_err('در حال حاضر ارتباط با سرویس تصویر هویتی ممکن نیست', 502);
                 }
                 if (empty($photoRes['success']) || $photoRes['success'] !== true) {
                     error_log('company.verify_identity photo rejected: ' . (string)($photoRes['message'] ?? 'provider rejected request'));
-                    api_err('تصویر هویتی تأیید نشد. لطفاً تاریخ تولد و سریال کارت ملی را بررسی کنید.', 400);
+                    api_err('تصویر هویتی تأیید نشد. لطفاً تاریخ تولد و کد ملی را بررسی کنید.', 400);
                 }
                 $imageBase64 = $photoRes['data']['imageBase64'] ?? null;
                 if (is_string($imageBase64) && $imageBase64 !== '') {
@@ -229,7 +233,7 @@ if (!function_exists('company_routes')) {
                     $companyId = (int)$pdo->lastInsertId();
                 }
 
-                $pdo->prepare("UPDATE users SET full_name=?, code_meli=?, birth_date=?, national_card_serial=?, updated_at=NOW(3) WHERE id=? LIMIT 1")
+                $pdo->prepare("UPDATE users SET full_name=?, code_meli=?, birth_date=?, national_card_serial=COALESCE(NULLIF(?, ''), national_card_serial), updated_at=NOW(3) WHERE id=? LIMIT 1")
                     ->execute([$fullName, $nationalCode, $birthDate, $cardSerial, (int)$u['id']]);
 
                 $pdo->commit();

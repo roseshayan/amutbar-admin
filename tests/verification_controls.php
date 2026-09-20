@@ -18,7 +18,7 @@ $afterSharedAccountChecks = function (): void {
     check(!verification_needs_video($id, 1) && verification_needs_video($id, 2), 'Only enabled role requires video');
     $pdo->exec("INSERT INTO external_api_providers (name, slug, base_url) VALUES ('Test', 'test', 'https://example.invalid')");
     $provider = (int)$pdo->lastInsertId();
-    $passed = ['success' => true, 'data' => ['isMatch' => true, 'isLiveness' => true, 'isSpeechMatched' => true]];
+    $passed = ['success' => true, 'data' => ['isPassed' => true, 'isMatch' => true, 'isLiveness' => true, 'isSpeechMatched' => true]];
     $insert = $pdo->prepare("INSERT INTO identity_verification_jobs (subject_user_id, subject_kind, check_type, provider_id, status, response_redacted_json) VALUES (?, ?, 'VideoVerify', ?, ?, ?)");
     $insert->execute([$id, 1, $provider, 2, json_encode($passed)]);
     check(verification_needs_video($id, 2), 'A shared account driver result cannot verify cargo');

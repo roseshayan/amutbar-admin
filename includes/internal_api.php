@@ -27,6 +27,7 @@ function internal_api_endpoints_catalog(): array
         // ---------- Auth ----------
         'api.auth.request_otp' => ['ارسال کد OTP', 'Auth', true, true],
         'api.auth.verify_otp' => ['تأیید کد OTP', 'Auth', true, true],
+        'api.auth.video_challenge' => ['متن یک‌بارمصرف احراز ویدئویی', 'Auth', true, false],
         'api.auth.verify_identity' => ['احراز هویت API.ir', 'Auth', true, true],
         'api.auth.refresh' => ['رفرش توکن', 'Auth', true, true],
         'api.auth.logout' => ['خروج', 'Auth', true, true],

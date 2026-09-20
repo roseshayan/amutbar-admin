@@ -26,13 +26,15 @@ header('Content-Type: application/json; charset=utf-8');
 api_cors();
 
 set_exception_handler(static function (Throwable $e): void {
-    error_log('api.unhandled: ' . $e->getMessage());
+    if ($e instanceof VerificationServiceException) api_verification_error($e);
+    $requestId = bin2hex(random_bytes(16));
+    error_log('api.unhandled request=' . $requestId . ' type=' . get_class($e));
     if (!headers_sent()) {
         header('Content-Type: application/json; charset=utf-8');
     }
     http_response_code(500);
     echo json_encode(
-        ['ok' => false, 'message' => 'خطایی در پردازش اطلاعات رخ داد. لطفاً دوباره تلاش کنید.'],
+        ['ok' => false, 'message' => 'خطایی در پردازش اطلاعات رخ داد. لطفاً دوباره تلاش کنید.', 'code' => 'internal_error', 'retryable' => false, 'request_id' => $requestId],
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
     );
     exit;

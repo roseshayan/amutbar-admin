@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . "/ApiIrContract.php";
 class ExternalApiHelper {
     private $pdo;
     
@@ -118,108 +119,104 @@ class ExternalApiHelper {
      * ارسال درخواست به API خارجی
      */
     public function callExternalApi($providerSlug, $endpoint, $method = 'GET', $data = [], $env = 3) {
+        $requestId = bin2hex(random_bytes(16));
+        $provider = null;
+        $credential = null;
+        $httpCode = 0;
+        $started = microtime(true);
+        $errorCode = null;
+        $decoded = null;
         try {
-            // دریافت اطلاعات ارائه‌دهنده
-            $providerStmt = $this->pdo->prepare("
-                SELECT * FROM external_api_providers 
-                WHERE slug = ? AND status = 1
-            ");
-            $providerStmt->execute([$providerSlug]);
-            $provider = $providerStmt->fetch();
-            
-            if (!$provider) {
-                throw new Exception("ارائه‌دهنده API یافت نشد: $providerSlug");
-            }
-            
-            // دریافت اعتبارنامه فعال
+            $st = $this->pdo->prepare("SELECT * FROM external_api_providers WHERE slug=? AND status=1");
+            $st->execute([$providerSlug]);
+            $provider = $st->fetch();
+            if (!$provider) throw new VerificationServiceException('provider_configuration_error', 'سرویس احراز هویت فعال نیست. با پشتیبانی تماس بگیرید.', 503);
             $credential = $this->getActiveCredential($provider['id'], $env);
-            if (!$credential) {
-                throw new Exception("اعتبارنامه فعال برای $providerSlug یافت نشد");
-            }
-            
-            // رمزگشایی اعتبارنامه
-            $credential = $this->decryptCredential($credential);
-            
-            // ساخت URL کامل
-            $url = rtrim($provider['base_url'], '/') . '/' . ltrim($endpoint, '/');
-            $scheme = strtolower((string)(parse_url($url, PHP_URL_SCHEME) ?: ''));
-            if (!in_array($scheme, ['http', 'https'], true)) {
-                throw new Exception('پروتکل آدرس ارائه‌دهنده مجاز نیست');
-            }
-            if (
-                strtolower((string)env('APP_ENV', 'local')) === 'production'
-                && $scheme !== 'https'
-            ) {
-                throw new Exception('در محیط عملیاتی آدرس ارائه‌دهنده باید HTTPS باشد');
-            }
-            
-            // آماده‌سازی هدرها
-            $headers = [
-                'Content-Type: application/json',
-                'Accept: application/json'
-            ];
-            
-            // افزودن هدر احراز هویت
-            $this->addAuthHeader($headers, $provider['auth_type'], $credential);
-            
-            // تنظیمات cURL
-            $ch = curl_init();
-            
-            if ($method === 'POST') {
-                curl_setopt($ch, CURLOPT_POST, true);
-                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-            } elseif ($method === 'PUT') {
-                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
-                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-            } elseif ($method === 'DELETE') {
-                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
+            if (!$credential) throw new VerificationServiceException('provider_credentials_error', 'دسترسی سرویس احراز هویت تنظیم نشده است.', 503);
+            $method = strtoupper((string)$method);
+            $timeout = max(1000, min(180000, (int)$provider['timeout_ms']));
+            $headers = ['Content-Type: application/json', 'Accept: application/json'];
+            if ($providerSlug === 'api_ir') {
+                $request = ApiIrContract::prepare((string)$endpoint, $data);
+                $endpoint = $request['endpoint'];
+                $data = $request['data'];
+                $timeout = max($timeout, $request['timeout_ms']);
+                $url = ApiIrContract::BASE_URL . '/' . ltrim($endpoint, '/');
+                $method = 'POST';
+                $token = trim((string)(($credential['bearer_token'] ?? '') ?: ($credential['api_key'] ?? '')));
+                if ($token === '' || preg_match('/[\r\n]/', $token)) throw new VerificationServiceException('provider_credentials_error', 'کلید سرویس احراز هویت نیاز به بررسی پشتیبانی دارد.', 503);
+                $headers[] = 'Authorization: Bearer ' . $token;
             } else {
-                if (!empty($data)) {
-                    $url .= '?' . http_build_query($data);
-                }
+                $url = rtrim($provider['base_url'], '/') . '/' . ltrim($endpoint, '/');
+                $this->addAuthHeader($headers, $provider['auth_type'], $credential);
             }
-            
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT_MS, $provider['timeout_ms']);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-            curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
-            
-            // اجرای درخواست
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $error = curl_error($ch);
-            curl_close($ch);
-            
-            // ثبت لاگ درخواست
-            $this->logApiRequest($provider['id'], $credential['id'], $endpoint, $method, 
-                               $httpCode, json_encode($data), $response);
-            
-            if ($error) {
-                throw new Exception("خطای cURL: $error");
+            $scheme = strtolower((string)parse_url($url, PHP_URL_SCHEME));
+            if (!in_array($scheme, ['http', 'https'], true) || (env('APP_ENV', 'local') === 'production' && $scheme !== 'https')) {
+                throw new VerificationServiceException('provider_configuration_error', 'آدرس سرویس نامعتبر است.', 503);
             }
-            
-            $decodedResponse = json_decode($response, true);
-            
-            // بررسی وضعیت HTTP
-            if ($httpCode < 200 || $httpCode >= 300) {
-                $errorMsg = isset($decodedResponse['message']) ? 
-                           $decodedResponse['message'] : 
-                           "خطای HTTP: $httpCode";
-                throw new Exception($errorMsg);
+            // No automatic retry: a timed-out POST may already have consumed credit.
+            if (is_callable('set_time_limit')) @set_time_limit((int)ceil($timeout / 1000) + 30);
+            $response = $this->sendRequest($url, $method, $data, $headers, $timeout);
+            $httpCode = $response['status'];
+            if ($providerSlug === 'api_ir') {
+                $decoded = ApiIrContract::validateResponse($endpoint, ApiIrContract::decode($httpCode, $response['body'], $response['errno']), $data);
+            } else {
+                if ($response['errno'] !== 0 || $httpCode < 200 || $httpCode >= 300) throw new VerificationServiceException('provider_unavailable', 'ارتباط با سرویس خارجی برقرار نشد.', 502, true);
+                $decoded = json_decode($response['body'], true);
+                if (!is_array($decoded)) throw new VerificationServiceException('provider_invalid_response', 'پاسخ سرویس قابل پردازش نبود.', 502, true);
             }
-            
-            return $decodedResponse;
-            
-        } catch (Exception $e) {
-            // ثبت خطا
-            error_log("External API Error [$providerSlug]: " . $e->getMessage());
+            return $decoded;
+        } catch (VerificationServiceException $e) {
+            $e->requestId = $requestId;
+            $errorCode = $e->errorCode;
+            error_log("External API [$providerSlug] request=$requestId error=$errorCode http=$httpCode provider_code=" . ($e->providerCode ?? 'unknown'));
             throw $e;
+        } catch (Throwable $e) {
+            $errorCode = 'provider_internal_error';
+            error_log("External API [$providerSlug] request=$requestId error=$errorCode type=" . get_class($e));
+            throw new VerificationServiceException($errorCode, 'خطایی در پردازش استعلام رخ داد. با پشتیبانی تماس بگیرید.', 502, false, null, $requestId);
+        } finally {
+            if ($provider && $credential) {
+                $summary = ['success' => $decoded['success'] ?? false, 'code' => $decoded['code'] ?? null, 'error_code' => $errorCode];
+                $this->logApiRequest($provider['id'], $credential['id'], $endpoint, $method, $httpCode,
+                    json_encode(['fields' => array_keys($data)]), json_encode($summary), $requestId,
+                    (int)round((microtime(true) - $started) * 1000), $errorCode);
+            }
         }
     }
-    
+
+    /** Transport seam allows fixture tests without any paid provider requests. */
+    protected function sendRequest(string $url, string $method, array $data, array $headers, int $timeout): array {
+        $ch = curl_init();
+        $body = '';
+        $options = [
+            CURLOPT_URL => $url,
+            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_CONNECTTIMEOUT_MS => min(10000, $timeout),
+            CURLOPT_TIMEOUT_MS => $timeout,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_WRITEFUNCTION => static function ($handle, string $chunk) use (&$body): int {
+                if (strlen($body) + strlen($chunk) > 16 * 1024 * 1024) return 0;
+                $body .= $chunk;
+                return strlen($chunk);
+            },
+        ];
+        if ($method === 'GET') {
+            if ($data) $options[CURLOPT_URL] .= '?' . http_build_query($data);
+        } else {
+            $options[CURLOPT_CUSTOMREQUEST] = $method;
+            $options[CURLOPT_POSTFIELDS] = json_encode($data ?: new stdClass(), JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        }
+        try {
+            curl_setopt_array($ch, $options);
+            curl_exec($ch);
+            return ['status' => (int)curl_getinfo($ch, CURLINFO_HTTP_CODE), 'errno' => curl_errno($ch), 'body' => $body];
+        } finally { curl_close($ch); }
+    }
+
     /**
      * افزودن هدر احراز هویت
      */
@@ -256,13 +253,13 @@ class ExternalApiHelper {
      * ثبت لاگ درخواست API
      */
     private function logApiRequest($providerId, $credentialId, $endpoint, $method, 
-                                 $httpCode, $requestData, $response) {
+                                 $httpCode, $requestData, $response, $requestId = null, $latency = null, $errorCode = null) {
         try {
             $stmt = $this->pdo->prepare("
                 INSERT INTO external_api_request_logs 
                 (provider_id, credential_id, operation, http_method, url_path, 
-                 http_status, request_redacted_json, response_redacted_json)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                 http_status, request_redacted_json, response_redacted_json, request_id, latency_ms, error_code)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $operation = $this->extractOperationFromEndpoint($endpoint);
@@ -275,7 +272,7 @@ class ExternalApiHelper {
                 $endpoint,
                 $httpCode,
                 $this->redactSensitiveData($requestData),
-                $this->redactSensitiveData($response)
+                $this->redactSensitiveData($response), $requestId, $latency, $errorCode
             ]);
         } catch (Exception $e) {
             error_log("Failed to log API request: " . $e->getMessage());

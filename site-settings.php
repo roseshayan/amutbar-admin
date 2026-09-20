@@ -226,7 +226,7 @@ require_once "views/panel/sidebar.php";
                                     <div class="col-md-6">
                                         <div class="border rounded p-3 h-100">
                                             <h5><?= $appTitle ?></h5>
-                                            <?php foreach (['require_shahkar' => 'تطبیق شماره موبایل و کد ملی (شاهکار)', 'require_national_serial' => 'دریافت سریال کارت ملی و استعلام تصویر', 'require_video' => 'الزام احراز هویت ویدئویی'] as $setting => $label): ?>
+                                            <?php foreach (['require_shahkar' => 'تطبیق شماره موبایل و کد ملی (شاهکار)', 'require_national_serial' => 'استعلام مشخصات و تصویر هویتی (PersonData)', 'require_video' => 'الزام احراز هویت ویدئویی'] as $setting => $label): ?>
                                             <div class="form-check form-switch my-3">
                                                 <input class="form-check-input" type="checkbox" id="<?= $appKey . '_' . $setting ?>" data-verification-setting="verification.<?= $appKey . '.' . $setting ?>">
                                                 <label class="form-check-label" for="<?= $appKey . '_' . $setting ?>"><?= $label ?></label>
@@ -250,7 +250,7 @@ require_once "views/panel/sidebar.php";
                                     </div>
                                     <div class="col-md-6">
                                         <label for="video_max_mb" class="form-label">حداکثر حجم ویدئو (MB)</label>
-                                        <input type="number" class="form-control" id="video_max_mb" min="1" max="12">
+                                        <input type="number" class="form-control" id="video_max_mb" min="1" max="5">
                                         <div class="text-muted small mt-1">توجه: Base64 حدود 33٪ بزرگ‌تر می‌شود؛ بهتر است فایل کمتر از 4MB باشد.</div>
                                     </div>
 
@@ -258,8 +258,8 @@ require_once "views/panel/sidebar.php";
                                         <div class="fw-semibold mb-2">متن جمله (Speech Text)</div>
                                     </div>
                                     <div class="col-12">
-                                        <textarea class="form-control" id="video_phrase_template" rows="3" placeholder="اینجانب {full_name} با قوانین {company_name} موافقت می‌کنم."></textarea>
-                                        <div class="text-muted small mt-1">از {full_name} و {company_name} می‌توانید استفاده کنید.</div>
+                                        <div class="alert alert-info mb-0">متن ضبط برای هر تلاش مستقیماً از سرویس API.ir دریافت می‌شود و تا ۱۰ دقیقه، فقط برای همان کاربر و اپلیکیشن معتبر است.</div>
+
                                     </div>
 
                                     <div class="col-12 mt-4">
@@ -377,7 +377,6 @@ require_once "views/panel/footer.php";
             // verification
             video_max_seconds: document.getElementById('video_max_seconds'),
             video_max_mb: document.getElementById('video_max_mb'),
-            video_phrase_template: document.getElementById('video_phrase_template'),
             liveness_threshold: document.getElementById('liveness_threshold'),
             matching_threshold: document.getElementById('matching_threshold'),
             speech_threshold: document.getElementById('speech_threshold')
@@ -544,7 +543,6 @@ require_once "views/panel/footer.php";
             els.maint_enabled.value = it['maintenance.enabled'] || '0';
             els.maint_message.value = it['maintenance.message'] || '';
 
-            els.video_phrase_template.value = it['verification.video_phrase_template'] || 'اینجانب {full_name} با قوانین {company_name} موافقت می‌کنم.';
             document.querySelectorAll('[data-verification-setting]').forEach(el => {
                 const value = it[el.dataset.verificationSetting];
                 if (el.type === 'checkbox') el.checked = value === '1';
@@ -583,7 +581,6 @@ require_once "views/panel/footer.php";
                 'maintenance.enabled': els.maint_enabled.value,
                 'maintenance.message': els.maint_message.value,
 
-                'verification.video_phrase_template': els.video_phrase_template.value,
                 'verification.video_max_seconds': els.video_max_seconds.value,
                 'verification.video_max_mb': els.video_max_mb.value,
                 'verification.api_ir.liveness_threshold': els.liveness_threshold.value,

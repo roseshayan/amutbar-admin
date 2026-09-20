@@ -15,6 +15,7 @@ declare(strict_types=1);
 // - users.jwt_token_version (برای logout-all / ابطال سراسری)
 
 require_once __DIR__ . '/jwt.php';
+require_once __DIR__ . '/ApiIrContract.php';
 require_once __DIR__ . '/app_roles.php';
 require_once __DIR__ . '/api_profile.php';
 require_once __DIR__ . '/verification_policy.php';
@@ -252,7 +253,8 @@ function api_ok(array $payload = []): void
 
 function api_err(string $message, int $status = 400, array $payload = []): void
 {
-    json_out(['ok' => false, 'message' => $message] + $payload, $status);
+    if (empty($payload['request_id'])) $payload['request_id'] = bin2hex(random_bytes(16));
+    json_out(['ok' => false, 'message' => $message] + $payload + ['code' => 'api_error', 'retryable' => $status >= 500], $status);
 }
 
 // -----------------------------
@@ -363,4 +365,9 @@ function api_revoke_all_user_tokens(int $userId): void
         ->execute([$userId]);
     $pdo->prepare("UPDATE jwt_refresh_tokens SET revoked_at=NOW(3) WHERE user_id=? AND revoked_at IS NULL")
         ->execute([$userId]);
+}
+
+function api_verification_error(VerificationServiceException $error): void
+{
+    api_err($error->getMessage(), $error->httpStatus, $error->publicPayload());
 }

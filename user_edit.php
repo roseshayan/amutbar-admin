@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/includes/init.php';
 require_admin();
+require_once __DIR__ . '/includes/app_roles.php';
 
 $id = (int)($_GET["id"] ?? 0);
 if ($id <= 0) redirect("users_list.php");
@@ -733,6 +734,17 @@ function jdate_str_to_gdate(string $jdate): ?string
                     </div>
                     <div class="card-body">
 
+                        <label class="form-label" for="idvAppRole">اپلیکیشن مورد استعلام</label>
+                        <select class="form-select mb-3" id="idvAppRole">
+                            <?php foreach ([1 => 'رانندگان', 2 => 'اعلام بار'] as $role => $label): ?>
+                                <?php if (api_user_has_app_role($user, $role)): ?>
+                                    <option value="<?= $role ?>" <?= (int)$user['user_type'] === $role ? 'selected' : '' ?>><?= $label ?></option>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                        </select>
+                        <label class="form-label" for="idvIp">IP مورد استعلام (فقط برای سرویس موقعیت IP)</label>
+                        <input class="form-control mb-3" id="idvIp" dir="ltr" placeholder="مثلاً 8.8.8.8">
+                        <div class="text-muted mb-3">ابتدا تغییرات اطلاعات کاربر را ذخیره کنید. هر اجرای دستی ممکن است از اعتبار سرویس کسر کند.</div>
                         <div id="idvServicesWrap" class="row g-2"></div>
 
                         <div class="mt-3 d-flex gap-2 flex-wrap">
@@ -750,8 +762,7 @@ function jdate_str_to_gdate(string $jdate): ?string
                             style="max-height:320px; overflow:auto; direction:ltr; text-align:left;"></pre>
 
                         <div class="text-muted small mt-2">
-                            نکته: سرویس «بایومتریک جامع» بدون <span dir="ltr">videoBase64</span> در پنل قابل اجرا
-                            نیست.
+                            ویدئو باید در نسخهٔ جدید همان اپ با متن ضبط معتبر ارسال شده باشد.
                         </div>
 
                     </div>
@@ -1137,96 +1148,74 @@ function jdate_str_to_gdate(string $jdate): ?string
     }
 
     // ===== Identity Verification (Admin Panel) =====
+    const idvEscape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[c]));
+    let idvBusy = false;
+    async function idvJson(url, options = {}) {
+        const response = await fetch(url, {credentials: 'same-origin', ...options});
+        let body;
+        try { body = await response.json(); } catch (_) { throw new Error('پاسخ سرور قابل پردازش نبود.'); }
+        if (!response.ok || !body.ok) throw new Error((body.message || 'استعلام انجام نشد.') + (body.request_id ? ` — کد پیگیری: ${body.request_id}` : ''));
+        return body;
+    }
     async function loadIdvServices() {
         const wrap = document.getElementById('idvServicesWrap');
-        const out = document.getElementById('idvOutput');
-        if (!wrap) return;
-        wrap.innerHTML = '<div class="text-muted">در حال بارگذاری...</div>';
-        if (out) out.textContent = '';
-
-        const res = await fetch(`${BASE_URL}/ajax/identity-verification.php?action=list_services&user_type=${USER_TYPE}`, {
-            credentials: 'same-origin'
-        });
-        const json = await res.json();
-        if (!json.ok) {
-            wrap.innerHTML = `<div class="text-danger">${json.message || 'خطا'}</div>`;
-            return;
-        }
-        const items = json.items || [];
-        if (!items.length) {
-            wrap.innerHTML = '<div class="text-muted">سرویس فعالی وجود ندارد.</div>';
-            return;
-        }
-        wrap.innerHTML = items.map(s => `
-            <div class="col-12 col-md-6 col-lg-4">
-                <label class="form-check form-switch">
-                    <input class="form-check-input idv-check" type="checkbox" value="${s.id}">
-                    <span class="form-check-label">${s.title} <span class="text-muted small" dir="ltr">(${s.code})</span></span>
-                </label>
-                <div class="text-muted small">${s.description || ''}</div>
-            </div>
-        `).join('');
+        if (!wrap || idvBusy) return;
+        wrap.textContent = 'در حال بارگذاری...';
+        const role = document.getElementById('idvAppRole').value;
+        if (!role) { wrap.textContent = 'کاربر عضو هیچ‌یک از اپلیکیشن‌ها نیست.'; return; }
+        try {
+            const json = await idvJson(`${BASE_URL}/ajax/identity-verification.php?action=list_services&user_type=${encodeURIComponent(role)}`);
+            if (role !== document.getElementById('idvAppRole').value) return;
+            wrap.innerHTML = (json.items || []).map(s => `
+                <div class="col-12 col-md-6 col-lg-4">
+                    <label class="form-check form-switch">
+                        <input class="form-check-input idv-check" type="checkbox" value="${Number(s.id)}" ${s.available === false ? 'disabled' : ''}>
+                        <span class="form-check-label">${idvEscape(s.title)} <span dir="ltr">(${idvEscape(s.code)})</span></span>
+                    </label><div class="text-muted small">${idvEscape(s.description)}</div>
+                </div>`).join('') || 'سرویس فعالی وجود ندارد.';
+        } catch (e) { wrap.textContent = e instanceof TypeError ? 'ارتباط با سرور برقرار نشد؛ بارگذاری مجدد را بزنید.' : e.message; }
     }
-
     async function runIdvSelected() {
+        if (idvBusy) return;
         const out = document.getElementById('idvOutput');
-        const checks = Array.from(document.querySelectorAll('.idv-check:checked')).map(x => x.value);
-        if (!checks.length) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'هشدار',
-                text: 'حداقل یک سرویس را انتخاب کنید'
-            });
-            return;
-        }
-
-        // Override های کاربردی: پلاک (اگر تکمیل باشد)
+        const checks = [...document.querySelectorAll('.idv-check:checked')].map(x => x.value);
+        if (!checks.length) { out.textContent = 'حداقل یک سرویس را انتخاب کنید.'; return; }
         const overrides = {};
-        const p1 = document.getElementById('plate_part1')?.value || '';
-        const p2 = document.getElementById('plate_part2')?.value || '';
-        const p3 = document.getElementById('plate_part3')?.value || '';
-        const p4 = document.getElementById('plate_part4')?.value || '';
-        if (p1 && p2 && p3 && p4) {
-            // فرمت رایج پروژه (برای VehicleCard/VehicleInfo ممکن است لازم باشد دقیقاً طبق مستند api.ir نرمال‌سازی شود)
-            overrides.plateNumber = `${p1}${p2}${p3}ایران${p4}`;
-        }
-
+        const plate = [1,2,3,4].map(n => document.getElementById(`plate_part${n}`)?.value || '');
+        if (plate.every(Boolean)) overrides.plateNumber = `${plate[0]}${plate[1]}${plate[2]}ایران${plate[3]}`;
+        const ip = document.getElementById('idvIp').value.trim();
+        if (ip) overrides.ip = ip;
         const fd = new FormData();
         fd.append('action', 'run');
         fd.append('user_id', String(USER_ID));
+        fd.append('app_role', document.getElementById('idvAppRole').value);
+        fd.append('_csrf_token', <?= json_encode(csrf_token()) ?>);
         checks.forEach(id => fd.append('service_ids[]', id));
         fd.append('overrides', JSON.stringify(overrides));
-
-        if (out) out.textContent = 'Running...';
-
-        const res = await fetch(`${BASE_URL}/ajax/identity-verification.php`, {
-            method: 'POST',
-            credentials: 'same-origin',
-            body: fd
-        });
-        const json = await res.json();
-        if (out) out.textContent = JSON.stringify(json, null, 2);
-
-        if (json.ok) {
-            Swal.fire({
-                icon: 'success',
-                title: 'انجام شد',
-                text: 'نتیجه در پایین نمایش داده شد'
-            });
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'خطا',
-                text: json.message || 'خطا'
-            });
+        idvBusy = true;
+        ['btnRunIdv', 'btnReloadIdv', 'idvAppRole'].forEach(id => document.getElementById(id).disabled = true);
+        out.textContent = 'در حال اجرای استعلام؛ منتظر بمانید...';
+        try {
+            const json = await idvJson(`${BASE_URL}/ajax/identity-verification.php`, {method: 'POST', body: fd});
+            const results = json.results || [];
+            out.textContent = results.map((r, i) => {
+                const name = r.service?.title || `استعلام ${i + 1}`;
+                const message = !r.ok ? (r.message || 'اجرای استعلام ناموفق بود') : r.verified === false ? 'اطلاعات تأیید نشد' : r.verified === true ? 'تأیید شد' : 'استعلام انجام شد؛ نتیجه نیازمند بررسی است';
+                const details = r.ok && r.verified == null ? '\n' + JSON.stringify(r.result?.data ?? null, null, 2) : '';
+                return `${name}: ${message}${r.request_id ? ' — کد پیگیری: ' + r.request_id : ''}${details}`;
+            }).join('\n\n');
+            const failed = !results.length || results.some(r => !r.ok || r.verified === false);
+            Swal.fire({icon: failed ? 'warning' : 'success', title: failed ? 'نتایج را بررسی کنید' : 'استعلام انجام شد', text: 'نتیجهٔ هر سرویس در پایین نمایش داده شد.'});
+        } catch (e) { out.textContent = e instanceof TypeError ? 'ارتباط قطع شد؛ نتیجه ممکن است ثبت شده باشد. پیش از اجرای دوباره وضعیت را بررسی کنید.' : e.message; }
+        finally {
+            idvBusy = false;
+            ['btnRunIdv', 'btnReloadIdv', 'idvAppRole'].forEach(id => document.getElementById(id).disabled = false);
         }
     }
-
     document.addEventListener('DOMContentLoaded', () => {
-        const b1 = document.getElementById('btnReloadIdv');
-        const b2 = document.getElementById('btnRunIdv');
-        if (b1) b1.addEventListener('click', loadIdvServices);
-        if (b2) b2.addEventListener('click', runIdvSelected);
+        document.getElementById('btnReloadIdv')?.addEventListener('click', loadIdvServices);
+        document.getElementById('btnRunIdv')?.addEventListener('click', runIdvSelected);
+        document.getElementById('idvAppRole')?.addEventListener('change', loadIdvServices);
         loadIdvServices();
     });
 

@@ -30,6 +30,7 @@ function verification_video_passed(array $result): bool
 {
     $data = $result['data'] ?? null;
     return ($result['success'] ?? false) === true && is_array($data)
+        && ($data['isPassed'] ?? false) === true
         && ($data['isMatch'] ?? false) === true
         && ($data['isLiveness'] ?? false) === true
         && ($data['isSpeechMatched'] ?? false) === true;
@@ -48,7 +49,7 @@ function verification_needs_video(int $userId, int $role): bool
 
 function verification_validate_settings(array $items): void
 {
-    foreach (['verification.video_max_seconds' => [1, 30], 'verification.video_max_mb' => [1, 12],
+    foreach (['verification.video_max_seconds' => [1, 30], 'verification.video_max_mb' => [1, 5],
         'verification.api_ir.liveness_threshold' => [0, 100], 'verification.api_ir.matching_threshold' => [0, 100],
         'verification.api_ir.speech_threshold' => [0, 100]] as $key => [$min, $max]) {
         if (!array_key_exists($key, $items)) continue;

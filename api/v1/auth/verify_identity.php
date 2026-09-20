@@ -33,7 +33,7 @@ if (empty($full_name) || empty($national_code) || empty($birth_date)) {
 }
 
 // اگر سریال الزامی بود، چک کن که خالی نباشه
-if ($requireSerial && empty($card_serial)) {
+if ($policy['require_video'] && mb_strlen($card_serial) < 5) {
     api_err('وارد کردن سریال کارت ملی الزامی است.');
 }
 
@@ -53,7 +53,9 @@ try {
 
         try {
             $shahkarRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/ShahkarLite', 'POST', $shahkarBody);
-        } catch (Exception $e) {
+        } catch (VerificationServiceException $e) {
+            api_verification_error($e);
+        } catch (Throwable $e) {
             error_log('legacy.verify_identity shahkar failed: ' . $e->getMessage());
             api_err('در حال حاضر ارتباط با سرویس احراز هویت ممکن نیست', 502);
         }
@@ -77,19 +79,21 @@ try {
         $photoBody = [
             'birthDate' => $birth_date,
             'nationalCode' => $national_code,
-            'serialNumber' => $card_serial
+
         ];
 
         try {
-            $photoRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/PersonImage', 'POST', $photoBody);
-        } catch (Exception $e) {
+            $photoRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/PersonData', 'POST', $photoBody);
+        } catch (VerificationServiceException $e) {
+            api_verification_error($e);
+        } catch (Throwable $e) {
             error_log('legacy.verify_identity photo service failed: ' . $e->getMessage());
             api_err('در حال حاضر ارتباط با سرویس تصویر هویتی ممکن نیست', 502);
         }
 
         if (empty($photoRes['success']) || $photoRes['success'] !== true) {
             error_log('legacy.verify_identity photo rejected: ' . (string)($photoRes['message'] ?? 'provider rejected request'));
-            api_err('تصویر هویتی تأیید نشد. لطفاً تاریخ تولد و سریال کارت ملی را بررسی کنید.');
+            api_err('تصویر هویتی تأیید نشد. لطفاً تاریخ تولد و کد ملی را بررسی کنید.');
         }
 
         $imageBase64 = $photoRes['data']['imageBase64'] ?? null;
@@ -116,7 +120,7 @@ try {
     $pdo->beginTransaction();
     try {
         // آپدیت یوزر (اگر $card_serial خالی باشه هم همون خالی ذخیره میشه که درسته)
-        $pdo->prepare("UPDATE users SET full_name=?, code_meli=?, birth_date=?, national_card_serial=?, updated_at=NOW(3) WHERE id=? LIMIT 1")
+        $pdo->prepare("UPDATE users SET full_name=?, code_meli=?, birth_date=?, national_card_serial=COALESCE(NULLIF(?, ''), national_card_serial), updated_at=NOW(3) WHERE id=? LIMIT 1")
             ->execute([$full_name, $national_code, $birth_date, $card_serial, $user_id]);
 
         $st = $pdo->prepare("SELECT id FROM drivers WHERE user_id=? AND deleted_at IS NULL LIMIT 1");

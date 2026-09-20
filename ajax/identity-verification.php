@@ -34,6 +34,8 @@ try {
             exit;
         }
 
+        $appRole = (int)($_POST['app_role'] ?? 0);
+        if (!in_array($appRole, [1, 2], true)) throw new InvalidArgumentException('Invalid app role');
         $actorAdminId = admin_id();
 
         $overrides = $_POST['overrides'] ?? [];
@@ -43,11 +45,14 @@ try {
         }
         if (!is_array($overrides)) $overrides = [];
 
+        $overrides = array_intersect_key($overrides, array_flip(['plateNumber', 'ip']));
+        $serviceIds = array_values(array_unique(array_map('intval', $serviceIds)));
+        if (count($serviceIds) > 20) throw new InvalidArgumentException('Too many services');
         $results = [];
         foreach ($serviceIds as $sid) {
             $sid = (int)$sid;
             if ($sid <= 0) continue;
-            $results[] = $runner->runServiceForUser($sid, $subjectUserId, $actorAdminId, $overrides);
+            $results[] = $runner->runServiceForUser($sid, $subjectUserId, $actorAdminId, $overrides, $appRole);
         }
 
         echo json_encode(['ok' => true, 'results' => $results]);
@@ -56,6 +61,8 @@ try {
 
     echo json_encode(['ok' => false, 'message' => 'action نامعتبر است']);
 } catch (Throwable $e) {
-    $debug = (string)env('APP_DEBUG', '0') === '1';
-    echo json_encode(['ok' => false, 'message' => $debug ? $e->getMessage() : 'خطای سرور']);
+    $ref = bin2hex(random_bytes(16));
+    error_log('admin.verification request=' . $ref . ' type=' . get_class($e));
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'message' => 'اجرای استعلام انجام نشد.', 'request_id' => $ref]);
 }
