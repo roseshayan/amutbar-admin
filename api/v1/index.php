@@ -69,6 +69,7 @@ elseif ($path === '/company/verification-video') $endpointKey = 'api.company.ver
 
 // Content
 elseif ($path === '/banners') $endpointKey = 'api.content.banners';
+elseif ($path === '/faqs') $endpointKey = 'api.content.faqs';
 
 // Support
 elseif ($path === '/support/tickets') {
@@ -1050,6 +1051,86 @@ if ($method === 'GET' && $path === '/banners') {
         'items' => $banners,
         'target_app_id' => $targetAppId,
         'fallback_target_app_id' => $fallbackTargetAppId,
+    ]);
+}
+
+// دریافت دسته‌بندی‌ها و پرسش‌های متداول فعال برای اپ انتخاب‌شده
+if ($method === 'GET' && $path === '/faqs') {
+    $pdo = db();
+    $targetAppId = isset($_GET['target_app_id']) ? (int)$_GET['target_app_id'] : 1;
+    if (!in_array($targetAppId, [1, 2], true)) $targetAppId = 1;
+
+    $st = $pdo->prepare("
+        SELECT
+            c.id AS category_id,
+            c.title AS category_title,
+            c.description AS category_description,
+            c.icon_key AS category_icon_key,
+            i.id AS item_id,
+            i.question,
+            i.answer,
+            i.link_label,
+            i.link_url,
+            i.image_key,
+            i.video_key,
+            i.video_url
+        FROM faq_categories c
+        INNER JOIN faq_items i
+            ON i.category_id = c.id
+           AND i.is_active = 1
+        WHERE c.target_app_id = ?
+          AND c.is_active = 1
+        ORDER BY c.sort_order ASC, c.id ASC, i.sort_order ASC, i.id ASC
+    ");
+    $st->execute([$targetAppId]);
+    $rows = $st->fetchAll();
+
+    require_once __DIR__ . '/../../includes/settings.php';
+    $siteUrl = rtrim((string)settings_get('site.url', ''), '/');
+    if ($siteUrl === '') {
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+        $siteUrl = $scheme . (string)($_SERVER['HTTP_HOST'] ?? '');
+    }
+
+    $publicUrl = static function ($value) use ($siteUrl): ?string {
+        $value = trim((string)($value ?? ''));
+        if ($value === '') return null;
+        if (preg_match('~^https?://~i', $value)) return $value;
+        if (str_starts_with($value, '//')) return 'https:' . $value;
+        if ($siteUrl === '') return '/' . ltrim($value, '/');
+        return $siteUrl . '/' . ltrim($value, '/');
+    };
+
+    $categories = [];
+    foreach ($rows as $row) {
+        $categoryId = (int)$row['category_id'];
+        if (!isset($categories[$categoryId])) {
+            $categories[$categoryId] = [
+                'id' => $categoryId,
+                'title' => (string)$row['category_title'],
+                'description' => $row['category_description'] !== null ? (string)$row['category_description'] : null,
+                'icon_key' => (string)$row['category_icon_key'],
+                'questions' => [],
+            ];
+        }
+
+        $linkUrl = trim((string)($row['link_url'] ?? ''));
+        $categories[$categoryId]['questions'][] = [
+            'id' => (int)$row['item_id'],
+            'question' => (string)$row['question'],
+            'answer' => (string)$row['answer'],
+            'link' => $linkUrl === '' ? null : [
+                'label' => trim((string)($row['link_label'] ?? '')) ?: 'مشاهده لینک',
+                'url' => $linkUrl,
+            ],
+            'image_url' => $publicUrl($row['image_key']),
+            'video_url' => $publicUrl($row['video_url'] ?: $row['video_key']),
+        ];
+    }
+
+    api_ok([
+        'items' => array_values($categories),
+        'target_app_id' => $targetAppId,
     ]);
 }
 
