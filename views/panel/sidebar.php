@@ -98,6 +98,12 @@ $sidebarLogoHref = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-l
                     </a>
                 </li>
                 <li class="slide">
+                    <a href="faqs.php" class="side-menu__item">
+                        <i class="ri-question-answer-line side-menu__icon"></i>
+                        <span class="side-menu__label">سوالات متداول</span>
+                    </a>
+                </li>
+                <li class="slide">
                     <a href="media-library.php" class="side-menu__item">
                         <i class="ri-folder-image-line side-menu__icon"></i>
                         <span class="side-menu__label">مدیریت رسانه‌ها</span>
