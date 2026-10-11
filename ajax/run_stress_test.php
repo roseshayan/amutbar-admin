@@ -34,7 +34,6 @@ if ($action === 'status') {
             $pid = (int)$data['pid'];
             if (PHP_OS_FAMILY === 'Linux') {
                 $check = @shell_exec("kill -0 $pid 2>&1");
-                // If kill -0 has error and process doesn't exist
                 if (!empty($check) && str_contains(strtolower($check), 'no such process')) {
                     $isRunning = false;
                     $data['status'] = 'completed';
@@ -62,16 +61,26 @@ if ($action === 'status') {
 // ACTION: start (Spawn asynchronous background test)
 // -------------------------------------------------------------
 if ($action === 'start') {
-    // Check if test is already running
+    // Check if test is actively running
     if (is_file($activeTestFile)) {
         $curr = json_decode((string)file_get_contents($activeTestFile), true) ?: [];
         if (($curr['status'] ?? '') === 'running') {
-            echo json_encode([
-                'ok' => false,
-                'message' => 'یک تست در حال حاضر در حال اجرا است. ابتدا آن را متوقف کنید یا صبر کنید به پایان برسد.',
-                'data' => $curr,
-            ], JSON_UNESCAPED_UNICODE);
-            exit;
+            $pid = (int)($curr['pid'] ?? 0);
+            $stillAlive = true;
+            if ($pid > 0 && PHP_OS_FAMILY === 'Linux') {
+                $check = @shell_exec("kill -0 $pid 2>&1");
+                if (!empty($check) && str_contains(strtolower($check), 'no such process')) {
+                    $stillAlive = false;
+                }
+            }
+            if ($stillAlive) {
+                echo json_encode([
+                    'ok' => false,
+                    'message' => 'یک تست در حال حاضر در حال اجرا است. ابتدا دکمه توقف اضطراری را بزنید یا صبر کنید به پایان برسد.',
+                    'data' => $curr,
+                ], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
         }
     }
 
@@ -81,20 +90,42 @@ if ($action === 'start') {
     $requests = max(50, min(500000, (int)($_POST['requests'] ?? 5000)));
     $scenario = (string)($_POST['scenario'] ?? 'mixed');
     $customUrl = trim((string)($_POST['custom_url'] ?? ''));
+    $pacing = max(0, min(1000, (int)($_POST['pacing'] ?? 20))); // Default 20ms
     $host = (string)($_SERVER['HTTP_HOST'] ?? 'amut.speed-ping.shop');
 
     $runId = 'run_' . bin2hex(random_bytes(6));
     $runnerScript = escapeshellarg(BASE_PATH . '/scripts/stress_runner.php');
 
+    // Immediately overwrite active test file with fresh RUNNING state to prevent reading old completed test
+    $initialState = [
+        'run_id' => $runId,
+        'status' => 'running',
+        'mode' => $mode,
+        'scenario' => $scenario,
+        'target_vus' => $vus,
+        'duration_target_sec' => $duration,
+        'requests_target' => $requests,
+        'start_time' => date('Y-m-d H:i:s'),
+        'elapsed_sec' => 0,
+        'remaining_sec' => $duration,
+        'progress_percent' => 0,
+        'total_requests' => 0,
+        'current_rps' => 0.0,
+        'latency_p95_ms' => 0.0,
+        'status_codes' => [],
+    ];
+    @file_put_contents($activeTestFile, json_encode($initialState, JSON_UNESCAPED_SLASHES));
+
     $args = sprintf(
-        '--vus=%d --mode=%s --duration=%d --requests=%d --scenario=%s --run-id=%s --host=%s',
+        '--vus=%d --mode=%s --duration=%d --requests=%d --scenario=%s --run-id=%s --host=%s --pacing=%d',
         $vus,
         escapeshellarg($mode),
         $duration,
         $requests,
         escapeshellarg($scenario),
         escapeshellarg($runId),
-        escapeshellarg($host)
+        escapeshellarg($host),
+        $pacing
     );
 
     if ($customUrl !== '') {
@@ -111,19 +142,11 @@ if ($action === 'start') {
         pclose(popen("start /B \"AmutbarStressRunner\" $phpBin $runnerScript $args", "r"));
     }
 
-    // Give the background process a moment to initialize metadata
-    usleep(250000); // 250ms
-
-    $state = [];
-    if (is_file($activeTestFile)) {
-        $state = json_decode((string)file_get_contents($activeTestFile), true) ?: [];
-    }
-
     echo json_encode([
         'ok' => true,
         'message' => 'تست فشار در پس‌زمینه با موفقیت استارت شد.',
         'run_id' => $runId,
-        'state' => $state,
+        'state' => $initialState,
     ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -194,7 +217,7 @@ if ($action === 'export_csv') {
 
     fputcsv($fp, [
         'Run_ID', 'Timestamp', 'Scenario', 'Mode', 'VUs', 'Duration_Sec',
-        'Total_Requests', 'RPS', 'Success_Rate_Percent',
+        'Total_Requests', 'RPS', 'Server_Success_Rate', 'Strict_2xx_Rate',
         'Latency_Avg_ms', 'Latency_p50_ms', 'Latency_p90_ms', 'Latency_p95_ms', 'Latency_p99_ms',
         'Grade', 'Est_Peak_Users_10k_Target', 'Est_Daily_Users', 'Verdict'
     ]);
@@ -209,6 +232,7 @@ if ($action === 'export_csv') {
             $row['duration_seconds'] ?? '',
             $row['total_requests'] ?? '',
             $row['rps'] ?? '',
+            $row['server_success_rate'] ?? ($row['success_rate'] ?? ''),
             $row['success_rate'] ?? '',
             $row['latency_avg_ms'] ?? '',
             $row['latency_p50_ms'] ?? '',

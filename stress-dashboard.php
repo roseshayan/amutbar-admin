@@ -276,7 +276,8 @@ require_once __DIR__ . '/includes/init.php';
                             <label class="form-label fw-bold small text-muted">سناریو و اندپوینت هدف:</label>
                             <select class="form-select" id="selScenario">
                                 <option value="mixed" selected>🚀 سناریوی ترکیبی کاربران واقعی (Loads, Cities, Config, FAQs, Vehicles)</option>
-                                <option value="driver_loads">🚚 فید بارهای رانندگان (/driver/loads - کوئری سنگین دیتابیس)</option>
+                                <option value="public_only">🌐 ترافیک کاملاً عمومی دیتابیس (شهرها، تنظیمات، استان‌ها، ماشین‌ها - بدون توکن)</option>
+                                <option value="driver_loads">🚚 فید بارهای رانندگان (/driver/loads - با توکن احراز هویت)</option>
                                 <option value="city_search">🔍 جستجوی دیتابیسی شهرها (/meta/cities/search?q=تهران)</option>
                                 <option value="app_config">⚙️ تنظیمات و متادیتا اپ (/meta/app-config?target_app_id=1)</option>
                                 <option value="vehicle_types">🚛 انواع ناوگان و بارگیرها (/meta/vehicle-types)</option>
@@ -286,6 +287,22 @@ require_once __DIR__ . '/includes/init.php';
                                 <option value="health">💚 تست خالص وب‌سرور (/health - بدون کوئری دیتابیس)</option>
                                 <option value="custom">✏️ آدرس سفارشی دلخواه...</option>
                             </select>
+                        </div>
+
+                        <!-- Traffic Pacing Settings -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted">الگوی ترافیک و رفتار پردازنده (Traffic Pacing):</label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="trafficPacing" id="pacingRealistic" value="25" checked>
+                                <label class="btn btn-outline-success" for="pacingRealistic">
+                                    <i class="ri-user-smile-line me-1"></i> ترافیک واقعی ۱۰,۰۰۰ کاربر (CPU متوازن ~۵۰-۶۰٪)
+                                </label>
+
+                                <input type="radio" class="btn-check" name="trafficPacing" id="pacingThrottle" value="0">
+                                <label class="btn btn-outline-danger" for="pacingThrottle">
+                                    <i class="ri-flashlight-line me-1"></i> حداکثر فشار پیوسته (CPU در مرز ۱۰۰٪)
+                                </label>
+                            </div>
                         </div>
 
                         <!-- Custom URL Input (hidden by default) -->
@@ -596,6 +613,7 @@ require_once __DIR__ . '/includes/init.php';
     <script>
         let latestRunReport = null;
         let isTestRunning = false;
+        let activeRunId = null;
 
         // Chart 1: Throughput (RPS & Latency)
         const ctxThroughput = document.getElementById('chartThroughput').getContext('2d');
@@ -804,6 +822,7 @@ require_once __DIR__ . '/includes/init.php';
             const vus = document.getElementById('inpVus').value;
             const duration = document.getElementById('selDuration').value;
             const requests = document.getElementById('inpReqs').value;
+            const pacing = document.querySelector('input[name="trafficPacing"]:checked')?.value || '25';
 
             const formData = new FormData();
             formData.append('action', 'start');
@@ -813,11 +832,22 @@ require_once __DIR__ . '/includes/init.php';
             formData.append('vus', vus);
             formData.append('duration', duration);
             formData.append('requests', requests);
+            formData.append('pacing', pacing);
 
             btnStart.disabled = true;
             btnStart.classList.add('d-none');
             btnStop.classList.remove('d-none');
             document.getElementById('panelLiveHud').classList.remove('d-none');
+
+            // Reset HUD fields for new test
+            document.getElementById('hudTimer').innerText = '00:00';
+            document.getElementById('hudTotalReqs').innerText = '0';
+            document.getElementById('hudCurrentRps').innerText = '0.0';
+            document.getElementById('hudLatency').innerText = '0 ms';
+            document.getElementById('hudProgressBar').style.width = '0%';
+            document.getElementById('hudProgressPercent').innerText = '0%';
+            document.getElementById('hudScenarioName').innerText = 'سناریو: ' + scenario;
+            document.getElementById('hudStatusBadge').innerText = 'در حال راه‌اندازی...';
 
             try {
                 const res = await fetch('ajax/run_stress_test.php', { method: 'POST', body: formData });
@@ -827,7 +857,9 @@ require_once __DIR__ . '/includes/init.php';
                     btnStart.disabled = false;
                     btnStart.classList.remove('d-none');
                     btnStop.classList.add('d-none');
+                    document.getElementById('panelLiveHud').classList.add('d-none');
                 } else {
+                    activeRunId = data.run_id;
                     isTestRunning = true;
                 }
             } catch (err) {
@@ -836,6 +868,7 @@ require_once __DIR__ . '/includes/init.php';
                 btnStart.disabled = false;
                 btnStart.classList.remove('d-none');
                 btnStop.classList.add('d-none');
+                document.getElementById('panelLiveHud').classList.add('d-none');
             }
         });
 
@@ -857,9 +890,17 @@ require_once __DIR__ . '/includes/init.php';
                 if (!resData.ok || !resData.data) return;
 
                 const d = resData.data;
+
+                // Ignore stale data from previous test run
+                if (isTestRunning && activeRunId && d.run_id && d.run_id !== activeRunId) {
+                    return;
+                }
+
                 const isRunning = (d.status === 'running' || d.status === 'stopping');
 
                 if (isRunning) {
+                    activeRunId = d.run_id;
+                    isTestRunning = true;
                     document.getElementById('panelLiveHud').classList.remove('d-none');
                     document.getElementById('btnStartTest').classList.add('d-none');
                     document.getElementById('btnStopTest').classList.remove('d-none');
@@ -885,9 +926,10 @@ require_once __DIR__ . '/includes/init.php';
                     chartThroughput.data.datasets[1].data.push(d.latency_avg_ms);
                     chartThroughput.update();
 
-                } else if (isTestRunning && d.status === 'completed') {
-                    // Test just finished!
+                } else if (isTestRunning && d.status === 'completed' && (!activeRunId || d.run_id === activeRunId)) {
+                    // Test finished legitimately!
                     isTestRunning = false;
+                    activeRunId = null;
                     document.getElementById('btnStartTest').disabled = false;
                     document.getElementById('btnStartTest').classList.remove('d-none');
                     document.getElementById('btnStopTest').classList.add('d-none');
