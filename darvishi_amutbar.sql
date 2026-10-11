@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Sep 20, 2026 at 02:56 PM
+-- Generation Time: Oct 04, 2026 at 05:43 PM
 -- Server version: 11.4.13-MariaDB
 -- PHP Version: 8.4.25
 
@@ -30,14 +30,14 @@ SET time_zone = "+00:00";
 CREATE TABLE `admin_audit_logs` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `actor_user_id` bigint(20) UNSIGNED NOT NULL,
-  `action` varchar(96) NOT NULL,
-  `entity_type` varchar(64) DEFAULT NULL,
+  `action` varchar(96) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `entity_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `entity_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `ip_address` varchar(45) DEFAULT NULL,
-  `user_agent` varchar(255) DEFAULT NULL,
-  `payload_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`payload_json`)),
+  `ip_address` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_agent` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `payload_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `created_at` datetime(3) NOT NULL DEFAULT current_timestamp(3)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Dumping data for table `admin_audit_logs`
@@ -137,7 +137,8 @@ INSERT INTO `admin_audit_logs` (`id`, `actor_user_id`, `action`, `entity_type`, 
 (91, 1, 'users.soft_delete', 'user', 61, '5.74.139.30', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '[]', '2026-08-01 21:30:01.987'),
 (92, 1, 'users.soft_delete', 'user', 62, '5.74.139.30', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', '[]', '2026-08-01 21:32:27.695'),
 (93, 1, 'users.soft_delete', 'user', 65, '2.176.231.47', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '[]', '2026-08-22 11:03:37.348'),
-(94, 1, 'users.soft_delete', 'user', 64, '2.176.231.47', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '[]', '2026-08-22 11:04:19.323');
+(94, 1, 'users.soft_delete', 'user', 64, '2.176.231.47', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', '[]', '2026-08-22 11:04:19.323'),
+(95, 1, 'users.save', 'user', 72, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '[]', '2026-09-20 17:23:52.583');
 
 -- --------------------------------------------------------
 
@@ -253,7 +254,10 @@ INSERT INTO `auth_daily_stats` (`stat_date`, `user_type`, `event_type`, `cnt`) V
 ('2026-08-22', 1, 4, 1),
 ('2026-08-22', 3, 1, 2),
 ('2026-08-22', 3, 5, 1),
-('2026-08-30', 3, 1, 1);
+('2026-08-30', 3, 1, 1),
+('2026-09-27', 2, 4, 1),
+('2026-09-27', 3, 1, 1),
+('2026-09-27', 3, 5, 1);
 
 -- --------------------------------------------------------
 
@@ -268,159 +272,15 @@ CREATE TABLE `auth_events` (
   `event_type` tinyint(3) UNSIGNED NOT NULL,
   `ip_address` varbinary(16) DEFAULT NULL,
   `user_agent_hash` binary(32) DEFAULT NULL,
-  `payload_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`payload_json`)),
+  `payload_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `created_at` datetime(3) NOT NULL DEFAULT current_timestamp(3)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Dumping data for table `auth_events`
 --
 
 INSERT INTO `auth_events` (`id`, `user_id`, `user_type`, `event_type`, `ip_address`, `user_agent_hash`, `payload_json`, `created_at`) VALUES
-(1931, 1, 3, 1, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"remember\":true}', '2026-07-08 19:01:25.793'),
-(1932, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:01:27.393'),
-(1933, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:01:28.181'),
-(1934, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:01:36.594'),
-(1935, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:01:36.621'),
-(1936, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:01:36.930'),
-(1937, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:01:37.121'),
-(1938, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:01:38.654'),
-(1939, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:01:38.678'),
-(1940, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:01:38.882'),
-(1941, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:01:38.986'),
-(1942, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:01:54.156'),
-(1943, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:02:08.907'),
-(1944, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:02:23.918'),
-(1945, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:02:39.415'),
-(1946, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:02:54.366'),
-(1947, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:03:09.386'),
-(1948, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:03:24.369'),
-(1949, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:03:39.387'),
-(1950, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:04:20.367'),
-(1951, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:04:41.087'),
-(1952, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:04:54.057'),
-(1953, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:05:09.385'),
-(1954, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:05:24.383'),
-(1955, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:05:38.908'),
-(1956, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:05:53.956'),
-(1957, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:06:09.698'),
-(1958, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:06:23.910'),
-(1959, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:06:39.403'),
-(1960, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:06:54.379'),
-(1961, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:07:09.367'),
-(1962, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:07:24.396'),
-(1963, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:08:04.693'),
-(1964, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:08:08.905'),
-(1965, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:08:24.404'),
-(1966, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:08:39.366'),
-(1967, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:08:55.509'),
-(1968, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:09:12.491'),
-(1969, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:09:25.649'),
-(1970, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:09:39.664'),
-(1971, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:09:54.558'),
-(1972, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:10:11.048'),
-(1973, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:10:24.072'),
-(1974, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:10:39.489'),
-(1975, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:10:53.930'),
-(1976, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:11:08.940'),
-(1977, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:11:24.494'),
-(1978, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:11:39.364'),
-(1979, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:11:55.684'),
-(1980, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:12:14.184'),
-(1981, 1, 3, 3, 0x057b064f, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-08 19:12:24.645'),
-(1983, 1, 3, 1, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"remember\":true}', '2026-07-17 22:19:48.388'),
-(1984, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:19:48.683'),
-(1985, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:19:52.832'),
-(1986, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:19:54.503'),
-(1987, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:19:54.521'),
-(1988, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:19:55.127'),
-(1989, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:19:55.648'),
-(1990, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:19:57.398'),
-(1991, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:19:57.416'),
-(1992, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:19:58.067'),
-(1993, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:20:03.363'),
-(1994, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:20:03.380'),
-(1995, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:20:04.488'),
-(1996, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:20:04.510'),
-(1997, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:20:04.987'),
-(1998, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:20:19.973'),
-(1999, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:20:35.116'),
-(2000, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:20:51.563'),
-(2001, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:20:52.949'),
-(2002, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:20:53.290'),
-(2003, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:20:55.225'),
-(2004, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:20:55.242'),
-(2005, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:21:00.209'),
-(2006, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:21:00.233'),
-(2007, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:21:15.215'),
-(2008, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:21:30.170'),
-(2009, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:21:45.145'),
-(2010, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:22:00.329'),
-(2011, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:22:15.174'),
-(2012, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:22:30.195'),
-(2013, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:22:44.971'),
-(2014, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:22:46.567'),
-(2015, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:22:46.926'),
-(2016, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:23:02.170'),
-(2017, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:23:17.200'),
-(2018, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:23:32.184'),
-(2019, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:23:46.873'),
-(2020, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:24:02.235'),
-(2021, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:24:17.207'),
-(2022, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:24:32.186'),
-(2023, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:24:47.187'),
-(2024, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:25:02.207'),
-(2025, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:25:17.214'),
-(2026, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:25:32.361'),
-(2027, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:25:47.276'),
-(2028, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:26:02.241'),
-(2029, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:26:17.195'),
-(2030, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:26:32.197'),
-(2031, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:26:47.203'),
-(2032, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:27:02.199'),
-(2033, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:27:17.200'),
-(2034, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:27:32.185'),
-(2035, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:27:47.252'),
-(2036, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:28:02.413'),
-(2037, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:28:17.206'),
-(2038, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:28:32.319'),
-(2039, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:28:47.256'),
-(2040, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:29:03.522'),
-(2041, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:29:17.375'),
-(2042, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:29:32.198'),
-(2043, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:29:47.267'),
-(2044, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:30:02.005'),
-(2045, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:30:17.201'),
-(2046, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:30:32.241'),
-(2047, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:30:47.200'),
-(2048, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:31:04.175'),
-(2049, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:31:18.709'),
-(2050, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:31:39.214'),
-(2051, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:31:47.404'),
-(2052, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:32:03.156'),
-(2053, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:32:17.283'),
-(2054, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:32:32.622'),
-(2055, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:32:47.740'),
-(2056, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:33:39.920'),
-(2057, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:33:40.025'),
-(2058, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:33:40.149'),
-(2059, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:33:47.377'),
-(2060, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:34:02.197'),
-(2061, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:34:17.267'),
-(2062, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:34:32.471'),
-(2063, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:34:47.855'),
-(2064, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:35:12.676'),
-(2065, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:35:22.586'),
-(2066, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:35:32.185'),
-(2067, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:35:47.201'),
-(2068, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:36:02.216'),
-(2069, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:36:17.193'),
-(2070, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:36:32.205'),
-(2071, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:36:47.178'),
-(2073, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:37:40.177'),
-(2074, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:55:41.939'),
-(2075, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:56:40.262'),
-(2076, 1, 3, 3, 0xcc126d5b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"via\":\"remember_token\"}', '2026-07-17 22:56:54.190'),
 (2078, 1, 3, 1, 0x054ac05b, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"remember\":true}', '2026-07-30 21:56:13.349'),
 (2079, 56, 2, 4, 0x054a8b1e, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"platform\":null,\"device_id\":null}', '2026-08-01 19:03:41.198'),
 (2080, 56, 2, 4, 0x054a8b1e, 0x6235d36597d64fc0e0c3883911a8fb2f9451d0254ab3379d980f5a3426585d87, '{\"platform\":3,\"device_id\":\"chrome|Win32|Google Inc.\"}', '2026-08-01 19:29:23.511'),
@@ -449,7 +309,10 @@ INSERT INTO `auth_events` (`id`, `user_id`, `user_type`, `event_type`, `ip_addre
 (2103, 1, 3, 1, 0x02b0e72f, 0x40956f08f6c9af83802ecd226385c678a06f995e8a19f59cd575a9a4c6acc287, '{\"remember\":false}', '2026-08-22 11:02:59.169'),
 (2104, 72, 1, 4, 0x02b0e72f, 0x46b17d32fb739949221d021c1a0a9d12f9f0e738fa52aa9367b07ab1ec47c734, '{\"platform\":1,\"device_id\":\"R16NW\"}', '2026-08-22 11:03:57.226'),
 (2105, 1, 3, 1, 0x02b0e72f, 0x40956f08f6c9af83802ecd226385c678a06f995e8a19f59cd575a9a4c6acc287, '{\"remember\":false}', '2026-08-22 13:54:54.246'),
-(2106, 1, 3, 1, 0x02bedb79, 0x40956f08f6c9af83802ecd226385c678a06f995e8a19f59cd575a9a4c6acc287, '{\"remember\":false}', '2026-08-30 21:57:58.767');
+(2106, 1, 3, 1, 0x02bedb79, 0x40956f08f6c9af83802ecd226385c678a06f995e8a19f59cd575a9a4c6acc287, '{\"remember\":false}', '2026-08-30 21:57:58.767'),
+(2107, 1, 3, 5, 0x7f000001, 0xac628f4cfda1bcac1aa445ee899b5f1385b4ffff94a36e6c4923a865bb69cfc6, '{\"reason\":\"bad_password\"}', '2026-09-27 16:46:42.556'),
+(2108, 1, 3, 1, 0x7f000001, 0xac628f4cfda1bcac1aa445ee899b5f1385b4ffff94a36e6c4923a865bb69cfc6, '{\"remember\":true}', '2026-09-27 16:46:45.382'),
+(2109, 72, 2, 4, 0x02b0c0df, 0xeee4db044476a4de043619dd1427762263ba8b7cf150a37e268f4c261359bb6f, '{\"platform\":1,\"device_id\":\"CE2A.260420.050\"}', '2026-09-27 18:43:02.024');
 
 -- --------------------------------------------------------
 
@@ -459,25 +322,25 @@ INSERT INTO `auth_events` (`id`, `user_id`, `user_type`, `event_type`, `ip_addre
 
 CREATE TABLE `banners` (
   `id` bigint(20) UNSIGNED NOT NULL,
-  `title` varchar(120) DEFAULT NULL,
-  `body` varchar(255) DEFAULT NULL,
-  `image_key` varchar(255) DEFAULT NULL,
-  `placement` varchar(64) NOT NULL,
+  `title` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `body` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `image_key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `placement` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `target_app_id` tinyint(3) UNSIGNED DEFAULT NULL,
   `target_user_type` tinyint(3) UNSIGNED DEFAULT NULL,
   `target_platform` tinyint(3) UNSIGNED DEFAULT NULL,
   `action_type` tinyint(3) UNSIGNED NOT NULL DEFAULT 0,
-  `action_value` varchar(255) DEFAULT NULL,
+  `action_value` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `start_at` datetime(3) DEFAULT NULL,
   `end_at` datetime(3) DEFAULT NULL,
   `priority` smallint(5) UNSIGNED NOT NULL DEFAULT 100,
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `min_version_code` int(10) UNSIGNED DEFAULT NULL,
-  `data_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`data_json`)),
+  `data_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `created_by_user_id` bigint(20) UNSIGNED DEFAULT NULL,
   `created_at` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   `updated_at` datetime(3) NOT NULL DEFAULT current_timestamp(3) ON UPDATE current_timestamp(3)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Dumping data for table `banners`
@@ -2167,7 +2030,8 @@ INSERT INTO `companies` (`id`, `user_id`, `company_name`, `owner_full_name`, `ow
 (7, 59, 'شایان نماینده', 'شایان نماینده', '0312449348', NULL, NULL, 123, 1230001001576, NULL, 1, '2026-08-01 20:54:08.301', NULL, NULL, '2026-08-01 20:54:08.301', '2026-08-01 20:54:39.676', NULL, NULL, NULL),
 (8, 64, 'شایان نماینده', 'شایان نماینده', '0312449348', NULL, NULL, NULL, NULL, NULL, 1, '2026-08-06 15:59:36.582', NULL, NULL, '2026-08-06 15:59:36.582', '2026-08-22 11:04:19.310', '2026-08-22 11:04:19.310', NULL, NULL),
 (9, 66, 'محمد درویشی نیا', 'محمد درویشی نیا', '4190260975', NULL, NULL, NULL, NULL, NULL, 1, '2026-08-06 16:07:40.306', NULL, NULL, '2026-08-06 16:07:40.306', '2026-08-06 16:07:40.306', NULL, NULL, NULL),
-(10, 68, 'علیرضا درویشی نیا', 'علیرضا درویشی نیا', '4190718335', NULL, NULL, NULL, NULL, NULL, 1, '2026-08-17 12:10:08.386', NULL, NULL, '2026-08-17 12:10:08.386', '2026-08-17 12:10:08.386', NULL, NULL, NULL);
+(10, 68, 'علیرضا درویشی نیا', 'علیرضا درویشی نیا', '4190718335', NULL, NULL, NULL, NULL, NULL, 1, '2026-08-17 12:10:08.386', NULL, NULL, '2026-08-17 12:10:08.386', '2026-08-17 12:10:08.386', NULL, NULL, NULL),
+(11, 72, 'شایان نماینده', 'شایان نماینده', '0312449348', NULL, NULL, NULL, NULL, NULL, 1, '2026-09-27 18:43:13.980', NULL, NULL, '2026-09-27 18:43:13.980', '2026-09-27 18:43:13.980', NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -2229,39 +2093,39 @@ CREATE TABLE `conversations` (
 CREATE TABLE `drivers` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `user_id` bigint(20) UNSIGNED NOT NULL,
-  `full_name` varchar(120) NOT NULL,
-  `national_code` varchar(16) NOT NULL,
-  `smart_card_number` varchar(32) DEFAULT NULL,
+  `full_name` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `national_code` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `smart_card_number` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `vehicle_type_id` smallint(5) UNSIGNED DEFAULT NULL,
-  `plate_number` varchar(24) DEFAULT NULL,
+  `plate_number` varchar(24) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `model_year` smallint(5) UNSIGNED DEFAULT NULL,
-  `color` varchar(32) DEFAULT NULL,
+  `color` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `capacity_kg` decimal(10,2) DEFAULT NULL,
   `province_id` int(10) UNSIGNED DEFAULT NULL,
   `city_id` bigint(20) UNSIGNED DEFAULT NULL,
   `verification_status` tinyint(3) UNSIGNED NOT NULL DEFAULT 0,
   `verified_at` datetime(3) DEFAULT NULL,
   `verified_by_user_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `reject_reason` varchar(255) DEFAULT NULL,
+  `reject_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `rating_avg` decimal(3,2) NOT NULL DEFAULT 0.00,
   `rating_count` int(10) UNSIGNED NOT NULL DEFAULT 0,
   `created_at` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   `updated_at` datetime(3) NOT NULL DEFAULT current_timestamp(3) ON UPDATE current_timestamp(3),
   `deleted_at` datetime(3) DEFAULT NULL,
-  `plate_active` varchar(24) GENERATED ALWAYS AS (case when `deleted_at` is null then `plate_number` else NULL end) STORED,
-  `license_serial` varchar(32) DEFAULT NULL COMMENT 'سریال گواهینامه',
-  `license_base` varchar(32) DEFAULT NULL COMMENT 'پایه گواهینامه',
-  `vin_number` varchar(64) DEFAULT NULL COMMENT 'شماره VIN',
-  `insurance_number` varchar(64) DEFAULT NULL COMMENT 'شماره بیمه نامه',
-  `insurance_expiry` varchar(10) DEFAULT NULL COMMENT 'تاریخ اتمام بیمه',
-  `engine_number` varchar(64) DEFAULT NULL COMMENT 'شماره موتور',
-  `chassis_number` varchar(64) DEFAULT NULL COMMENT 'شماره شاسی',
-  `issued_from` varchar(120) DEFAULT NULL COMMENT 'صادره از',
-  `address` text DEFAULT NULL COMMENT 'آدرس',
-  `home_phone` varchar(16) DEFAULT NULL COMMENT 'تلفن منزل',
-  `postal_code` varchar(16) DEFAULT NULL COMMENT 'کد پستی',
-  `extra_phones` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'شماره موبایل اضافه (آرایه‌ای از شماره‌ها)' CHECK (json_valid(`extra_phones`))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `plate_active` varchar(24) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci GENERATED ALWAYS AS (case when `deleted_at` is null then `plate_number` else NULL end) STORED,
+  `license_serial` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'سریال گواهینامه',
+  `license_base` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'پایه گواهینامه',
+  `vin_number` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'شماره VIN',
+  `insurance_number` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'شماره بیمه نامه',
+  `insurance_expiry` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'تاریخ اتمام بیمه',
+  `engine_number` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'شماره موتور',
+  `chassis_number` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'شماره شاسی',
+  `issued_from` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'صادره از',
+  `address` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'آدرس',
+  `home_phone` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'تلفن منزل',
+  `postal_code` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'کد پستی',
+  `extra_phones` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'شماره موبایل اضافه (آرایه‌ای از شماره‌ها)'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Dumping data for table `drivers`
@@ -2270,7 +2134,7 @@ CREATE TABLE `drivers` (
 INSERT INTO `drivers` (`id`, `user_id`, `full_name`, `national_code`, `smart_card_number`, `vehicle_type_id`, `plate_number`, `model_year`, `color`, `capacity_kg`, `province_id`, `city_id`, `verification_status`, `verified_at`, `verified_by_user_id`, `reject_reason`, `rating_avg`, `rating_count`, `created_at`, `updated_at`, `deleted_at`, `license_serial`, `license_base`, `vin_number`, `insurance_number`, `insurance_expiry`, `engine_number`, `chassis_number`, `issued_from`, `address`, `home_phone`, `postal_code`, `extra_phones`) VALUES
 (26, 63, 'شایان نماینده', '0312449348', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, '2026-08-01 21:34:11.703', NULL, NULL, 0.00, 0, '2026-08-01 21:34:11.703', '2026-08-01 21:34:11.703', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (27, 67, 'رسول درویشی نیا', '4190412147', NULL, 2, '11 ب 111 ایران 11', NULL, NULL, NULL, NULL, NULL, 1, '2026-08-06 16:17:04.678', NULL, NULL, 0.00, 0, '2026-08-06 16:17:04.678', '2026-08-06 16:18:29.647', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(28, 72, 'شایان نماینده', '0312449348', NULL, 2, '32 م 568 ایران 55', NULL, NULL, NULL, NULL, NULL, 1, '2026-08-22 11:04:21.446', NULL, NULL, 0.00, 0, '2026-08-22 11:04:21.446', '2026-08-22 11:04:58.746', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+(28, 72, 'شایان نماینده', '0312449348', NULL, 2, '32 م 568 ایران 55', NULL, NULL, NULL, NULL, NULL, 1, '2026-09-20 17:23:52.000', 1, NULL, 0.00, 0, '2026-08-22 11:04:21.446', '2026-09-20 17:23:52.580', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '[\"\"]');
 
 -- --------------------------------------------------------
 
@@ -2282,26 +2146,26 @@ CREATE TABLE `driver_activity_logs` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `user_id` bigint(20) UNSIGNED NOT NULL,
   `driver_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `event_key` varchar(80) NOT NULL,
-  `event_title` varchar(160) NOT NULL,
-  `screen_key` varchar(80) DEFAULT NULL,
-  `screen_title` varchar(160) DEFAULT NULL,
-  `entity_type` varchar(50) DEFAULT NULL,
+  `event_key` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `event_title` varchar(160) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `screen_key` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `screen_title` varchar(160) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `entity_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `entity_id` bigint(20) UNSIGNED DEFAULT NULL,
   `load_id` bigint(20) UNSIGNED DEFAULT NULL,
   `company_id` bigint(20) UNSIGNED DEFAULT NULL,
   `ticket_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `client_event_id` varchar(80) DEFAULT NULL,
+  `client_event_id` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `client_platform` tinyint(3) UNSIGNED DEFAULT NULL COMMENT '1=android,2=ios,3=web',
   `client_version_code` int(10) UNSIGNED DEFAULT NULL,
-  `app_version_name` varchar(32) DEFAULT NULL,
-  `device_id` varchar(96) DEFAULT NULL,
+  `app_version_name` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `device_id` varchar(96) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `ip_address` varbinary(16) DEFAULT NULL,
-  `user_agent` varchar(255) DEFAULT NULL,
-  `payload_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`payload_json`)),
+  `user_agent` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `payload_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `occurred_at` datetime(3) DEFAULT NULL,
   `created_at` datetime(3) NOT NULL DEFAULT current_timestamp(3)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Dumping data for table `driver_activity_logs`
@@ -2596,15 +2460,15 @@ CREATE TABLE `external_api_credentials` (
   `provider_id` smallint(5) UNSIGNED NOT NULL,
   `env` tinyint(3) UNSIGNED NOT NULL DEFAULT 1,
   `status` tinyint(3) UNSIGNED NOT NULL DEFAULT 1,
-  `key_id` varchar(64) DEFAULT NULL,
+  `key_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `api_key_enc` varbinary(1024) DEFAULT NULL,
   `api_secret_enc` varbinary(1024) DEFAULT NULL,
   `bearer_token_enc` varbinary(2048) DEFAULT NULL,
-  `extra_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`extra_json`)),
+  `extra_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `created_at` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   `updated_at` datetime(3) NOT NULL DEFAULT current_timestamp(3) ON UPDATE current_timestamp(3),
   `created_by_user_id` bigint(20) UNSIGNED DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Dumping data for table `external_api_credentials`
@@ -2652,17 +2516,17 @@ CREATE TABLE `external_api_request_logs` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `provider_id` smallint(5) UNSIGNED NOT NULL,
   `credential_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `operation` varchar(64) NOT NULL,
-  `http_method` varchar(8) NOT NULL,
-  `url_path` varchar(255) NOT NULL,
-  `request_id` varchar(64) DEFAULT NULL,
+  `operation` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `http_method` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `url_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `request_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `http_status` smallint(5) UNSIGNED DEFAULT NULL,
   `latency_ms` int(10) UNSIGNED DEFAULT NULL,
-  `error_code` varchar(64) DEFAULT NULL,
-  `request_redacted_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`request_redacted_json`)),
-  `response_redacted_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`response_redacted_json`)),
+  `error_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `request_redacted_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  `response_redacted_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `created_at` datetime(3) NOT NULL DEFAULT current_timestamp(3)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Dumping data for table `external_api_request_logs`
@@ -2794,7 +2658,15 @@ INSERT INTO `external_api_request_logs` (`id`, `provider_id`, `credential_id`, `
 (105, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":false,\"success\":true,\"code\":0,\"message\":\"اطلاعات ارسالی با مرجع تطبیق در یکی یا بیشتر از فیلدهای زیر مشابهت ندارد.(نام،نام خانوادگی،نام پدر،تاریخ تولد،جنسیت برای حقیقی ) (شماره ثبت شرکت،نام شرکت،تاریخ ثبت،فعال یا غیر فعال بودن برای حقوقی ایرانی)\"}', '2026-08-17 13:39:09.441'),
 (106, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":false,\"success\":true,\"code\":0,\"message\":\"اطلاعات ارسالی با مرجع تطبیق در یکی یا بیشتر از فیلدهای زیر مشابهت ندارد.(نام،نام خانوادگی،نام پدر،تاریخ تولد،جنسیت برای حقیقی ) (شماره ثبت شرکت،نام شرکت،تاریخ ثبت،فعال یا غیر فعال بودن برای حقوقی ایرانی)\"}', '2026-08-17 13:40:10.242'),
 (107, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":false,\"success\":true,\"code\":0,\"message\":\"اطلاعات ارسالی با مرجع تطبیق در یکی یا بیشتر از فیلدهای زیر مشابهت ندارد.(نام،نام خانوادگی،نام پدر،تاریخ تولد،جنسیت برای حقیقی ) (شماره ثبت شرکت،نام شرکت،تاریخ ثبت،فعال یا غیر فعال بودن برای حقوقی ایرانی)\"}', '2026-08-17 13:44:01.925'),
-(108, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-08-22 11:04:21.438');
+(108, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"mobile\":\"[REDACTED]\",\"nationalCode\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-08-22 11:04:21.438'),
+(109, 1, 1, 'ShahkarLite', 'POST', 'api/sw1/ShahkarLite', NULL, 200, NULL, NULL, '{\"nationalCode\":\"[REDACTED]\",\"mobile\":\"[REDACTED]\",\"birthDate\":\"[REDACTED]\"}', '{\"data\":true,\"success\":true,\"code\":0,\"message\":\"استعلام انجام شد\"}', '2026-09-20 16:22:28.200'),
+(110, 1, 1, 'Shahkar2', 'POST', '/api/sw1/Shahkar2', NULL, 404, NULL, NULL, '{\"nationalCode\":\"[REDACTED]\",\"mobile\":\"[REDACTED]\",\"birthDate\":\"[REDACTED]\"}', '{\"body\":\"\"}', '2026-09-20 16:22:42.245'),
+(111, 1, 1, 'ShahkarLite', 'POST', 'api/sw1/ShahkarLite', '9246034cc06ff3883a32075e1d3adce7', 200, 1531, NULL, '{\"fields\":[\"nationalCode\",\"mobile\",\"birthDate\",\"plateNumber\"]}', '{\"success\":true,\"code\":0,\"error_code\":null}', '2026-09-20 17:06:59.141'),
+(112, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', '981433158e9b8a62c116198d2ba2e441', 200, 557, NULL, '{\"fields\":[\"nationalCode\",\"mobile\"]}', '{\"success\":true,\"code\":0,\"error_code\":null}', '2026-09-20 17:22:20.188'),
+(113, 1, 1, 'PersonData', 'POST', '/api/sw1/PersonData', '8ee2397cab77c08b81f9690b0234c088', 200, 123, 'provider_rejected', '{\"fields\":[\"nationalCode\",\"birthDate\"]}', '{\"success\":false,\"code\":null,\"error_code\":\"provider_rejected\"}', '2026-09-20 17:23:59.409'),
+(114, 1, 1, 'Shahkar', 'POST', '/api/sw1/Shahkar', '4c4625bdd83256a480d954699d2ead8c', 200, 1162, NULL, '{\"fields\":[\"nationalCode\",\"mobile\",\"isCompany\"]}', '{\"success\":true,\"code\":0,\"error_code\":null}', '2026-09-20 17:24:16.611'),
+(115, 1, 1, 'PersonData', 'POST', '/api/sw1/PersonData', 'f5e572570a6a2303149a3eba57faa210', 200, 92, 'provider_rejected', '{\"fields\":[\"nationalCode\",\"birthDate\"]}', '{\"success\":false,\"code\":null,\"error_code\":\"provider_rejected\"}', '2026-09-20 17:24:16.714'),
+(116, 1, 1, 'ShahkarLite', 'POST', '/api/sw1/ShahkarLite', '1fe92f9fd1484e316a6e0dd5c003388e', 200, 6803, NULL, '{\"fields\":[\"mobile\",\"nationalCode\"]}', '{\"success\":true,\"code\":0,\"error_code\":null}', '2026-09-27 18:43:13.970');
 
 -- --------------------------------------------------------
 
@@ -2820,7 +2692,16 @@ CREATE TABLE `faq_categories` (
 --
 
 INSERT INTO `faq_categories` (`id`, `target_app_id`, `title`, `description`, `icon_key`, `sort_order`, `is_active`, `created_by_user_id`, `created_at`, `updated_at`) VALUES
-(1, 1, 'نصب', 'راهنمای دانلود برنامه، نسخه اندروید یا آیفون و...', 'install', 1, 1, 1, '2026-08-30 22:00:08.162', '2026-08-30 22:00:08.162');
+(1, 1, 'نصب', 'راهنمای دانلود برنامه، نسخه اندروید یا آیفون و...', 'install', 1, 1, 1, '2026-08-30 22:00:08.162', '2026-08-30 22:00:08.162'),
+(2, 2, 'نصب', 'راهنمای دانلود برنامه، نسخه آیفون و...', 'install', 100, 1, 1, '2026-09-27 16:57:02.202', '2026-09-27 16:57:02.202'),
+(3, 2, 'ورود و ثبت نام', 'دریافت کد، ثبت شماره جدید و...', 'auth', 101, 1, 1, '2026-09-27 16:57:21.376', '2026-09-27 16:57:21.376'),
+(4, 2, 'ثبت اعلام‌بار', 'اطلاعات اعلام‌بار، کرایه بار و...', 'search_load', 102, 1, 1, '2026-09-27 16:58:04.525', '2026-09-27 16:58:04.525'),
+(5, 2, 'بیمه', 'هزینه صدور بیمه، دریافت خسارت و...', 'insurance', 103, 1, 1, '2026-09-27 16:58:42.703', '2026-09-27 16:58:49.227'),
+(6, 2, 'احراز هویت', 'احراز هویت راننده، مدارک مورد نیاز و...', 'identity', 104, 1, 1, '2026-09-27 16:59:19.342', '2026-09-27 16:59:19.342'),
+(7, 2, 'اطلاعات کاربری', 'ویرایش اطلاعات، خروج از حساب و...', 'identity', 105, 1, 1, '2026-09-27 16:59:48.106', '2026-09-27 16:59:53.625'),
+(8, 2, 'پیام‌ها', 'بازخورد رانندگان، انصراف راننده و...', 'general', 106, 1, 1, '2026-09-27 17:00:24.644', '2026-09-27 17:00:24.644'),
+(9, 2, 'تاریخچه بارها', 'ویرایش اعلام‌بار، تعداد بازدید و...', 'history', 107, 1, 1, '2026-09-27 17:00:55.338', '2026-09-27 17:00:55.338'),
+(10, 2, 'دسترسی‌ها', 'راهنمای دسترسی ویدئو و میکروفن و...', 'general', 108, 1, 1, '2026-09-27 17:01:26.916', '2026-09-27 17:01:32.337');
 
 -- --------------------------------------------------------
 
@@ -2850,7 +2731,11 @@ CREATE TABLE `faq_items` (
 --
 
 INSERT INTO `faq_items` (`id`, `category_id`, `question`, `answer`, `link_label`, `link_url`, `image_key`, `video_key`, `video_url`, `sort_order`, `is_active`, `created_by_user_id`, `created_at`, `updated_at`) VALUES
-(1, 1, 'چگونه میتوانم برنامه ترابرنت رانندگان را نصب کنم؟', 'تست', NULL, NULL, NULL, NULL, NULL, 1, 1, 1, '2026-08-30 22:00:49.355', '2026-08-30 22:00:49.355');
+(1, 1, 'چگونه میتوانم برنامه آموت‌بار رانندگان را نصب کنم؟', 'تست', 'دانلود اپلیکیشن', 'https://amutapp.com/amutadmin/app.php', NULL, NULL, NULL, 1, 1, 1, '2026-08-30 22:00:49.355', '2026-09-27 17:06:46.454'),
+(2, 2, 'چگونه می‌توانم با گوشی آیفون از برنامه صاحبان کالا آموت‌بار استفاده کنم؟', 'اگر گوشی آیفون دارید، برای ثبت اعلام‌ بار خود باید از طریق سایت آموت بار اقدام کنید، ابتدا باید وارد سایت آموت بار بشوید.\r\nسپس به قسمت «اپلیکیشن صاحبان کالا» بروید. حال گزینه «نسخه وب اپلیکیشن» را انتخاب کرده و نسبت به ثبت بار خود از طریق این نسخه اقدام کنید.\r\nهمچنین می‌توانید مستقیما با ورود به آدرس https://amutapp.com/shipper/pwa نیز از برنامه استفاده کنید.', 'ورود به اپلیکیشن', 'https://amutapp.com/amutadmin/app.php', NULL, NULL, NULL, 100, 1, 1, '2026-09-27 17:03:33.521', '2026-09-27 17:06:31.279'),
+(3, 2, 'چگونه می‌توانم با گوشی اندروید از برنامه صاحبان کالا آموت‌بار استفاده کنم؟', 'اگر گوشی اندروید دارید، برای اعلام بار خود می‌توانید در مایکت، کافه بازار یا گوگل پلی «آموت بار صاحبان کالا» را جست و جو و نصب کنید.\r\nهمچنین می‌توانید از طریق سایت آموت بار نیز «برنامه آموت بار صاحبان کالا» را نصب کنید.\r\nابتدا باید وارد سایت آموت بار شوید. سپس به قسمت «اپلیکیشن صاحبان کالا» بروید. حال گزینه «نسخه وب اپلیکیشن» را انتخاب کرده و نسبت به ثبت بار خود از طریق این نسخه اقدام کنید.', 'دانلود اپلیکیشن', 'https://amutapp.com/amutadmin/app.php', NULL, NULL, NULL, 101, 1, 1, '2026-09-27 17:05:12.843', '2026-09-27 17:05:12.843'),
+(4, 2, 'آیا می‌توانم با کامپیوتر(سیستم عامل ویندوز) از برنامه آموت‌بار صاحبان کالا استفاده کنم؟', 'برای استفاده از برنامه «آموت بار صاحبان کالا» بر روی کامپیوتر، ابتدا باید وارد سایت آموت بار شوید.\r\nسپس به قسمت «اپلیکیشن صاحبان کالا» بروید. حال گزینه «نسخه وب اپلیکیشن» را انتخاب کرده و نسبت به ثبت بار خود از طریق این نسخه اقدام کنید.\r\nهمچنین می‌توانید مستقیما با ورود به آدرس https://amutapp.com/amutadmin/app.php نیز از برنامه استفاده کنید.', 'دانلود اپلیکیشن', 'https://amutapp.com/amutadmin/app.php', NULL, NULL, NULL, 102, 1, 1, '2026-09-27 17:06:22.301', '2026-09-27 17:06:22.301'),
+(5, 3, 'چگونه در برنامه صاحبان کالا آموت بار ثبت نام کنم؟', '۱. وارد برنامه \"آموت بار صاحبان کالا\" شوید.\r\nدر صفحه اول شماره موبایلی که به نام خودتان است را وارد کنید.\r\n۲. در صفحه بعد کد تایید ارسال شده از سمت آموت بار را وارد کنید.\r\nدر قسمت بالای صفحه‌ می‌توانید شماره‌ای که پیامک برای آن ارسال می‌شود را مشاهده کنید\r\nبا انتخاب دکمه \"ویرایش شماره موبایل\" می توانید شماره موبایل خود را ویرایش کنید.\r\n۳. بعد از مطالعه قوانین و مقررات آموت بار، تیک قوانین مقررات را فعال کنید تا دکمه ثبت فعال شود. \r\nبا کلیک بر لینک قوانین و مقررات می‌توانید آن را مطالعه کنید.\r\nتوجه داشته باشید، در صورتی که تیک قوانین و مقررات را انتخاب نکرده باشید، دکمه \"ثبت\" غیرفعال خواهدماند. \r\n4.  در مرحله‌ی بعد توضیحات کلی ثبت نام را مشاهده می‌کنید که هر زمان شرایط برای شما فراهم بود می‌توانید دکمه شروع را انتخاب کنید و ثبت نام را انجام دهید.\r\n6. صفحه‌ی بعد وضعیت ثبت نام است که به شما نشان می‌دهد نتیجه‌ی هر مرحله از ثبت نام شما چگونه بوده است و برای مرحله‌ی بعد چه اقدامی باید انجام دهید.  \r\n7. در این صفحه باید کدملی‌ای که با شماره موبایل تطبیق دارد را وارد نمایید. \r\nدر صورتی که کدملی و شماره تلفن باهم تطبیق نداشت دکمه ویرایش شماره موبایل را انتخاب کنید و در صفحه شماره موبایل، آن را اصلاح کنید.\r\n۸. در صفحه‌ی بعد نیاز است که تاریخ تولد خود را وارد کنید.\r\nاز طریق اسکرول کردن سال، ماه و روز تاریخ تولد خود را انتخاب کنید.\r\nتوجه داشته باشید از آنجایی که سن قانونی 18 سال هست، افرادی که کمتر از 18 سال سن دارند اجازه فعالیت در آموت بار را ندارند.\r\n9. پس از وارد کردن تاریخ تولد، در این صفحه نتایج مرحله‌ی قبل را مشاهده می‌کنید و می‌توانید وارد مرحله‌ی بعد شوید.\r\n10. در صفحه‌ی بعد ویدیوی آموزش نحوه‌ی انجام احراز هویت ویدیویی را مشاهده کنید. \r\nپس از یک‌ بار مشاهده‌ی ویدیو، دکمه‌ی ادامه برای شما فعال می‌شود تا بتوانید وارد مرحله‌ی بعد شوید.\r\n۱۱. همانطور که در ویدیوی آموزشی توضیح داده شد،‌ در این بخش اقدام به ضبط ویدیو از خود کنید.\r\n در این مرحله باید چهره خود را داخل فریم دایره‌ای شکل قرار دهید و عبارتی که بعد از شروع ضبط رو صفحه قرار می‌گیرد را بلند بخوانید و سپس گزینه ارسال را انتخاب نمائید.\r\n۱۲. در این صفحه نشان می‌دهد که شما با موفقیت اطلاعات خود را ارسال کردید و باید منتظر بررسی نهایی آن باشید. \r\nنتیجه‌ی بررسی به شما از طریق پیامک و از داخل اپ اطلاع‌رسانی می‌شود.', NULL, NULL, NULL, NULL, NULL, 100, 1, 1, '2026-09-27 17:08:26.367', '2026-09-27 17:08:26.367');
 
 -- --------------------------------------------------------
 
@@ -2932,6 +2817,19 @@ CREATE TABLE `identity_verification_jobs` (
   `created_at` datetime(3) NOT NULL DEFAULT current_timestamp(3)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `identity_verification_jobs`
+--
+
+INSERT INTO `identity_verification_jobs` (`id`, `subject_user_id`, `subject_kind`, `check_type`, `provider_id`, `credential_id`, `status`, `request_id`, `request_redacted_json`, `response_redacted_json`, `started_at`, `finished_at`, `created_by_user_id`, `created_at`) VALUES
+(7, 66, 2, 'ShahkarLite', 1, NULL, 2, NULL, '{\"nationalCode\":\"[REDACTED]\",\"mobile\":\"[REDACTED]\",\"birthDate\":\"[REDACTED]\"}', '{\"success\":true,\"code\":0,\"data\":true,\"error\":null,\"message\":\"استعلام انجام شد\"}', '2026-09-20 16:22:27.704', '2026-09-20 16:22:28.205', 1, '2026-09-20 16:22:27.704'),
+(8, 66, 2, 'Shahkar2', 1, NULL, 4, NULL, '{\"nationalCode\":\"[REDACTED]\",\"mobile\":\"[REDACTED]\",\"birthDate\":\"[REDACTED]\"}', '{\"success\":false,\"error\":\"خطای HTTP: 404\"}', '2026-09-20 16:22:42.194', '2026-09-20 16:22:42.249', 1, '2026-09-20 16:22:42.194'),
+(9, 72, 1, 'ShahkarLite', 1, NULL, 2, NULL, '{\"nationalCode\":\"[REDACTED]\",\"mobile\":\"[REDACTED]\",\"birthDate\":\"[REDACTED]\",\"plateNumber\":\"32م568ایران55\"}', '{\"success\":true,\"code\":0,\"data\":true,\"error\":null,\"message\":\"استعلام انجام شد\"}', '2026-09-20 17:06:57.605', '2026-09-20 17:06:59.146', 1, '2026-09-20 17:06:57.605'),
+(10, 67, 1, 'ShahkarLite', 1, NULL, 2, NULL, '{\"nationalCode\":\"[REDACTED]\",\"mobile\":\"[REDACTED]\",\"birthDate\":\"[REDACTED]\",\"plateNumber\":\"11ب111ایران11\"}', '{\"success\":true,\"code\":0,\"data\":true,\"error\":null,\"message\":\"استعلام انجام شد\"}', '2026-09-20 17:22:19.628', '2026-09-20 17:22:20.190', 1, '2026-09-20 17:22:19.628'),
+(11, 72, 1, 'PersonData', 1, NULL, 4, NULL, '{\"nationalCode\":\"[REDACTED]\",\"mobile\":\"[REDACTED]\",\"birthDate\":\"[REDACTED]\",\"serialNumber\":\"[REDACTED]\",\"plateNumber\":\"32م568ایران55\"}', '{\"success\":false,\"code\":\"provider_rejected\",\"request_id\":\"8ee2397cab77c08b81f9690b0234c088\"}', '2026-09-20 17:23:59.281', '2026-09-20 17:23:59.411', 1, '2026-09-20 17:23:59.281'),
+(12, 72, 1, 'Shahkar', 1, NULL, 2, NULL, '{\"nationalCode\":\"[REDACTED]\",\"mobile\":\"[REDACTED]\",\"birthDate\":\"[REDACTED]\",\"serialNumber\":\"[REDACTED]\",\"plateNumber\":\"32م568ایران55\"}', '{\"success\":true,\"code\":0,\"data\":true,\"error\":null,\"message\":\"استعلام انجام شد\"}', '2026-09-20 17:24:15.443', '2026-09-20 17:24:16.617', 1, '2026-09-20 17:24:15.443'),
+(13, 72, 1, 'PersonData', 1, NULL, 4, NULL, '{\"nationalCode\":\"[REDACTED]\",\"mobile\":\"[REDACTED]\",\"birthDate\":\"[REDACTED]\",\"serialNumber\":\"[REDACTED]\",\"plateNumber\":\"32م568ایران55\"}', '{\"success\":false,\"code\":\"provider_rejected\",\"request_id\":\"f5e572570a6a2303149a3eba57faa210\"}', '2026-09-20 17:24:16.620', '2026-09-20 17:24:16.716', 1, '2026-09-20 17:24:16.620');
+
 -- --------------------------------------------------------
 
 --
@@ -2940,19 +2838,19 @@ CREATE TABLE `identity_verification_jobs` (
 
 CREATE TABLE `identity_verification_services` (
   `id` smallint(5) UNSIGNED NOT NULL,
-  `code` varchar(64) NOT NULL,
-  `title` varchar(96) NOT NULL,
-  `description` varchar(255) DEFAULT NULL,
+  `code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title` varchar(96) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `subject_kind` tinyint(3) UNSIGNED NOT NULL DEFAULT 0 COMMENT '0=all, 1=driver, 2=company',
   `provider_id` smallint(5) UNSIGNED NOT NULL,
-  `http_method` varchar(8) NOT NULL DEFAULT 'POST',
-  `endpoint_path` varchar(255) NOT NULL,
-  `config_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`config_json`)),
+  `http_method` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'POST',
+  `endpoint_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `config_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `is_active` tinyint(3) UNSIGNED NOT NULL DEFAULT 1,
   `sort_order` smallint(5) UNSIGNED NOT NULL DEFAULT 100,
   `created_at` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   `updated_at` datetime(3) NOT NULL DEFAULT current_timestamp(3) ON UPDATE current_timestamp(3)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Dumping data for table `identity_verification_services`
@@ -3028,7 +2926,11 @@ INSERT INTO `jwt_refresh_tokens` (`id`, `user_id`, `jti_hash`, `device_id`, `pla
 (92, 71, '9823a35a7ee27aa52dadec951d6179bbbb378cec68a0f6cc592cc98ae4d7e92b', 'SP1A.210812.016', 1, '2.176.251.101', 'Dart/3.12 (dart:io)', NULL, NULL, NULL, '2026-11-15 13:43:05.000', '2026-08-17 13:43:05.039'),
 (93, 65, '36a6d49219ec748ff236468261ec74c0fceac64f7826aa0c36404b5b254e17ac', 'R16NW', 1, '104.28.217.89', 'Dart/3.12 (dart:io)', 83, NULL, '2026-08-22 11:03:37.338', '2026-11-20 11:02:20.000', '2026-08-22 11:02:20.441'),
 (94, 72, '0a5146a53492693fecf1e548428499b614351bfd730c3ac606141d62c36b509f', 'R16NW', 1, '2.176.231.47', 'Dart/3.12 (dart:io)', NULL, '2026-08-22 13:57:09.831', '2026-08-22 13:57:09.831', '2026-11-20 11:03:57.000', '2026-08-22 11:03:57.205'),
-(95, 72, 'ee6e13784f328f5ff635f4c0948990cb275e8ded9ca8de9ac1fecfa85ac740ae', 'R16NW', 1, '104.28.217.88', 'Dart/3.12 (dart:io)', 94, NULL, NULL, '2026-11-20 13:57:09.000', '2026-08-22 13:57:09.834');
+(95, 72, 'ee6e13784f328f5ff635f4c0948990cb275e8ded9ca8de9ac1fecfa85ac740ae', 'R16NW', 1, '104.28.217.88', 'Dart/3.12 (dart:io)', 94, NULL, NULL, '2026-11-20 13:57:09.000', '2026-08-22 13:57:09.834'),
+(96, 72, '87096f12dc362750e7590ba6a3eb77b1b54cee855746e3d95cc872ed8bfe28ab', 'CE2A.260420.050', 1, '2.176.192.223', 'Dart/3.13 (dart:io)', NULL, '2026-09-27 18:58:14.317', '2026-09-27 18:58:14.317', '2026-12-26 18:43:02.000', '2026-09-27 18:43:02.014'),
+(97, 72, 'aad64b3f0c6d3ab1d9d822874589a8c9000da07ee0ff97c1269e9103ec9fd708', 'CE2A.260420.050', 1, '2.176.192.223', 'Dart/3.13 (dart:io)', 96, '2026-09-27 19:13:25.199', '2026-09-27 19:13:25.199', '2026-12-26 18:58:14.000', '2026-09-27 18:58:14.321'),
+(98, 72, '182ebdce71d85716aaafe7b0ec6c08872146d9b1b432fdc0e44eae10ba78d8c3', 'CE2A.260420.050', 1, '2.176.192.223', 'Dart/3.13 (dart:io)', 97, '2026-09-27 19:29:25.175', '2026-09-27 19:29:25.175', '2026-12-26 19:13:25.000', '2026-09-27 19:13:25.204'),
+(99, 72, '9b162218ee255aa221e38ac792b6177dd59feae2efd1c25c5b4ca41b9970d7ce', 'CE2A.260420.050', 1, '2.176.192.223', 'Dart/3.13 (dart:io)', 98, NULL, NULL, '2026-12-26 19:29:25.000', '2026-09-27 19:29:25.179');
 
 -- --------------------------------------------------------
 
@@ -3164,14 +3066,14 @@ CREATE TABLE `messages` (
 CREATE TABLE `notifications` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `user_id` bigint(20) UNSIGNED NOT NULL,
-  `type` varchar(48) NOT NULL,
-  `title` varchar(120) DEFAULT NULL,
-  `body` varchar(255) DEFAULT NULL,
-  `data_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`data_json`)),
+  `type` varchar(48) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `body` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `data_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `is_read` tinyint(1) NOT NULL DEFAULT 0,
   `created_at` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   `read_at` datetime(3) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 -- --------------------------------------------------------
 
@@ -3251,7 +3153,8 @@ INSERT INTO `otp_codes` (`id`, `phone`, `purpose`, `code_hash`, `expires_at`, `c
 (78, '09123598357', 1, '47e6805825f8b5137eac1998032d7f12a7b361ca120965aaaddb52c3c04fa36a', '2026-08-17 13:39:14.479', '2026-08-17 13:37:39.332', 0, 'b`?+', '2026-08-17 13:37:14.479'),
 (79, '09358223323', 1, 'a35f2b51fa99b19e317cc6463b4fa4c88fbe7a319c0d9e7483fb7da07dad6728', '2026-08-17 13:42:20.537', '2026-08-17 13:40:32.344', 0, '??e', '2026-08-17 13:40:20.537'),
 (80, '09192999873', 1, 'a76ca6df14e95ac430cab161d2b3297748219e3d99be88dbc0f478bfa7214d49', '2026-08-17 13:44:47.212', '2026-08-17 13:43:05.020', 0, '??e', '2026-08-17 13:42:47.212'),
-(81, '09351794610', 1, '81f10b31d3dcd2f2591326ab9a9e4ae6344532859cfcbd805dd6217e2a13213d', '2026-08-22 11:05:44.753', '2026-08-22 11:03:57.185', 0, '??/', '2026-08-22 11:03:44.753');
+(81, '09351794610', 1, '81f10b31d3dcd2f2591326ab9a9e4ae6344532859cfcbd805dd6217e2a13213d', '2026-08-22 11:05:44.753', '2026-08-22 11:03:57.185', 0, '??/', '2026-08-22 11:03:44.753'),
+(82, '09351794610', 1, '37f145a97e5fefb65704b2ef256ebf54cc412189ab055a511114d9e4c9e27560', '2026-09-27 18:44:36.174', '2026-09-27 18:43:01.995', 0, '???', '2026-09-27 18:42:36.174');
 
 -- --------------------------------------------------------
 
@@ -3351,7 +3254,7 @@ CREATE TABLE `remember_tokens` (
 --
 
 INSERT INTO `remember_tokens` (`id`, `user_id`, `token_hash`, `expires_at`, `created_at`, `updated_at`) VALUES
-(22, 1, '0c95f71d732c2e7fd04a54f1197051d67f524483964384db8a19f93765548ad4', '2026-08-13 16:16:16.000', '2026-08-06 16:16:16.665', '2026-08-06 16:16:16.665');
+(23, 1, '0a85b7b717e1be15bdf558964c1c35484e653466bd5cc0f32779984e5225cf83', '2026-10-04 16:46:45.000', '2026-09-27 16:46:45.390', '2026-09-27 16:46:45.390');
 
 -- --------------------------------------------------------
 
@@ -3545,7 +3448,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `full_name`, `code_meli`, `birth_date`, `national_card_serial`, `phone`, `email`, `password_hash`, `father_name`, `gender`, `user_type`, `status`, `display_name`, `avatar_key`, `theme_mode`, `last_login_at`, `failed_login_attempts`, `locked_until`, `jwt_token_version`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 'شایان', '1111111111', '1380/10/04', NULL, '09123456789', 'namayandeshayan@gmail.com', '$2y$10$RqKeGtk7M20hxcqSLXkpwedIxMvwRVhsAXC3OiEdZ0nKQ3u7dD3U2', 'یعقوب', '1', 3, 1, 'عمو شایان', 'storage/uploads/avatars/avatar_1_1770674071.webp', 'light', '2026-08-30 21:57:58.762', 0, NULL, 1, '2025-12-18 15:06:36.758', '2026-08-30 21:57:58.762', NULL),
+(1, 'شایان', '1111111111', '1380/10/04', NULL, '09123456789', 'namayandeshayan@gmail.com', '$2y$10$RqKeGtk7M20hxcqSLXkpwedIxMvwRVhsAXC3OiEdZ0nKQ3u7dD3U2', 'یعقوب', '1', 3, 1, 'عمو شایان', 'storage/uploads/avatars/avatar_1_1770674071.webp', 'light', '2026-09-27 16:46:45.378', 0, NULL, 1, '2025-12-18 15:06:36.758', '2026-09-27 16:46:45.378', NULL),
 (64, 'شایان نماینده', '0312449348', '1380/10/04', NULL, '09129248289', NULL, NULL, NULL, '1', 2, 2, NULL, NULL, NULL, '2026-08-06 15:58:34.909', 0, NULL, 2, '2026-08-06 15:58:34.894', '2026-08-22 11:04:19.316', '2026-08-22 11:04:19.316'),
 (65, 'کاربر', NULL, NULL, NULL, '09351794610', NULL, NULL, NULL, '1', 1, 2, NULL, NULL, NULL, '2026-08-06 16:06:32.136', 0, NULL, 2, '2026-08-06 16:06:32.124', '2026-08-22 11:03:37.341', '2026-08-22 11:03:37.341'),
 (66, 'محمد درویشی نیا', '4190260975', '1371/10/02', NULL, '09120654653', NULL, NULL, NULL, '1', 2, 1, NULL, NULL, NULL, '2026-08-06 16:06:51.830', 0, NULL, 1, '2026-08-06 16:06:51.797', '2026-08-06 16:07:40.312', NULL),
@@ -3554,7 +3457,7 @@ INSERT INTO `users` (`id`, `full_name`, `code_meli`, `birth_date`, `national_car
 (69, 'کاربر', NULL, NULL, NULL, '09192999719', NULL, NULL, NULL, '1', 1, 1, NULL, NULL, NULL, '2026-08-17 13:24:53.246', 0, NULL, 1, '2026-08-17 13:24:53.234', '2026-08-17 13:24:53.246', NULL),
 (70, 'کاربر', NULL, NULL, NULL, '09123598357', NULL, NULL, NULL, '1', 2, 1, NULL, NULL, NULL, '2026-08-17 13:37:39.361', 0, NULL, 1, '2026-08-17 13:37:39.338', '2026-08-17 13:37:39.361', NULL),
 (71, 'کاربر', NULL, NULL, NULL, '09192999873', NULL, NULL, NULL, '1', 1, 1, NULL, NULL, NULL, '2026-08-17 13:43:05.045', 0, NULL, 1, '2026-08-17 13:43:05.028', '2026-08-17 13:43:05.045', NULL),
-(72, 'شایان نماینده', '0312449348', '1380/10/04', NULL, '09351794610', NULL, NULL, NULL, '1', 1, 1, NULL, NULL, NULL, '2026-08-22 11:03:57.218', 0, NULL, 1, '2026-08-22 11:03:57.190', '2026-08-22 11:04:58.753', NULL);
+(72, 'شایان نماینده', '0312449348', '1380/10/04', '1G39352909', '09351794610', NULL, NULL, NULL, '1', 1, 1, NULL, NULL, NULL, '2026-09-27 18:43:02.019', 0, NULL, 1, '2026-08-22 11:03:57.190', '2026-09-27 18:43:13.982', NULL);
 
 -- --------------------------------------------------------
 
@@ -3581,7 +3484,8 @@ INSERT INTO `user_app_roles` (`user_id`, `app_role`, `status`, `created_at`, `up
 (69, 1, 1, '2026-08-17 13:24:53.234', '2026-08-30 21:57:22.502'),
 (70, 2, 1, '2026-08-17 13:37:39.338', '2026-08-30 21:57:22.502'),
 (71, 1, 1, '2026-08-17 13:43:05.028', '2026-08-30 21:57:22.502'),
-(72, 1, 1, '2026-08-22 11:03:57.190', '2026-08-30 21:57:22.502');
+(72, 1, 1, '2026-08-22 11:03:57.190', '2026-08-30 21:57:22.502'),
+(72, 2, 1, '2026-09-27 18:43:02.007', '2026-09-27 18:43:02.007');
 
 -- --------------------------------------------------------
 
@@ -3593,23 +3497,13 @@ CREATE TABLE `user_files` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `user_id` bigint(20) UNSIGNED NOT NULL,
   `file_type` tinyint(3) UNSIGNED NOT NULL COMMENT '1=عکس پروفایل, 2=عکس کارت ملی, 3=عکس گواهینامه, 4=عکس کارت ماشین, 5=عکس برگه سبز, 6=ویدئو احراز هویت, 7=عکس بیمه نامه',
-  `file_key` varchar(255) NOT NULL,
-  `mime_type` varchar(64) DEFAULT NULL,
+  `file_key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `mime_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `file_size` int(10) UNSIGNED DEFAULT NULL,
-  `metadata` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`metadata`)),
+  `metadata` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `created_at` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   `updated_at` datetime(3) NOT NULL DEFAULT current_timestamp(3) ON UPDATE current_timestamp(3)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `user_files`
---
-
-INSERT INTO `user_files` (`id`, `user_id`, `file_type`, `file_key`, `mime_type`, `file_size`, `metadata`, `created_at`, `updated_at`) VALUES
-(28, 67, 3, 'storage/uploads/images/user_67_875eae4ab578f4ba49010605.jpg', 'image/jpeg', 205103, '{\"related_id\":null,\"original_name\":\"scaled_۲۰۲۶۰۶۰۹_۱۴۳۹۲۹.jpg\",\"uploaded_at\":\"2026-08-06 16:18:45\"}', '2026-08-06 16:18:45.762', '2026-08-06 16:18:45.762'),
-(29, 67, 4, 'storage/uploads/images/user_67_d263d37af245148f36360b68.jpg', 'image/jpeg', 59719, '{\"related_id\":null,\"original_name\":\"scaled_IMG_20260521_192142_168.jpg\",\"uploaded_at\":\"2026-08-06 16:18:45\"}', '2026-08-06 16:18:45.780', '2026-08-06 16:18:45.780'),
-(30, 72, 3, 'storage/uploads/images/user_72_7e0b662021877f288782d98c.jpg', 'image/jpeg', 402817, '{\"related_id\":null,\"original_name\":\"scaled_f6dab14a-32bd-43c4-8657-24edd2a627747993297603800577870.jpg\",\"uploaded_at\":\"2026-08-22 11:05:00\"}', '2026-08-22 11:05:00.865', '2026-08-22 11:05:00.865'),
-(31, 72, 4, 'storage/uploads/images/user_72_5a74830e4bf0f96bde25811d.jpg', 'image/jpeg', 326263, '{\"related_id\":null,\"original_name\":\"scaled_20dca4b6-06bc-4976-be38-b530c71a185b6822419593613764612.jpg\",\"uploaded_at\":\"2026-08-22 11:05:00\"}', '2026-08-22 11:05:00.881', '2026-08-22 11:05:00.881');
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 -- --------------------------------------------------------
 
@@ -3666,6 +3560,22 @@ INSERT INTO `vehicle_types` (`id`, `parent_id`, `code`, `title`, `body_type`, `m
 (2, 1, '11', 'نیسان روباز', 'روباز', 2200.00, 'نیسان روباز', 1, '2026-02-13 22:04:13', '2026-02-13 22:04:13'),
 (3, 1, '12', 'نیسان مسقف', 'مسقف', 2200.00, 'نیسان مسقف', 1, '2026-02-13 22:04:49', '2026-02-13 22:04:49'),
 (4, 1, '13', 'نیسان یخچالی', 'یخچالی', 2200.00, 'نیسان یخچالی', 1, '2026-02-13 22:05:49', '2026-02-13 22:05:49');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `verification_video_challenges`
+--
+
+CREATE TABLE `verification_video_challenges` (
+  `token_hash` char(64) NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `app_role` tinyint(3) UNSIGNED NOT NULL,
+  `speech_text` varchar(2000) NOT NULL,
+  `expires_at` datetime(3) NOT NULL,
+  `used_at` datetime(3) DEFAULT NULL,
+  `created_at` datetime(3) NOT NULL DEFAULT current_timestamp(3)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Indexes for dumped tables
@@ -4115,6 +4025,13 @@ ALTER TABLE `vehicle_types`
   ADD KEY `ix_vehicle_types_active` (`is_active`);
 
 --
+-- Indexes for table `verification_video_challenges`
+--
+ALTER TABLE `verification_video_challenges`
+  ADD PRIMARY KEY (`token_hash`),
+  ADD KEY `ix_video_challenge_user` (`user_id`,`app_role`,`expires_at`);
+
+--
 -- AUTO_INCREMENT for dumped tables
 --
 
@@ -4122,7 +4039,7 @@ ALTER TABLE `vehicle_types`
 -- AUTO_INCREMENT for table `admin_audit_logs`
 --
 ALTER TABLE `admin_audit_logs`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=95;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=96;
 
 --
 -- AUTO_INCREMENT for table `api_tokens`
@@ -4140,7 +4057,7 @@ ALTER TABLE `app_versions`
 -- AUTO_INCREMENT for table `auth_events`
 --
 ALTER TABLE `auth_events`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2107;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2110;
 
 --
 -- AUTO_INCREMENT for table `banners`
@@ -4170,7 +4087,7 @@ ALTER TABLE `cities`
 -- AUTO_INCREMENT for table `companies`
 --
 ALTER TABLE `companies`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `company_documents`
@@ -4224,7 +4141,7 @@ ALTER TABLE `driver_verification_events`
 -- AUTO_INCREMENT for table `external_api_credentials`
 --
 ALTER TABLE `external_api_credentials`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `external_api_providers`
@@ -4236,19 +4153,19 @@ ALTER TABLE `external_api_providers`
 -- AUTO_INCREMENT for table `external_api_request_logs`
 --
 ALTER TABLE `external_api_request_logs`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=109;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=117;
 
 --
 -- AUTO_INCREMENT for table `faq_categories`
 --
 ALTER TABLE `faq_categories`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `faq_items`
 --
 ALTER TABLE `faq_items`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `field_settings`
@@ -4260,7 +4177,7 @@ ALTER TABLE `field_settings`
 -- AUTO_INCREMENT for table `identity_verification_jobs`
 --
 ALTER TABLE `identity_verification_jobs`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `identity_verification_services`
@@ -4272,7 +4189,7 @@ ALTER TABLE `identity_verification_services`
 -- AUTO_INCREMENT for table `jwt_refresh_tokens`
 --
 ALTER TABLE `jwt_refresh_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=96;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=100;
 
 --
 -- AUTO_INCREMENT for table `loads`
@@ -4302,13 +4219,13 @@ ALTER TABLE `messages`
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `otp_codes`
 --
 ALTER TABLE `otp_codes`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=82;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=83;
 
 --
 -- AUTO_INCREMENT for table `permissions`
@@ -4326,7 +4243,7 @@ ALTER TABLE `ratings`
 -- AUTO_INCREMENT for table `remember_tokens`
 --
 ALTER TABLE `remember_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT for table `reports`
@@ -4356,13 +4273,13 @@ ALTER TABLE `support_ticket_messages`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=73;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=74;
 
 --
 -- AUTO_INCREMENT for table `user_files`
 --
 ALTER TABLE `user_files`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `user_relations`
@@ -4669,6 +4586,12 @@ ALTER TABLE `user_roles`
 --
 ALTER TABLE `vehicle_types`
   ADD CONSTRAINT `fk_vehicle_types_parent` FOREIGN KEY (`parent_id`) REFERENCES `vehicle_types` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Constraints for table `verification_video_challenges`
+--
+ALTER TABLE `verification_video_challenges`
+  ADD CONSTRAINT `fk_video_challenge_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

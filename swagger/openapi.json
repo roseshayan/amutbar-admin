@@ -1,0 +1,1390 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "سامانه مدیریت و وب‌سرویس‌های آموت‌بار (Amutbar API)",
+    "description": "مستندات جامع وب‌سرویس‌های سامانه آموت‌بار برای اپلیکیشن رانندگان (Driver App - User Type 1)، اپلیکیشن صاحبان بار و باربری (Cargo App - User Type 2) و پنل مدیریت.\n\n### ساختار پاسخ‌ها:\nتمامی پاسخ‌های موفق وب‌سرویس با فرمت زیر بازگردانده می‌شوند:\n```json\n{\n  \"ok\": true,\n  \"status\": 200,\n  \"items\": [...] // یا آبجکت‌های دیگر مثل profile, auth, ...\n}\n```\nو پاسخ‌های خطا دارای ساختار زیر هستند:\n```json\n{\n  \"ok\": false,\n  \"message\": \"متن خطای فارسی\",\n  \"code\": \"کد_خطا\",\n  \"status\": 422\n}\n```\n\n### احراز هویت:\nبرای فراخوانی متدهای نیازمند احراز هویت، هدر `Authorization: Bearer <access_token>` را ارسال نمایید.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "پشتیبانی فنی آموت‌بار",
+      "url": "https://amutapp.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "/api/v1",
+      "description": "سرور فعلی (نسبی)"
+    },
+    {
+      "url": "https://amutapp.com/amutadmin/api/v1",
+      "description": "سرور اصلی پروداکشن"
+    },
+    {
+      "url": "http://localhost/amutbar-admin/api/v1",
+      "description": "محیط محلی تستی (Laragon/Localhost)"
+    }
+  ],
+  "tags": [
+    {
+      "name": "سیستم و متادیتا (System & Meta)",
+      "description": "اطلاعات پایه سیستم، تنظیمات اپ، استان‌ها، شهرها و انواع بار"
+    },
+    {
+      "name": "احراز هویت و ورود (Authentication)",
+      "description": "ارسال و تایید OTP، خروج و تمدید توکن JWT"
+    },
+    {
+      "name": "پروفایل من و اعلانات (Me & Notifications)",
+      "description": "پروفایل کاربر وارد شده، آپلود آواتار و لیست اعلان‌ها"
+    },
+    {
+      "name": "اپلیکیشن رانندگان (Driver)",
+      "description": "پروفایل راننده، مدارک، جستجوی بار، تماس و لاگ فعالیت"
+    },
+    {
+      "name": "اپلیکیشن باربری و اعلام بار (Company / Cargo)",
+      "description": "احراز هویت باربری، اعلام بار جدید، لیست بارها و بستن بار"
+    },
+    {
+      "name": "پشتیبانی و تیکت‌ها (Support Tickets)",
+      "description": "سیستم گفت‌وگو و پشتیبانی با قابلیت ارسال پیوست"
+    },
+    {
+      "name": "محتوا و بنرها (Content)",
+      "description": "بنرهای تبلیغاتی و سوالات متداول"
+    },
+    {
+      "name": "مدیریت کاربران ادمین (Admin Users)",
+      "description": "سرویس‌های مدیریتی سطح ادمین برای مدیریت کاربران"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "توکن دسترسی JWT دریافت شده از /auth/verify-otp را در این فیلد وارد کنید."
+      }
+    },
+    "schemas": {
+      "StandardSuccess": {
+        "type": "object",
+        "properties": {
+          "ok": { "type": "boolean", "example": true },
+          "status": { "type": "integer", "example": 200 }
+        }
+      },
+      "StandardError": {
+        "type": "object",
+        "properties": {
+          "ok": { "type": "boolean", "example": false },
+          "message": { "type": "string", "example": "اطلاعات وارد شده نامعتبر است" },
+          "code": { "type": "string", "example": "validation_error" },
+          "status": { "type": "integer", "example": 422 },
+          "request_id": { "type": "string", "example": "a8f3b20c1d..." }
+        }
+      },
+      "UserPayload": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 10 },
+          "phone": { "type": "string", "example": "09121234567" },
+          "full_name": { "type": "string", "example": "علی محمدی" },
+          "user_type": { "type": "integer", "description": "1=راننده، 2=باربری/صاحب بار، 3=ادمین", "example": 1 },
+          "avatar_key": { "type": "string", "nullable": true, "example": "storage/uploads/avatars/avatar_10.jpg" }
+        }
+      },
+      "LoadItem": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 105 },
+          "public_code": { "type": "string", "example": "729482619042" },
+          "origin": { "type": "string", "example": "تهران (تهران)" },
+          "destination": { "type": "string", "example": "مشهد (خراسان رضوی)" },
+          "cargo_title": { "type": "string", "example": "آهن آلات" },
+          "vehicle_title": { "type": "string", "example": "تریلی کفی" },
+          "price": { "type": "string", "example": "18,500,000" },
+          "price_evaluation": { "type": "string", "enum": ["منصفانه", "ارزان", "گران"], "example": "منصفانه" },
+          "distance_km": { "type": "number", "nullable": true, "example": 890 }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["سیستم و متادیتا (System & Meta)"],
+        "summary": "بررسی وضعیت سلامت API",
+        "description": "پینگ و بررسی آنلاین بودن وب‌سرویس جهت مانیتورینگ و لود بالانسر.",
+        "responses": {
+          "200": {
+            "description": "سرویس فعال است",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "service": "amutbar-api",
+                  "version": "v1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meta/app-config": {
+      "get": {
+        "tags": ["سیستم و متادیتا (System & Meta)"],
+        "summary": "دریافت تنظیمات اولیه و وضعیت اپلیکیشن",
+        "description": "دریافت شماره نسخه‌های معتبر، لینک‌های دانلود، وضعیت حالت تعمیرات (Maintenance) و سیاست‌های احراز هویت ویدیویی.",
+        "parameters": [
+          {
+            "name": "target_app_id",
+            "in": "query",
+            "required": false,
+            "description": "شناسه اپ: 1 برای راننده (Driver)، 2 برای صاحب بار (Cargo)",
+            "schema": { "type": "integer", "enum": [1, 2], "default": 1 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "پیکربندی با موفقیت دریافت شد",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "target_app_id": 1,
+                  "company_name": "سامانه آموت‌بار",
+                  "site_name": "آموت‌بار",
+                  "site_url": "https://amutapp.com",
+                  "support": {
+                    "phone": "02191000000",
+                    "whatsapp": "09120000000",
+                    "telegram": "@amutbar_support"
+                  },
+                  "app": {
+                    "android": { "latest_version_code": 12, "min_supported_code": 10, "update_url": "https://..." },
+                    "ios": { "latest_version_code": 5, "min_supported_code": 5, "update_url": "https://..." }
+                  },
+                  "maintenance": { "enabled": false, "message": null },
+                  "onboarding": { "require_verification_video": true },
+                  "auth": { "require_national_serial": true, "require_shahkar": true }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meta/provinces": {
+      "get": {
+        "tags": ["سیستم و متادیتا (System & Meta)"],
+        "summary": "لیست استان‌های کشور",
+        "responses": {
+          "200": {
+            "description": "لیست استان‌ها",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "items": [
+                    { "id": 1, "name": "آذربایجان شرقی" },
+                    { "id": 8, "name": "تهران" },
+                    { "id": 11, "name": "خراسان رضوی" }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meta/cities": {
+      "get": {
+        "tags": ["سیستم و متادیتا (System & Meta)"],
+        "summary": "لیست شهرهای یک استان مشخص",
+        "parameters": [
+          {
+            "name": "province_id",
+            "in": "query",
+            "required": true,
+            "description": "شناسه استان",
+            "schema": { "type": "integer", "example": 8 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "لیست شهرهای استان مورد نظر",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "items": [
+                    { "id": 101, "province_id": 8, "name": "تهران", "lat": 35.6892, "lng": 51.3890 },
+                    { "id": 102, "province_id": 8, "name": "شهریار", "lat": null, "lng": null }
+                  ]
+                }
+              }
+            }
+          },
+          "422": { "$ref": "#/components/schemas/StandardError" }
+        }
+      }
+    },
+    "/meta/cities/search": {
+      "get": {
+        "tags": ["سیستم و متادیتا (System & Meta)"],
+        "summary": "جستجوی زنده شهرها و استان‌ها",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "عبارت جستجو (حداقل ۱ حرف)",
+            "schema": { "type": "string", "example": "اصف" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "نتایج جستجو",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "items": [
+                    { "id": 312, "text": "اصفهان (اصفهان)" },
+                    { "id": 315, "text": "کاشان (اصفهان)" }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meta/cargos/search": {
+      "get": {
+        "tags": ["سیستم و متادیتا (System & Meta)"],
+        "summary": "جستجوی زنده انواع کالا / بار",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "عبارت جستجو برای نوع کالا",
+            "schema": { "type": "string", "example": "آهن" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "لیست کالاهای منطبق",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "items": [
+                    { "id": 15, "text": "آهن آلات ساختمانی" },
+                    { "id": 22, "text": "میلگرد" }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meta/vehicle-types": {
+      "get": {
+        "tags": ["سیستم و متادیتا (System & Meta)"],
+        "summary": "لیست انواع وسایل نقلیه و بارگیرها",
+        "responses": {
+          "200": {
+            "description": "لیست وسایل نقلیه",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "items": [
+                    { "id": 1, "parent_id": null, "code": "TRUCK", "title": "خاور / کامیونت", "body_type": "مسقف", "max_weight_kg": 4000 },
+                    { "id": 5, "parent_id": null, "code": "TRAILER", "title": "تریلی کفی", "body_type": "کفی", "max_weight_kg": 24000 }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/request-otp": {
+      "post": {
+        "tags": ["احراز هویت و ورود (Authentication)"],
+        "summary": "درخواست ارسال کد اعتبارسنجی پیامکی (OTP)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["phone"],
+                "properties": {
+                  "phone": { "type": "string", "example": "09121234567", "description": "شماره موبایل معتبر ایران" },
+                  "user_type": { "type": "integer", "enum": [1, 2], "default": 1, "description": "1 برای راننده، 2 برای باربری/صاحب بار" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "کد پیامک شد",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "message": "کد تایید ارسال شد",
+                  "otp_id": 4821,
+                  "expires_in": 120
+                }
+              }
+            }
+          },
+          "422": { "$ref": "#/components/schemas/StandardError" }
+        }
+      }
+    },
+    "/auth/verify-otp": {
+      "post": {
+        "tags": ["احراز هویت و ورود (Authentication)"],
+        "summary": "تایید کد پیامکی و صدور توکن دسترسی JWT",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["phone", "code"],
+                "properties": {
+                  "phone": { "type": "string", "example": "09121234567" },
+                  "code": { "type": "string", "example": "12345" },
+                  "user_type": { "type": "integer", "enum": [1, 2], "default": 1 },
+                  "device_id": { "type": "string", "example": "android-uuid-1234" },
+                  "platform": { "type": "string", "enum": ["android", "ios", "web"], "example": "android" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ورود موفق و صدور توکن",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "auth": {
+                    "token_type": "Bearer",
+                    "access_token": "eyJhbGciOi...",
+                    "refresh_token": "def502...",
+                    "access_expires_in": 86400,
+                    "refresh_expires_in": 7776000
+                  },
+                  "flow": {
+                    "user_type": 1,
+                    "next": "dashboard",
+                    "profile_completed": true,
+                    "verification_status": 1
+                  }
+                }
+              }
+            }
+          },
+          "422": { "$ref": "#/components/schemas/StandardError" }
+        }
+      }
+    },
+    "/auth/video-challenge": {
+      "post": {
+        "tags": ["احراز هویت و ورود (Authentication)"],
+        "summary": "دریافت عبارت یک‌بارمصرف برای احراز ویدیویی",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "card_serial": { "type": "string", "example": "1A23456789" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "توکن چالش و متن تصادفی",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "challenge_token": "ch_7a8b9c...",
+                  "phrase": "اینجانب علی محمدی صحت اطلاعات را تایید می‌نمایم."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/verify-identity": {
+      "post": {
+        "tags": ["اپلیکیشن رانندگان (Driver)"],
+        "summary": "احراز هویت رسمی راننده (شاهکار و استعلام ثبت احوال)",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["full_name", "national_code", "birth_date"],
+                "properties": {
+                  "full_name": { "type": "string", "example": "علی محمدی" },
+                  "national_code": { "type": "string", "example": "0012345678" },
+                  "birth_date": { "type": "string", "example": "1370/05/12" },
+                  "card_serial": { "type": "string", "example": "1A23456789" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "احراز هویت با موفقیت انجام شد",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "message": "احراز هویت با موفقیت انجام شد.",
+                  "avatar_key": "storage/uploads/avatars/avatar_10.jpg"
+                }
+              }
+            }
+          },
+          "422": { "$ref": "#/components/schemas/StandardError" }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": ["احراز هویت و ورود (Authentication)"],
+        "summary": "تمدید توکن منقضی شده با Refresh Token",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["refresh_token"],
+                "properties": {
+                  "refresh_token": { "type": "string", "example": "def502..." },
+                  "device_id": { "type": "string", "example": "android-uuid-1234" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "توکن جدید صادر شد",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "auth": {
+                    "token_type": "Bearer",
+                    "access_token": "eyJhbGci...",
+                    "refresh_token": "def503..."
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/schemas/StandardError" }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["احراز هویت و ورود (Authentication)"],
+        "summary": "خروج از حساب کاربری",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "refresh_token": { "type": "string" },
+                  "all_devices": { "type": "string", "enum": ["0", "1"], "default": "0" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "خروج با موفقیت ثبت شد",
+            "content": {
+              "application/json": {
+                "example": { "ok": true, "message": "خروج انجام شد" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me": {
+      "get": {
+        "tags": ["پروفایل من و اعلانات (Me & Notifications)"],
+        "summary": "دریافت اطلاعات پروفایل کاربر فعلی",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "پروفایل کامل راننده یا صاحب بار",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "user": {
+                    "id": 10,
+                    "phone": "09121234567",
+                    "full_name": "علی محمدی",
+                    "user_type": 1,
+                    "avatar_key": "storage/uploads/avatars/avatar_10.jpg"
+                  },
+                  "driver": {
+                    "id": 8,
+                    "vehicle_type_id": 5,
+                    "plate_number": "12ع345ایران77",
+                    "verification_status": 1
+                  },
+                  "onboarding": {
+                    "identity_verified": true,
+                    "profile_completed": true,
+                    "needs_verification_video": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/avatar": {
+      "post": {
+        "tags": ["پروفایل من و اعلانات (Me & Notifications)"],
+        "summary": "آپلود و ذخیره تصویر آواتار کاربر",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["avatar"],
+                "properties": {
+                  "avatar": { "type": "string", "format": "binary", "description": "فایل عکس (jpg, png, webp)" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "آواتار بروز شد",
+            "content": {
+              "application/json": {
+                "example": { "ok": true, "avatar_key": "storage/uploads/avatars/avatar_10_168000.jpg" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/notifications/unread-count": {
+      "get": {
+        "tags": ["پروفایل من و اعلانات (Me & Notifications)"],
+        "summary": "دریافت تعداد اعلان‌های خوانده‌نشده",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "تعداد اعلانات",
+            "content": {
+              "application/json": {
+                "example": { "ok": true, "unread_count": 3, "latest_type": "load_alert" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/notifications": {
+      "get": {
+        "tags": ["پروفایل من و اعلانات (Me & Notifications)"],
+        "summary": "لیست کامل اعلان‌های کاربر",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "لیست اعلان‌ها (و علامت‌گذاری خودکار به عنوان خوانده‌شده)",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "items": [
+                    { "id": 45, "title": "بار جدید مطابق مسیر شما", "message": "بار تریلی از تهران به مشهد ثبت شد", "created_at": "2026-10-10 14:00:00" }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/driver/profile": {
+      "post": {
+        "tags": ["اپلیکیشن رانندگان (Driver)"],
+        "summary": "تکمیل و ویرایش اطلاعات راننده و خودرو",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["full_name", "national_code", "vehicle_type_id", "plate_number"],
+                "properties": {
+                  "full_name": { "type": "string", "example": "علی محمدی" },
+                  "national_code": { "type": "string", "example": "0012345678" },
+                  "vehicle_type_id": { "type": "integer", "example": 5 },
+                  "plate_number": { "type": "string", "example": "12ع345ایران77" },
+                  "smart_card_number": { "type": "string", "example": "2948201" },
+                  "model_year": { "type": "integer", "example": 1398 },
+                  "color": { "type": "string", "example": "سفید" },
+                  "capacity_kg": { "type": "number", "example": 22000 },
+                  "province_id": { "type": "integer", "example": 8 },
+                  "city_id": { "type": "integer", "example": 101 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "پروفایل راننده ذخیره شد",
+            "content": {
+              "application/json": {
+                "example": { "ok": true, "driver": { "id": 8, "full_name": "علی محمدی" } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/driver/docs": {
+      "post": {
+        "tags": ["اپلیکیشن رانندگان (Driver)"],
+        "summary": "آپلود مدارک راننده (گواهینامه و کارت ماشین)",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "license_image": { "type": "string", "format": "binary", "description": "تصویر گواهینامه" },
+                  "vehicle_card_image": { "type": "string", "format": "binary", "description": "تصویر کارت ماشین" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "مدارک آپلود شد",
+            "content": {
+              "application/json": {
+                "example": { "ok": true, "uploaded": true }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/driver/verification-video": {
+      "post": {
+        "tags": ["اپلیکیشن رانندگان (Driver)"],
+        "summary": "آپلود و بررسی ویدیوی سلفی احراز هویت راننده",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["verification_video"],
+                "properties": {
+                  "verification_video": { "type": "string", "format": "binary", "description": "فایل ویدیوی سلفی (mp4)" },
+                  "challenge_token": { "type": "string", "description": "توکن متناظر چالش متنی" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "نتیجه بررسی هوش مصنوعی ویدیو",
+            "content": {
+              "application/json": {
+                "example": { "ok": true, "uploaded": true, "verified": true, "message": "احراز هویت ویدئویی تأیید شد." }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/driver/loads": {
+      "get": {
+        "tags": ["اپلیکیشن رانندگان (Driver)"],
+        "summary": "جستجوی هوشمند بارهای فعال برای رانندگان",
+        "description": "نمایش لیست بارهای فعال با محاسبه خودکار میانگین قیمت بازار، ارزیابی منصفانه بودن نرخ و محاسبه مسافت جاده‌ای مبدأ تا مقصد.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "origin_province_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+          { "name": "dest_province_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+          { "name": "origin_city_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+          { "name": "dest_city_id", "in": "query", "required": false, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "لیست بارها",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "items": [
+                    {
+                      "id": 105,
+                      "public_code": "829401759281",
+                      "origin": "تهران (تهران)",
+                      "destination": "مشهد (خراسان رضوی)",
+                      "cargo_title": "آهن آلات",
+                      "price": "18,000,000",
+                      "price_evaluation": "منصفانه",
+                      "distance_km": 890
+                    }
+                  ],
+                  "info_message": "بارهای اعلام شده به صورت آنی به شما نمایش داده می‌شوند."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/driver/loads/{id}": {
+      "get": {
+        "tags": ["اپلیکیشن رانندگان (Driver)"],
+        "summary": "جزئیات کامل یک بار مشخص برای راننده",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "مشخصات کامل بار",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "data": {
+                    "id": 105,
+                    "public_code": "829401759281",
+                    "company_name": "باربری صداقت",
+                    "vehicle_title": "تریلی کفی",
+                    "load_type_text": "دربستی",
+                    "weight_text": "22 تن",
+                    "price_type_text": "صافی سرویسی",
+                    "phone_coordination": "09121112233",
+                    "description": "بارگیری فوری فردا ساعت ۸ صبح",
+                    "origin_full": "تهران (تهران)",
+                    "dest_full": "مشهد (خراسان رضوی)",
+                    "proposed_price": 18000000
+                  }
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/schemas/StandardError" }
+        }
+      }
+    },
+    "/companies/active-loads": {
+      "get": {
+        "tags": ["اپلیکیشن رانندگان (Driver)"],
+        "summary": "سایر بارهای فعال یک باربری مشخص",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "company_id", "in": "query", "required": true, "schema": { "type": "integer" } },
+          { "name": "exclude_id", "in": "query", "required": false, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "سایر بارهای این شرکت",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "items": [
+                    { "id": 109, "cargo_title": "کاشی و سرامیک", "origin": "یزد (یزد)", "destination": "تهران (تهران)", "price": "12,000,000" }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/driver/calls/log": {
+      "post": {
+        "tags": ["اپلیکیشن رانندگان (Driver)"],
+        "summary": "ثبت لاگ برقراری تماس راننده با صاحب بار",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["load_id"],
+                "properties": {
+                  "load_id": { "type": "integer", "example": 105 },
+                  "client_platform": { "type": "string", "example": "android" },
+                  "client_version": { "type": "integer", "example": 12 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "تماس لاگ شد",
+            "content": {
+              "application/json": {
+                "example": { "ok": true, "logged": true }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/driver/calls/history": {
+      "get": {
+        "tags": ["اپلیکیشن رانندگان (Driver)"],
+        "summary": "دریافت تاریخچه تماس‌های راننده",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "لیست تاریخچه تماس‌ها",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "items": [
+                    {
+                      "call_id": 921,
+                      "load_id": 105,
+                      "public_code": "829401759281",
+                      "company_name": "باربری صداقت",
+                      "origin": "تهران (تهران)",
+                      "destination": "مشهد (خراسان رضوی)",
+                      "call_time": "2026-10-10 16:30:00",
+                      "is_available": true
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/driver/activity": {
+      "post": {
+        "tags": ["اپلیکیشن رانندگان (Driver)"],
+        "summary": "ثبت تله‌متری و لاگ فعالیت راننده در اپ",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "events": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "event_key": { "type": "string", "example": "view_load_details" },
+                        "target_id": { "type": "integer", "example": 105 }
+                      }
+                    }
+                  },
+                  "device_id": { "type": "string", "example": "android-uuid" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "لاگ با موفقیت ثبت شد",
+            "content": {
+              "application/json": {
+                "example": { "ok": true, "logged": 3 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/company/me": {
+      "get": {
+        "tags": ["اپلیکیشن باربری و اعلام بار (Company / Cargo)"],
+        "summary": "دریافت پروفایل شرکت و صاحب بار",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "اطلاعات شرکت و وضعیت احراز هویت",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "company": {
+                    "id": 14,
+                    "company_name": "باربری صداقت",
+                    "owner_full_name": "رضا حسینی",
+                    "verification_status": 1,
+                    "entity_type": 1
+                  },
+                  "onboarding": {
+                    "identity_verified": true,
+                    "verification_status": 1,
+                    "profile_completed": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/company/verify-identity": {
+      "post": {
+        "tags": ["اپلیکیشن باربری و اعلام بار (Company / Cargo)"],
+        "summary": "احراز هویت رسمی صاحب بار و باربری (شاهکار)",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["full_name", "national_code", "birth_date"],
+                "properties": {
+                  "full_name": { "type": "string", "example": "رضا حسینی" },
+                  "national_code": { "type": "string", "example": "0023456789" },
+                  "birth_date": { "type": "string", "example": "1365/04/10" },
+                  "card_serial": { "type": "string", "example": "2B98765432" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "احراز هویت با موفقیت انجام شد",
+            "content": {
+              "application/json": {
+                "example": { "ok": true, "message": "احراز هویت با موفقیت انجام شد." }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/company/profile": {
+      "post": {
+        "tags": ["اپلیکیشن باربری و اعلام بار (Company / Cargo)"],
+        "summary": "تکمیل و ویرایش مشخصات باربری (شخص حقیقی یا حقوقی)",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["company_name"],
+                "properties": {
+                  "entity_type": { "type": "integer", "enum": [1, 2], "default": 1, "description": "1=حقیقی، 2=حقوقی" },
+                  "company_name": { "type": "string", "example": "باربری سریع ترابر" },
+                  "province_id": { "type": "integer", "example": 8 },
+                  "city_id": { "type": "integer", "example": 101 },
+                  "address": { "type": "string", "example": "خیابان آزادی پلاک ۱۰" },
+                  "postal_code": { "type": "string", "example": "1458932145" },
+                  "registration_no": { "type": "string", "example": "123456", "description": "شماره ثبت (الزامی برای شخص حقوقی)" },
+                  "economic_code": { "type": "string", "example": "411234567890" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "پروفایل شرکت با موفقیت ذخیره شد",
+            "content": {
+              "application/json": {
+                "example": { "ok": true, "company": { "id": 14, "company_name": "باربری سریع ترابر" } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/company/docs": {
+      "post": {
+        "tags": ["اپلیکیشن باربری و اعلام بار (Company / Cargo)"],
+        "summary": "آپلود مدارک باربری (کارت ملی و پروانه فعالیت)",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "national_card_image": { "type": "string", "format": "binary" },
+                  "business_license_image": { "type": "string", "format": "binary" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "مدارک آپلود شد",
+            "content": {
+              "application/json": {
+                "example": { "ok": true, "uploaded": true }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/company/loads": {
+      "post": {
+        "tags": ["اپلیکیشن باربری و اعلام بار (Company / Cargo)"],
+        "summary": "اعلام بار جدید توسط باربری",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["origin_city_id", "dest_city_id", "primary_vehicle_type_id", "cargo_type_id", "phone_coordination", "proposed_price"],
+                "properties": {
+                  "origin_city_id": { "type": "integer", "example": 101 },
+                  "dest_city_id": { "type": "integer", "example": 205 },
+                  "origin_address": { "type": "string", "example": "انبار شماره ۲ جاده مخصوص" },
+                  "dest_address": { "type": "string", "example": "شهرک صنعتی مشهد" },
+                  "load_type": { "type": "integer", "enum": [1, 2], "default": 1, "description": "1=دربستی، 2=روباری" },
+                  "primary_vehicle_type_id": { "type": "integer", "example": 5 },
+                  "cargo_type_id": { "type": "integer", "example": 15 },
+                  "weight": { "type": "number", "example": 22 },
+                  "is_tonnage_free": { "type": "string", "enum": ["0", "1"], "default": "0" },
+                  "price_type": { "type": "integer", "enum": [1, 2], "default": 1, "description": "1=سرویسی، 2=تنی" },
+                  "proposed_price": { "type": "number", "example": 18000000 },
+                  "phone_coordination": { "type": "string", "example": "09121112233" },
+                  "description": { "type": "string", "example": "تخلیه صبح شنبه" },
+                  "has_insurance": { "type": "string", "enum": ["0", "1"], "default": "1" },
+                  "insurance_value": { "type": "number", "example": 500000000 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "بار با موفقیت ثبت شد",
+            "content": {
+              "application/json": {
+                "example": { "ok": true, "message": "بار با موفقیت اعلام شد", "load_id": 108, "public_code": "918273645019" }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["اپلیکیشن باربری و اعلام بار (Company / Cargo)"],
+        "summary": "لیست بارهای ثبت شده توسط خود باربری",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "لیست بارهای شرکت",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "items": [
+                    {
+                      "id": 108,
+                      "public_code": "918273645019",
+                      "status_id": 1,
+                      "status_text": "فعال",
+                      "origin": "تهران (تهران)",
+                      "destination": "مشهد (خراسان رضوی)",
+                      "cargo_title": "آهن آلات",
+                      "price": "18,000,000",
+                      "created_at": "2026-10-11 12:00:00"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/company/loads/{id}/close": {
+      "post": {
+        "tags": ["اپلیکیشن باربری و اعلام بار (Company / Cargo)"],
+        "summary": "بستن و پایان دادن به بار اعلام‌شده",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "بار بسته شد",
+            "content": {
+              "application/json": {
+                "example": { "ok": true, "message": "بار بسته شد", "load_id": 108 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/banners": {
+      "get": {
+        "tags": ["محتوا و بنرها (Content)"],
+        "summary": "دریافت بنرهای تبلیغاتی و اسلایدرها",
+        "parameters": [
+          { "name": "target_app_id", "in": "query", "required": false, "schema": { "type": "integer", "enum": [1, 2], "default": 1 } },
+          { "name": "placement", "in": "query", "required": false, "schema": { "type": "string", "enum": ["dashboard", "profile"], "default": "dashboard" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "لیست بنرها",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "items": [
+                    { "id": 1, "title": "تخفیف بیمه باربری", "image_url": "https://amutapp.com/storage/banners/banner1.jpg", "target_url": "https://..." }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/faqs": {
+      "get": {
+        "tags": ["محتوا و بنرها (Content)"],
+        "summary": "دریافت دسته‌بندی‌ها و پرسش‌های متداول",
+        "parameters": [
+          { "name": "target_app_id", "in": "query", "required": false, "schema": { "type": "integer", "enum": [1, 2], "default": 1 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "دسته‌بندی‌ها و پرسش‌ها",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "items": [
+                    {
+                      "id": 1,
+                      "title": "ثبت نام و احراز هویت",
+                      "questions": [
+                        { "id": 10, "question": "چگونه احراز هویت تصویری انجام دهم؟", "answer": "در بخش پروفایل دکمه احراز ویدیویی را لمس کنید..." }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/support/tickets": {
+      "get": {
+        "tags": ["پشتیبانی و تیکت‌ها (Support Tickets)"],
+        "summary": "لیست تیکت‌های پشتیبانی کاربر",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "لیست تیکت‌ها",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "items": [
+                    { "id": 34, "subject": "مشکل در احراز هویت", "status": 1, "updated_at": "2026-10-10 15:00:00" }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["پشتیبانی و تیکت‌ها (Support Tickets)"],
+        "summary": "ایجاد تیکت پشتیبانی جدید",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["subject", "message"],
+                "properties": {
+                  "subject": { "type": "string", "example": "سوال درباره بار اعلام‌شده" },
+                  "message": { "type": "string", "example": "سلام، شماره هماهنگی پاسخگو نیست..." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "تیکت ثبت شد",
+            "content": {
+              "application/json": {
+                "example": { "ok": true, "message": "پیام با موفقیت ایجاد شد", "ticket_id": 35 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/support/tickets/{id}/messages": {
+      "get": {
+        "tags": ["پشتیبانی و تیکت‌ها (Support Tickets)"],
+        "summary": "دریافت تاریخچه پیام‌های یک تیکت",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "پیام‌های تیکت",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "ticket": { "id": 35, "subject": "سوال درباره بار", "status": 1 },
+                  "messages": [
+                    { "id": 101, "sender_user_id": 10, "message": "سلام، راهنمایی بفرمایید", "attachment_url": null }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["پشتیبانی و تیکت‌ها (Support Tickets)"],
+        "summary": "ارسال پاسخ در تیکت (متنی یا پیوست تصویر/فایل)",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": { "type": "string", "example": "تصویر بارنامه پیوست شد" },
+                  "attachment": { "type": "string", "format": "binary" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "پیام ارسال شد",
+            "content": {
+              "application/json": {
+                "example": { "ok": true, "message": "پیام ارسال شد", "attachment_url": "https://..." }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users/list.php": {
+      "get": {
+        "tags": ["مدیریت کاربران ادمین (Admin Users)"],
+        "summary": "لیست کاربران پنل (مخصوص ادمین)",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "per_page", "in": "query", "schema": { "type": "integer", "default": 25 } },
+          { "name": "q", "in": "query", "schema": { "type": "string" } },
+          { "name": "user_type", "in": "query", "schema": { "type": "integer", "enum": [1, 2, 3] } }
+        ],
+        "responses": {
+          "200": {
+            "description": "لیست کاربران",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ok": true,
+                  "page": 1,
+                  "per_page": 25,
+                  "total": 120,
+                  "items": [
+                    { "id": 1, "full_name": "مدیر سیستم", "phone": "09120000000", "user_type": 3, "status": 1 }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -51,6 +51,9 @@ require_once "views/panel/sidebar.php";
                 </nav>
             </div>
             <div class="btn-list">
+                <a href="swagger/" target="_blank" class="btn btn-secondary btn-wave">
+                    <i class="ri-article-line align-middle"></i> مشاهده مستندات تعاملی (Swagger)
+                </a>
                 <button id="btnSaveInternalApi" class="btn btn-primary btn-wave">
                     <i class="ri-save-3-line align-middle"></i> ذخیره تنظیمات
                 </button>

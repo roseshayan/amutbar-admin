@@ -1,0 +1,116 @@
+name: Amutbar Backend CD (Deploy to Linux VPS)
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: 'Target Environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+jobs:
+  deploy:
+    name: Deploy to Linux VPS via SSH
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH Key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add VPS Host to Known Hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p ${{ secrets.SSH_PORT || 22 }} -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Sync Project Files to VPS (Rsync)
+        run: |
+          DEPLOY_PATH="${{ secrets.DEPLOY_PATH || '/var/www/amutbar-admin' }}"
+          SSH_USER="${{ secrets.SSH_USER || 'root' }}"
+          SSH_PORT="${{ secrets.SSH_PORT || 22 }}"
+          SSH_HOST="${{ secrets.SSH_HOST }}"
+
+          echo "Deploying to $SSH_USER@$SSH_HOST:$DEPLOY_PATH (Port: $SSH_PORT)..."
+
+          # اطمینان از وجود دایرکتوری استقرار روی سرور
+          ssh -p $SSH_PORT $SSH_USER@$SSH_HOST "mkdir -p $DEPLOY_PATH"
+
+          # همگام‌سازی فایل‌ها بدون دستکاری فایل‌های حساس سرور (.env و فایل‌های آپلودی)
+          rsync -avz --delete \
+            -e "ssh -p $SSH_PORT" \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.env' \
+            --exclude='storage/uploads/*' \
+            --exclude='storage/logs/*' \
+            --exclude='node_modules' \
+            ./ $SSH_USER@$SSH_HOST:$DEPLOY_PATH/
+
+      - name: Post-Deploy Execution on VPS (Composer, Migrations, Cache Reload)
+        run: |
+          DEPLOY_PATH="${{ secrets.DEPLOY_PATH || '/var/www/amutbar-admin' }}"
+          SSH_USER="${{ secrets.SSH_USER || 'root' }}"
+          SSH_PORT="${{ secrets.SSH_PORT || 22 }}"
+          SSH_HOST="${{ secrets.SSH_HOST }}"
+
+          ssh -p $SSH_PORT $SSH_USER@$SSH_HOST << 'EOF'
+            set -e
+            cd ${{ secrets.DEPLOY_PATH || '/var/www/amutbar-admin' }}
+
+            echo "=== ۱. اطمینان از ساخت پوشه‌های مورد نیاز ==="
+            mkdir -p storage/logs storage/uploads/avatars storage/uploads/videos storage/uploads/tickets storage/uploads/driver_docs storage/uploads/company_docs
+
+            echo "=== ۲. نصب پکیج‌های پروداکشن کامپوزر ==="
+            if command -v composer &> /dev/null; then
+              composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
+            fi
+
+            echo "=== ۳. اجرای خودکار مایگریشن‌های دیتابیس ==="
+            if [ -f scripts/run_migrations.php ]; then
+              php scripts/run_migrations.php
+            fi
+
+            echo "=== ۴. تنظیم سطوح دسترسی امنیتی لینوکس ==="
+            chown -R www-data:www-data .
+            find . -type d -exec chmod 755 {} \;
+            find . -type f -exec chmod 644 {} \;
+            chmod -R 775 storage/
+            chmod 600 .env 2>/dev/null || true
+
+            echo "=== ۵. پاکسازی و بارگذاری مجدد کش OPcache و سرویس‌ها ==="
+            # تلاش برای ریلود سرویس php-fpm متناسب با نسخه نصب شده
+            if systemctl is-active --quiet php8.2-fpm; then
+              systemctl reload php8.2-fpm
+            elif systemctl is-active --quiet php8.1-fpm; then
+              systemctl reload php8.1-fpm
+            elif systemctl is-active --quiet php-fpm; then
+              systemctl reload php-fpm
+            fi
+
+            # ریلود Nginx بدون قطعی
+            if systemctl is-active --quiet nginx; then
+              nginx -t && systemctl reload nginx
+            fi
+
+            echo "=== استقرار با موفقیت پایان یافت ==="
+          EOF
+
+      - name: Automated Health Check Verification
+        run: |
+          SITE_URL="${{ secrets.APP_URL || 'http://localhost' }}"
+          echo "Verifying API health at $SITE_URL/api/v1/health ..."
+          sleep 2
+          curl -fsS --retry 3 --retry-delay 2 "$SITE_URL/api/v1/health" || {
+            echo "Health check failed after deployment!"
+            exit 1
+          }
+          echo "Health check passed successfully!"

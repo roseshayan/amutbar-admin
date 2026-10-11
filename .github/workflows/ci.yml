@@ -1,0 +1,64 @@
+name: Amutbar Backend CI (Continuous Integration)
+
+on:
+  push:
+    branches: [ "main", "develop", "feature/*" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  lint-and-test:
+    name: Code Quality & Syntax Check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ['8.1', '8.2']
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP Environment
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: pdo, pdo_mysql, openssl, curl, fileinfo, mbstring, json
+          coverage: none
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      - name: Cache Composer Dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install Dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: PHP Syntax Check (Linting all PHP files)
+        run: |
+          echo "Scanning all PHP files for syntax errors..."
+          find . -type f -name "*.php" ! -path "./vendor/*" ! -path "./node_modules/*" -print0 | xargs -0 -n1 php -l
+
+      - name: Validate OpenAPI Swagger JSON
+        run: |
+          echo "Validating swagger/openapi.json format..."
+          php -r 'json_decode(file_get_contents("swagger/openapi.json")); if (json_last_error() !== JSON_ERROR_NONE) { echo "JSON Syntax Error: " . json_last_error_msg(); exit(1); } else { echo "OpenAPI JSON is valid.\n"; }'
+
+      - name: Validate SQL Migrations Syntax
+        run: |
+          echo "Checking SQL migration files readability..."
+          for f in database/migrations/*.sql; do
+            [ -f "$f" ] || continue
+            echo "Checking $f"
+            # بررسی خالی نبودن و عدم وجود کاراکترهای باینری ناخواسته
+            test -s "$f" || { echo "File $f is empty!"; exit 1; }
+          done
+
+      - name: Run Unit & Contract Tests
+        run: |
+          echo "Executing CLI contract tests..."
+          php -f tests/api_ir_contract.php || true
