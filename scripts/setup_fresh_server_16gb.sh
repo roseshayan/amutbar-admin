@@ -45,15 +45,47 @@ cd /var/www/amutbar-admin
 git config --global --add safe.directory /var/www/amutbar-admin
 
 # Create required writable directories
-mkdir -p storage/logs storage/cache
+mkdir -p storage/logs storage/cache storage/uploads
 chmod -R 777 storage
+chown -R www-data:www-data storage
 
 # 4. Setup Database
 echo "--- 4. Initializing MariaDB Database ---"
 mariadb -e "CREATE DATABASE IF NOT EXISTS amutbar CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 mariadb -e "CREATE USER IF NOT EXISTS 'amutbar'@'localhost' IDENTIFIED BY 'amut_test_pass_123';"
+mariadb -e "CREATE USER IF NOT EXISTS 'amutbar'@'127.0.0.1' IDENTIFIED BY 'amut_test_pass_123';"
+mariadb -e "ALTER USER 'amutbar'@'localhost' IDENTIFIED BY 'amut_test_pass_123';"
+mariadb -e "ALTER USER 'amutbar'@'127.0.0.1' IDENTIFIED BY 'amut_test_pass_123';"
 mariadb -e "GRANT ALL PRIVILEGES ON amutbar.* TO 'amutbar'@'localhost';"
+mariadb -e "GRANT ALL PRIVILEGES ON amutbar.* TO 'amutbar'@'127.0.0.1';"
 mariadb -e "FLUSH PRIVILEGES;"
+
+# Generate .env configuration if not present
+if [ ! -f "/var/www/amutbar-admin/.env" ]; then
+    echo "Creating .env configuration..."
+    if [ -f "/var/www/amutbar-admin/.env.example" ]; then
+        cp /var/www/amutbar-admin/.env.example /var/www/amutbar-admin/.env
+    else
+        touch /var/www/amutbar-admin/.env
+    fi
+    sed -i "s/DB_USER=.*/DB_USER=amutbar/" /var/www/amutbar-admin/.env
+    sed -i "s/DB_PASS=.*/DB_PASS=amut_test_pass_123/" /var/www/amutbar-admin/.env
+    sed -i "s/DB_HOST=.*/DB_HOST=127.0.0.1/" /var/www/amutbar-admin/.env
+    sed -i "s/DB_NAME=.*/DB_NAME=amutbar/" /var/www/amutbar-admin/.env
+    sed -i "s/APP_ENV=.*/APP_ENV=production/" /var/www/amutbar-admin/.env
+fi
+
+# Load base schema & reference seed if tables do not exist
+HAS_USERS=$(mariadb -Nse "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='amutbar' AND table_name='users';" 2>/dev/null || echo "0")
+if [ "$HAS_USERS" -eq "0" ]; then
+    echo "Importing base schema and reference seed..."
+    if [ -f "database/schema.sql" ]; then
+        mariadb amutbar < database/schema.sql || true
+    fi
+    if [ -f "database/reference_seed.sql" ]; then
+        mariadb amutbar < database/reference_seed.sql || true
+    fi
+fi
 
 # Run migrations
 echo "--- 5. Running Database Migrations ---"
