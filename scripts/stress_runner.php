@@ -105,6 +105,17 @@ $scenarios = [
             ['path' => '/api/v1/faqs?target_app_id=1', 'weight' => 5],
         ]
     ],
+    'ultimate_10k' => [
+        'name' => 'سخت‌ترین حالت ممکن ۱۰,۰۰۰ کاربر (Ultimate Database Storm)',
+        'en_name' => 'Ultimate 10k Users DB Storm (Heavy Text Search & Catalogs)',
+        'endpoints' => [
+            ['path' => '/api/v1/meta/cities/search?q=' . urlencode('تهران'), 'weight' => 35],
+            ['path' => '/api/v1/meta/cities/search?q=' . urlencode('اصفهان'), 'weight' => 25],
+            ['path' => '/api/v1/meta/cities/search?q=' . urlencode('شیراز'), 'weight' => 20],
+            ['path' => '/api/v1/meta/vehicle-types', 'weight' => 10],
+            ['path' => '/api/v1/meta/app-config?target_app_id=1', 'weight' => 10],
+        ]
+    ],
     'public_only' => [
         'name' => 'ترافیک عمومی بدون احراز هویت (Public Endpoints - No Auth)',
         'en_name' => 'Public Endpoints (Cities, Config, Provinces, Vehicles)',

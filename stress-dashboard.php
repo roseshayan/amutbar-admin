@@ -275,7 +275,8 @@ require_once __DIR__ . '/includes/init.php';
                         <div class="mb-3">
                             <label class="form-label fw-bold small text-muted">سناریو و اندپوینت هدف:</label>
                             <select class="form-select" id="selScenario">
-                                <option value="mixed" selected>🚀 سناریوی ترکیبی کاربران واقعی (Loads, Cities, Config, FAQs, Vehicles)</option>
+                                <option value="ultimate_10k" selected>🔥 سخت‌ترین حالت ممکن ۱۰,۰۰۰ کاربر (Ultimate DB Storm: سرچ سنگین شهرها، ماشین‌ها و تنظیمات)</option>
+                                <option value="mixed">🚀 سناریوی ترکیبی کاربران واقعی (Loads, Cities, Config, FAQs, Vehicles)</option>
                                 <option value="public_only">🌐 ترافیک کاملاً عمومی دیتابیس (شهرها، تنظیمات، استان‌ها، ماشین‌ها - بدون توکن)</option>
                                 <option value="driver_loads">🚚 فید بارهای رانندگان (/driver/loads - با توکن احراز هویت)</option>
                                 <option value="city_search">🔍 جستجوی دیتابیسی شهرها (/meta/cities/search?q=تهران)</option>
