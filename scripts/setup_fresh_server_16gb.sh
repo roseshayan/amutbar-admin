@@ -70,7 +70,7 @@ mariadb -e "GRANT ALL PRIVILEGES ON amutbar.* TO 'amutbar'@'localhost';"
 mariadb -e "GRANT ALL PRIVILEGES ON amutbar.* TO 'amutbar'@'127.0.0.1';"
 mariadb -e "FLUSH PRIVILEGES;"
 
-# Generate .env configuration if not present
+# Ensure .env exists and has valid database credentials
 if [ ! -f "/var/www/amutbar-admin/.env" ]; then
     echo "Creating .env configuration..."
     if [ -f "/var/www/amutbar-admin/.env.example" ]; then
@@ -78,12 +78,12 @@ if [ ! -f "/var/www/amutbar-admin/.env" ]; then
     else
         touch /var/www/amutbar-admin/.env
     fi
-    sed -i "s/DB_USER=.*/DB_USER=amutbar/" /var/www/amutbar-admin/.env
-    sed -i "s/DB_PASS=.*/DB_PASS=amut_test_pass_123/" /var/www/amutbar-admin/.env
-    sed -i "s/DB_HOST=.*/DB_HOST=127.0.0.1/" /var/www/amutbar-admin/.env
-    sed -i "s/DB_NAME=.*/DB_NAME=amutbar/" /var/www/amutbar-admin/.env
-    sed -i "s/APP_ENV=.*/APP_ENV=production/" /var/www/amutbar-admin/.env
 fi
+
+sed -i "s/DB_USER=.*/DB_USER=amutbar/" /var/www/amutbar-admin/.env
+sed -i "s/DB_PASS=.*/DB_PASS=amut_test_pass_123/" /var/www/amutbar-admin/.env
+sed -i "s/DB_HOST=.*/DB_HOST=127.0.0.1/" /var/www/amutbar-admin/.env
+sed -i "s/DB_NAME=.*/DB_NAME=amutbar/" /var/www/amutbar-admin/.env
 
 # Load base schema & reference seed if tables do not exist
 HAS_USERS=$(mariadb -Nse "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='amutbar' AND table_name='users';" 2>/dev/null || echo "0")
