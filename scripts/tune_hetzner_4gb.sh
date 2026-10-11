@@ -53,14 +53,9 @@ table_open_cache = 2000
 open_files_limit = 65535
 EOF
 
-# 4. Tune Nginx FastCGI Buffers
-echo "--- 4. Tuning Nginx Buffers ---"
-cat << 'EOF' > /etc/nginx/conf.d/fastcgi-tuning.conf
-fastcgi_buffer_size 32k;
-fastcgi_buffers 16 16k;
-fastcgi_busy_buffers_size 64k;
-fastcgi_temp_file_write_size 64k;
-EOF
+# 4. Clean any conflicting global Nginx buffer files (buffers are managed in site vhost)
+echo "--- 4. Cleaning Nginx global buffer overrides ---"
+rm -f /etc/nginx/conf.d/fastcgi-tuning.conf
 
 # 5. Fix Git safe directory
 echo "--- 5. Configuring Git safe directory ---"
