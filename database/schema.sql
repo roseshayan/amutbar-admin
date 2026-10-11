@@ -1996,7 +1996,6 @@ CREATE TABLE IF NOT EXISTS `verification_video_challenges` (
   CONSTRAINT `fk_video_challenge_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-<<<<<<< HEAD
 CREATE TABLE IF NOT EXISTS `faq_categories` (
   `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
   `target_app_id` tinyint UNSIGNED NOT NULL COMMENT '1 = Driver app, 2 = Cargo-owner app',
@@ -2036,8 +2035,6 @@ CREATE TABLE IF NOT EXISTS `faq_items` (
   CONSTRAINT `fk_faq_items_creator_user` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-=======
->>>>>>> b5ab1a68ab5cc5fefcfc4bb4d750ff5e38e109ad
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

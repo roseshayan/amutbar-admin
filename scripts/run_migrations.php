@@ -30,7 +30,31 @@ try {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ");
 
-    // 2. Fetch list of already applied migrations
+    // 2. Check if base schema exists
+    $hasBaseTables = (bool)$pdo->query("SHOW TABLES LIKE 'users'")->fetchColumn();
+    if (!$hasBaseTables) {
+        $schemaFile = __DIR__ . '/../database/schema.sql';
+        $seedFile = __DIR__ . '/../database/reference_seed.sql';
+        if (is_file($schemaFile)) {
+            echo "Base tables not found. Importing database/schema.sql ...\n";
+            try {
+                $pdo->exec(file_get_contents($schemaFile));
+                echo "Base schema imported successfully.\n";
+                if (is_file($seedFile)) {
+                    echo "Importing database/reference_seed.sql ...\n";
+                    $pdo->exec(file_get_contents($seedFile));
+                    echo "Reference seed imported successfully.\n";
+                }
+            } catch (Throwable $se) {
+                echo "Notice: Multi-statement import via PDO failed. Please run in terminal:\n";
+                echo "  sudo mysql " . (string)env('DB_NAME', 'amutbar') . " < database/schema.sql\n";
+                echo "  sudo mysql " . (string)env('DB_NAME', 'amutbar') . " < database/reference_seed.sql\n";
+                exit(1);
+            }
+        }
+    }
+
+    // 3. Fetch list of already applied migrations
     $st = $pdo->query("SELECT `migration_name` FROM `migration_history`");
     $applied = $st->fetchAll(PDO::FETCH_COLUMN);
     $appliedMap = array_flip($applied);

@@ -15,6 +15,14 @@
       "description": "سرور فعلی (نسبی)"
     },
     {
+      "url": "https://amut.speed-ping.shop/api/v1",
+      "description": "سرور تستی شما (amut.speed-ping.shop HTTPS)"
+    },
+    {
+      "url": "http://amut.speed-ping.shop/api/v1",
+      "description": "سرور تستی شما (amut.speed-ping.shop HTTP)"
+    },
+    {
       "url": "https://amutapp.com/amutadmin/api/v1",
       "description": "سرور اصلی پروداکشن"
     },
