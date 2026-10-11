@@ -20,6 +20,16 @@ echo "--- 1. Updating System Packages ---"
 apt-get update -y
 apt-get install -y git curl unzip zip ufw htop net-tools software-properties-common apache2-utils
 
+# Create 2GB swapfile if no swap exists (prevents sudden OOM during huge bursts)
+if [ "$(swapon --show | wc -l)" -le 1 ]; then
+    echo "Creating 2GB swapfile safety buffer..."
+    fallocate -l 2G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=2048
+    chmod 600 /swapfile
+    mkswap /swapfile
+    swapon /swapfile
+    grep -q '/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+fi
+
 # 2. Install Nginx, MariaDB, and PHP
 echo "--- 2. Installing Nginx, MariaDB & PHP ---"
 apt-get install -y nginx mariadb-server
