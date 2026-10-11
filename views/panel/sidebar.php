@@ -141,6 +141,12 @@ $sidebarLogoHref = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-l
                         <span class="side-menu__label">مستندات API (Swagger)</span>
                     </a>
                 </li>
+                <li class="slide">
+                    <a href="stress-dashboard.php" target="_blank" class="side-menu__item">
+                        <i class="ri-dashboard-3-line side-menu__icon"></i>
+                        <span class="side-menu__label">مانیتورینگ و استرس تست زنده</span>
+                    </a>
+                </li>
 
                 <li class="slide__category"><span class="category-name">گزارشات</span></li>
                 <li class="slide">
