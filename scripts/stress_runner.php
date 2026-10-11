@@ -2,15 +2,15 @@
 declare(strict_types=1);
 
 /**
- * Amutbar Asynchronous High-Concurrency Stress Test Engine (CLI / Background Runner) v2.1
+ * Amutbar Asynchronous High-Concurrency Stress Test Engine (CLI / Background Runner) v2.2
  * 
  * Features:
- *  - Automated Driver JWT Bearer Token Injection (eliminates false 401s on /driver/loads)
- *  - Pacing / Think-Time control (keeps CPU balanced or full throttle)
- *  - Sustained Duration Mode & Request Count Mode
- *  - Second-by-second live telemetry streaming
+ *  - 100% English CLI Terminal Output
+ *  - Second-by-second live terminal progress bar
+ *  - Non-blocking asynchronous multi-curl engine
+ *  - Automated Driver JWT Bearer Token Injection
  *  - Statistical percentiles (p50, p75, p90, p95, p99, std-dev)
- *  - Realistic 10,000 users capacity mathematical sizing
+ *  - 10,000 Users Capacity mathematical sizing
  */
 
 set_time_limit(0);
@@ -33,7 +33,6 @@ $options = getopt('', [
     'custom-url::',
     'run-id::',
     'host::',
-    'pacing::',
 ]);
 
 $vus = max(1, min(1000, (int)($options['vus'] ?? 50)));
@@ -42,9 +41,8 @@ $duration = max(5, min(3600, (int)($options['duration'] ?? 60))); // Up to 60 mi
 $totalRequestsTarget = max(50, min(500000, (int)($options['requests'] ?? 5000)));
 $scenario = (string)($options['scenario'] ?? 'mixed');
 $customUrl = (string)($options['custom-url'] ?? '');
-$runId = (string)($options['run-id'] ?? ('run_' . bin2hex(random_bytes(6))));
+$runId = trim((string)($options['run-id'] ?? ('run_' . bin2hex(random_bytes(6)))), "'\"");
 $hostHeader = (string)($options['host'] ?? 'amut.speed-ping.shop');
-$pacingMs = max(0, min(1000, (int)($options['pacing'] ?? 20))); // Default 20ms human think-time
 
 $activeTestFile = $storageLogs . '/active_stress_test.json';
 $historyFile = $storageLogs . '/stress_history.json';
@@ -74,7 +72,6 @@ function get_stress_driver_token(string $basePath): string
         // Check for active driver user (user_type=1)
         $driverId = (int)$pdo->query("SELECT id FROM users WHERE user_type=1 AND status=1 AND deleted_at IS NULL LIMIT 1")->fetchColumn();
         if ($driverId <= 0) {
-            // Fallback: any active user
             $driverId = (int)$pdo->query("SELECT id FROM users WHERE status=1 AND deleted_at IS NULL LIMIT 1")->fetchColumn();
         }
 
@@ -98,6 +95,7 @@ $driverToken = get_stress_driver_token($basePath);
 $scenarios = [
     'mixed' => [
         'name' => 'سناریوی ترکیبی کاربران واقعی (Realistic Traffic Mix)',
+        'en_name' => 'Realistic Traffic Mix (Loads, Cities, Config, FAQs, Vehicles)',
         'endpoints' => [
             ['path' => '/api/v1/driver/loads', 'weight' => 30],
             ['path' => '/api/v1/meta/cities/search?q=' . urlencode('تهران'), 'weight' => 25],
@@ -109,6 +107,7 @@ $scenarios = [
     ],
     'public_only' => [
         'name' => 'ترافیک عمومی بدون احراز هویت (Public Endpoints - No Auth)',
+        'en_name' => 'Public Endpoints (Cities, Config, Provinces, Vehicles)',
         'endpoints' => [
             ['path' => '/api/v1/meta/cities/search?q=' . urlencode('تهران'), 'weight' => 35],
             ['path' => '/api/v1/meta/app-config?target_app_id=1', 'weight' => 35],
@@ -118,12 +117,14 @@ $scenarios = [
     ],
     'driver_loads' => [
         'name' => 'فید بارهای رانندگان (/driver/loads - با توکن احراز هویت)',
+        'en_name' => 'Driver Loads Feed (/driver/loads - DB Join)',
         'endpoints' => [
             ['path' => '/api/v1/driver/loads', 'weight' => 100]
         ]
     ],
     'city_search' => [
         'name' => 'جستجوی دیتابیسی شهرها (/meta/cities/search)',
+        'en_name' => 'City DB Search (/meta/cities/search)',
         'endpoints' => [
             ['path' => '/api/v1/meta/cities/search?q=' . urlencode('تهران'), 'weight' => 50],
             ['path' => '/api/v1/meta/cities/search?q=' . urlencode('اصفهان'), 'weight' => 25],
@@ -132,42 +133,49 @@ $scenarios = [
     ],
     'app_config' => [
         'name' => 'تنظیمات و متادیتا اپلیکیشن (/meta/app-config)',
+        'en_name' => 'Application Config (/meta/app-config)',
         'endpoints' => [
             ['path' => '/api/v1/meta/app-config?target_app_id=1', 'weight' => 100]
         ]
     ],
     'vehicle_types' => [
         'name' => 'انواع ناوگان و خودروها (/meta/vehicle-types)',
+        'en_name' => 'Vehicle Types Catalog (/meta/vehicle-types)',
         'endpoints' => [
             ['path' => '/api/v1/meta/vehicle-types', 'weight' => 100]
         ]
     ],
     'provinces' => [
         'name' => 'لیست استان‌ها (/meta/provinces)',
+        'en_name' => 'Provinces List (/meta/provinces)',
         'endpoints' => [
             ['path' => '/api/v1/meta/provinces', 'weight' => 100]
         ]
     ],
     'faqs' => [
         'name' => 'سوالات متداول (/faqs)',
+        'en_name' => 'FAQs Content (/faqs)',
         'endpoints' => [
             ['path' => '/api/v1/faqs?target_app_id=1', 'weight' => 100]
         ]
     ],
     'banners' => [
         'name' => 'بنرهای تبلیغاتی (/banners)',
+        'en_name' => 'Promotional Banners (/banners)',
         'endpoints' => [
             ['path' => '/api/v1/banners?target_app_id=1', 'weight' => 100]
         ]
     ],
     'health' => [
         'name' => 'بررسی سلامت پایه وب‌سرور (/health - Pure Baseline)',
+        'en_name' => 'Web Server Health Check (/health)',
         'endpoints' => [
             ['path' => '/api/v1/health', 'weight' => 100]
         ]
     ],
     'custom' => [
         'name' => 'آدرس سفارشی (' . ($customUrl ?: '/api/v1/health') . ')',
+        'en_name' => 'Custom Endpoint (' . ($customUrl ?: '/api/v1/health') . ')',
         'endpoints' => [
             ['path' => '/' . ltrim($customUrl ?: '/api/v1/health', '/'), 'weight' => 100]
         ]
@@ -236,13 +244,23 @@ $initialState = [
 ];
 @file_put_contents($activeTestFile, json_encode($initialState, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
 
+if (php_sapi_name() === 'cli') {
+    echo "=== Starting Amutbar Stress Test Runner ===\n";
+    echo "Run ID:          {$runId}\n";
+    echo "Scenario:        {$activeScenario['en_name']}\n";
+    echo "Target VUs:      {$vus}\n";
+    echo "Mode:            {$mode} (" . ($mode === 'duration' ? "{$duration}s" : "{$totalRequestsTarget} requests") . ")\n";
+    echo "Target Base:     {$baseUrl}\n";
+    echo "Press Ctrl+C to stop.\n\n";
+}
+
 // Execution Variables
 $mh = curl_multi_init();
 $handles = [];
 $totalSent = 0;
 $totalCompleted = 0;
 $statusCodes = [];
-$latencies = []; // Array of latency floats
+$latencies = [];
 $successCount = 0;
 $failedCount = 0;
 
@@ -256,7 +274,7 @@ function create_curl_client(string $url, string $host, string $token): \CurlHand
 {
     $headers = [
         'Host: ' . $host,
-        'User-Agent: Amutbar-EnduranceRunner/2.1',
+        'User-Agent: Amutbar-EnduranceRunner/2.2',
         'Accept: application/json',
         'Connection: keep-alive',
     ];
@@ -310,7 +328,6 @@ do {
             $latencyMs = round((microtime(true) - $requestStart) * 1000, 2);
 
             $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            // Any response from server that is not 5xx or 0 is considered handled
             if ($httpCode >= 200 && $httpCode < 500) {
                 $successCount++;
             } else {
@@ -338,11 +355,6 @@ do {
             }
 
             if (!$shouldStop && $canSendMore) {
-                // If pacing is enabled, add microscopic delay
-                if ($pacingMs > 0) {
-                    usleep($pacingMs * 1000);
-                }
-
                 $nextUrl = pick_endpoint_url($activeScenario['endpoints'], $baseUrl);
                 $newCh = create_curl_client($nextUrl, $hostHeader, $driverToken);
                 $newKey = (int)$newCh;
@@ -425,6 +437,19 @@ do {
             'pid' => getmypid(),
         ];
         @file_put_contents($activeTestFile, json_encode($liveState, JSON_UNESCAPED_SLASHES));
+
+        // CLI Live Terminal Output
+        if (php_sapi_name() === 'cli') {
+            $timeFormatted = sprintf('%02d:%02d / %02d:%02d', (int)($elapsedSec / 60), $elapsedSec % 60, (int)($duration / 60), $duration % 60);
+            echo sprintf("\r[%s] Reqs: %s | RPS: %5.1f | Avg Lat: %4.1fms | p95: %4.1fms | 200 OK: %d",
+                $timeFormatted,
+                number_format($totalCompleted),
+                $currentRps,
+                $recentAvgLat,
+                $p95,
+                $statusCodes[200] ?? 0
+            );
+        }
 
         $reqsThisSec = 0;
         $lastSecTime = $now;
@@ -584,12 +609,28 @@ $finalReport['remaining_sec'] = 0;
 @file_put_contents($activeTestFile, json_encode($finalReport, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 
 // Echo summary for CLI
-echo "=== Stress Test Finished ===\n";
-echo "Run ID: {$runId}\n";
-echo "Scenario: {$activeScenario['name']}\n";
-echo "Duration: {$totalDurationSec}s | VUs: {$vus}\n";
-echo "Total Requests: {$totalCompleted} | RPS: {$rpsFinal}\n";
-echo "Server Success Rate: {$serverSuccessRate}%\n";
-echo "Status Codes: " . json_encode($statusCodes) . "\n";
-echo "Latency: Min: {$minLat}ms | Avg: {$avgLat}ms | p50: {$p50}ms | p95: {$p95}ms | Max: {$maxLat}ms\n";
-echo "Grade: {$grade}\n";
+if (php_sapi_name() === 'cli') {
+    echo "\n\n";
+    echo "========================================================\n";
+    echo "=== Amutbar Stress Test Benchmark Finished ===\n";
+    echo "========================================================\n";
+    echo "Run ID:              {$runId}\n";
+    echo "Scenario:            {$activeScenario['en_name']}\n";
+    echo "Duration:            {$totalDurationSec}s\n";
+    echo "Concurrency (VUs):   {$vus}\n";
+    echo "Total Requests:      " . number_format($totalCompleted) . "\n";
+    echo "Throughput (RPS):    {$rpsFinal} req/sec\n";
+    echo "Server Success Rate: {$serverSuccessRate}%\n";
+    echo "Status Codes:        " . json_encode($statusCodes) . "\n";
+    echo "Latency Min:         {$minLat} ms\n";
+    echo "Latency Avg:         {$avgLat} ms\n";
+    echo "Latency p50:         {$p50} ms\n";
+    echo "Latency p90:         {$p90} ms\n";
+    echo "Latency p95:         {$p95} ms\n";
+    echo "Latency p99:         {$p99} ms\n";
+    echo "Latency Max:         {$maxLat} ms\n";
+    echo "Performance Grade:   {$grade}\n";
+    echo "Peak Concurrent:     ~" . number_format($estPeakConcurrentUsers) . " users\n";
+    echo "Daily Active Users:  ~" . number_format($estDailyActiveUsers) . " users/day\n";
+    echo "========================================================\n";
+}
