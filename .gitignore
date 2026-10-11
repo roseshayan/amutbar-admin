@@ -7,8 +7,10 @@
 /node_modules/
 /storage/logs/*
 /storage/uploads/*
+/storage/backups/*
 !/storage/logs/.gitkeep
 !/storage/uploads/.gitkeep
+!/storage/backups/.gitkeep
 *.pem
 *.key
 *.p12

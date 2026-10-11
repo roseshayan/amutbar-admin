@@ -147,6 +147,12 @@ $sidebarLogoHref = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-l
                         <span class="side-menu__label">مانیتورینگ و استرس تست زنده</span>
                     </a>
                 </li>
+                <li class="slide">
+                    <a href="backup-manager.php" class="side-menu__item">
+                        <i class="ri-database-2-line side-menu__icon"></i>
+                        <span class="side-menu__label">پشتیبان‌گیری و بازیابی ابری</span>
+                    </a>
+                </li>
 
                 <li class="slide__category"><span class="category-name">گزارشات</span></li>
                 <li class="slide">
