@@ -6,7 +6,19 @@ use JetBrains\PhpStorm\NoReturn;
 
 function is_ajax(): bool
 {
-    return strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
+    $req = strtolower((string)($_SERVER['HTTP_X_REQUESTED_WITH'] ?? ''));
+    if ($req === 'xmlhttprequest') {
+        return true;
+    }
+    $accept = strtolower((string)($_SERVER['HTTP_ACCEPT'] ?? ''));
+    if (str_contains($accept, 'application/json')) {
+        return true;
+    }
+    $script = str_replace('\\', '/', (string)($_SERVER['SCRIPT_NAME'] ?? ''));
+    if (str_contains($script, '/ajax/') || str_contains($script, '/api/')) {
+        return true;
+    }
+    return false;
 }
 
 #[NoReturn]
@@ -63,8 +75,9 @@ function redirect(string $url): void
 function base_url(): string
 {
     $dir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/'));
-    // اگر در روت هستید '/' می‌شود
-    return $dir === '/' ? '' : $dir;
+    // If the script is executed from inside /ajax, /api, /scripts, /views, strip the subfolder
+    $dir = preg_replace('~/(ajax|api(/v\d+)?|scripts|views(/.*)?)$~i', '', $dir);
+    return ($dir === '/' || $dir === '') ? '' : rtrim($dir, '/');
 }
 
 function url_path(string $path): string

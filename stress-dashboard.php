@@ -11,7 +11,9 @@ require_once __DIR__ . '/includes/init.php';
     <title>داشبورد زنده مانیتورینگ و استرس تست آموت‌بار</title>
     <link rel="icon" type="image/png" href="assets/images/brand-logos/favicon.ico">
     <link rel="stylesheet" href="assets/libs/bootstrap/css/bootstrap.rtl.min.css">
-    <link rel="stylesheet" href="assets/icon-fonts/remixicon/remixicon.css">
+    <link rel="stylesheet" href="assets/icon-fonts/RemixIcons/fonts/remixicon.css">
+    <link rel="stylesheet" href="assets/icon-fonts/icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vazirmatn@33.0.3/Vazirmatn-font-face.css">
     <script src="assets/libs/chart.js/chart.umd.js"></script>
     <style>
@@ -393,6 +395,10 @@ require_once __DIR__ . '/includes/init.php';
         async function fetchTelemetry() {
             try {
                 const res = await fetch('ajax/server_telemetry.php');
+                if (!res.ok) {
+                    console.warn("Telemetry response status:", res.status);
+                    return;
+                }
                 const data = await res.json();
                 if (data.ok) {
                     // Update UI Cards
@@ -449,6 +455,10 @@ require_once __DIR__ . '/includes/init.php';
         async function loadHistory() {
             try {
                 const res = await fetch('ajax/run_stress_test.php?action=history');
+                if (!res.ok) {
+                    console.warn("History response status:", res.status);
+                    return;
+                }
                 const data = await res.json();
                 const tbody = document.getElementById('tblHistoryBody');
                 if (data.ok && data.history.length > 0) {

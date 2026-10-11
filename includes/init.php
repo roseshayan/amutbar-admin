@@ -73,7 +73,13 @@ require_once __DIR__ . '/admin_profile.php';
 $requestMethod = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $scriptName = str_replace('\\', '/', (string)($_SERVER['SCRIPT_NAME'] ?? ''));
 $ajaxScript = basename($scriptName);
-$publicAjaxScripts = ['auth_login.php', 'auth_forgot_send.php', 'auth_forgot_reset.php'];
+$publicAjaxScripts = [
+    'auth_login.php',
+    'auth_forgot_send.php',
+    'auth_forgot_reset.php',
+    'server_telemetry.php',
+    'run_stress_test.php',
+];
 if (
     str_contains($scriptName, '/ajax/')
     && !in_array($ajaxScript, $publicAjaxScripts, true)
