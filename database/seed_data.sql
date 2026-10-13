@@ -810,6 +810,47 @@ INSERT INTO `external_api_providers` VALUES (1,'api_ir','api_ir','https://s.api.
 UNLOCK TABLES;
 
 --
+-- Table structure for table `external_api_request_logs`
+--
+
+DROP TABLE IF EXISTS `external_api_request_logs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `external_api_request_logs` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `provider_id` smallint unsigned NOT NULL,
+  `credential_id` bigint unsigned DEFAULT NULL,
+  `operation` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `http_method` varchar(8) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `url_path` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `request_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `http_status` smallint unsigned DEFAULT NULL,
+  `latency_ms` int unsigned DEFAULT NULL,
+  `error_code` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `request_redacted_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin,
+  `response_redacted_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin,
+  `created_at` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`id`),
+  KEY `ix_external_api_logs_provider_time` (`provider_id`,`created_at`),
+  KEY `ix_external_api_logs_request` (`request_id`),
+  KEY `fk_external_api_logs_cred` (`credential_id`),
+  CONSTRAINT `fk_external_api_logs_cred` FOREIGN KEY (`credential_id`) REFERENCES `external_api_credentials` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_external_api_logs_provider` FOREIGN KEY (`provider_id`) REFERENCES `external_api_providers` (`id`) ON UPDATE CASCADE,
+  CONSTRAINT `external_api_request_logs_chk_1` CHECK (json_valid(`request_redacted_json`)),
+  CONSTRAINT `external_api_request_logs_chk_2` CHECK (json_valid(`response_redacted_json`))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `external_api_request_logs`
+--
+
+LOCK TABLES `external_api_request_logs` WRITE;
+/*!40000 ALTER TABLE `external_api_request_logs` DISABLE KEYS */;
+/*!40000 ALTER TABLE `external_api_request_logs` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `faq_categories`
 --
 
@@ -1965,64 +2006,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-10-13 18:22:53
-- -   M y S Q L   d u m p   1 0 . 1 3     D i s t r i b   8 . 0 . 3 0 ,   f o r   W i n 6 4   ( x 8 6 _ 6 4 )  
- - -  
- - -   H o s t :   l o c a l h o s t         D a t a b a s e :   a m u t b a r  
- - -   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  
- - -   S e r v e r   v e r s i o n 	 8 . 0 . 3 0  
-  
- / * ! 4 0 1 0 1   S E T   @ O L D _ C H A R A C T E R _ S E T _ C L I E N T = @ @ C H A R A C T E R _ S E T _ C L I E N T   * / ;  
- / * ! 4 0 1 0 1   S E T   @ O L D _ C H A R A C T E R _ S E T _ R E S U L T S = @ @ C H A R A C T E R _ S E T _ R E S U L T S   * / ;  
- / * ! 4 0 1 0 1   S E T   @ O L D _ C O L L A T I O N _ C O N N E C T I O N = @ @ C O L L A T I O N _ C O N N E C T I O N   * / ;  
- / * ! 5 0 5 0 3   S E T   N A M E S   u t f 8 m b 4   * / ;  
- / * ! 4 0 1 0 3   S E T   @ O L D _ T I M E _ Z O N E = @ @ T I M E _ Z O N E   * / ;  
- / * ! 4 0 1 0 3   S E T   T I M E _ Z O N E = ' + 0 0 : 0 0 '   * / ;  
- / * ! 4 0 0 1 4   S E T   @ O L D _ U N I Q U E _ C H E C K S = @ @ U N I Q U E _ C H E C K S ,   U N I Q U E _ C H E C K S = 0   * / ;  
- / * ! 4 0 0 1 4   S E T   @ O L D _ F O R E I G N _ K E Y _ C H E C K S = @ @ F O R E I G N _ K E Y _ C H E C K S ,   F O R E I G N _ K E Y _ C H E C K S = 0   * / ;  
- / * ! 4 0 1 0 1   S E T   @ O L D _ S Q L _ M O D E = @ @ S Q L _ M O D E ,   S Q L _ M O D E = ' N O _ A U T O _ V A L U E _ O N _ Z E R O '   * / ;  
- / * ! 4 0 1 1 1   S E T   @ O L D _ S Q L _ N O T E S = @ @ S Q L _ N O T E S ,   S Q L _ N O T E S = 0   * / ;  
-  
- - -  
- - -   T a b l e   s t r u c t u r e   f o r   t a b l e   ` e x t e r n a l _ a p i _ r e q u e s t _ l o g s `  
- - -  
-  
- D R O P   T A B L E   I F   E X I S T S   ` e x t e r n a l _ a p i _ r e q u e s t _ l o g s ` ;  
- / * ! 4 0 1 0 1   S E T   @ s a v e d _ c s _ c l i e n t           =   @ @ c h a r a c t e r _ s e t _ c l i e n t   * / ;  
- / * ! 5 0 5 0 3   S E T   c h a r a c t e r _ s e t _ c l i e n t   =   u t f 8 m b 4   * / ;  
- C R E A T E   T A B L E   ` e x t e r n a l _ a p i _ r e q u e s t _ l o g s `   (  
-     ` i d `   b i g i n t   u n s i g n e d   N O T   N U L L   A U T O _ I N C R E M E N T ,  
-     ` p r o v i d e r _ i d `   s m a l l i n t   u n s i g n e d   N O T   N U L L ,  
-     ` c r e d e n t i a l _ i d `   b i g i n t   u n s i g n e d   D E F A U L T   N U L L ,  
-     ` o p e r a t i o n `   v a r c h a r ( 6 4 )   C O L L A T E   u t f 8 m b 4 _ u n i c o d e _ c i   N O T   N U L L ,  
-     ` h t t p _ m e t h o d `   v a r c h a r ( 8 )   C O L L A T E   u t f 8 m b 4 _ u n i c o d e _ c i   N O T   N U L L ,  
-     ` u r l _ p a t h `   v a r c h a r ( 2 5 5 )   C O L L A T E   u t f 8 m b 4 _ u n i c o d e _ c i   N O T   N U L L ,  
-     ` r e q u e s t _ i d `   v a r c h a r ( 6 4 )   C O L L A T E   u t f 8 m b 4 _ u n i c o d e _ c i   D E F A U L T   N U L L ,  
-     ` h t t p _ s t a t u s `   s m a l l i n t   u n s i g n e d   D E F A U L T   N U L L ,  
-     ` l a t e n c y _ m s `   i n t   u n s i g n e d   D E F A U L T   N U L L ,  
-     ` e r r o r _ c o d e `   v a r c h a r ( 6 4 )   C O L L A T E   u t f 8 m b 4 _ u n i c o d e _ c i   D E F A U L T   N U L L ,  
-     ` r e q u e s t _ r e d a c t e d _ j s o n `   l o n g t e x t   C H A R A C T E R   S E T   u t f 8 m b 4   C O L L A T E   u t f 8 m b 4 _ b i n ,  
-     ` r e s p o n s e _ r e d a c t e d _ j s o n `   l o n g t e x t   C H A R A C T E R   S E T   u t f 8 m b 4   C O L L A T E   u t f 8 m b 4 _ b i n ,  
-     ` c r e a t e d _ a t `   d a t e t i m e ( 3 )   N O T   N U L L   D E F A U L T   C U R R E N T _ T I M E S T A M P ( 3 ) ,  
-     P R I M A R Y   K E Y   ( ` i d ` ) ,  
-     K E Y   ` i x _ e x t e r n a l _ a p i _ l o g s _ p r o v i d e r _ t i m e `   ( ` p r o v i d e r _ i d ` , ` c r e a t e d _ a t ` ) ,  
-     K E Y   ` i x _ e x t e r n a l _ a p i _ l o g s _ r e q u e s t `   ( ` r e q u e s t _ i d ` ) ,  
-     K E Y   ` f k _ e x t e r n a l _ a p i _ l o g s _ c r e d `   ( ` c r e d e n t i a l _ i d ` ) ,  
-     C O N S T R A I N T   ` f k _ e x t e r n a l _ a p i _ l o g s _ c r e d `   F O R E I G N   K E Y   ( ` c r e d e n t i a l _ i d ` )   R E F E R E N C E S   ` e x t e r n a l _ a p i _ c r e d e n t i a l s `   ( ` i d ` )   O N   D E L E T E   S E T   N U L L   O N   U P D A T E   C A S C A D E ,  
-     C O N S T R A I N T   ` f k _ e x t e r n a l _ a p i _ l o g s _ p r o v i d e r `   F O R E I G N   K E Y   ( ` p r o v i d e r _ i d ` )   R E F E R E N C E S   ` e x t e r n a l _ a p i _ p r o v i d e r s `   ( ` i d ` )   O N   U P D A T E   C A S C A D E ,  
-     C O N S T R A I N T   ` e x t e r n a l _ a p i _ r e q u e s t _ l o g s _ c h k _ 1 `   C H E C K   ( j s o n _ v a l i d ( ` r e q u e s t _ r e d a c t e d _ j s o n ` ) ) ,  
-     C O N S T R A I N T   ` e x t e r n a l _ a p i _ r e q u e s t _ l o g s _ c h k _ 2 `   C H E C K   ( j s o n _ v a l i d ( ` r e s p o n s e _ r e d a c t e d _ j s o n ` ) )  
- )   E N G I N E = I n n o D B   A U T O _ I N C R E M E N T = 1 1 6   D E F A U L T   C H A R S E T = u t f 8 m b 4   C O L L A T E = u t f 8 m b 4 _ u n i c o d e _ c i ;  
- / * ! 4 0 1 0 1   S E T   c h a r a c t e r _ s e t _ c l i e n t   =   @ s a v e d _ c s _ c l i e n t   * / ;  
- / * ! 4 0 1 0 3   S E T   T I M E _ Z O N E = @ O L D _ T I M E _ Z O N E   * / ;  
-  
- / * ! 4 0 1 0 1   S E T   S Q L _ M O D E = @ O L D _ S Q L _ M O D E   * / ;  
- / * ! 4 0 0 1 4   S E T   F O R E I G N _ K E Y _ C H E C K S = @ O L D _ F O R E I G N _ K E Y _ C H E C K S   * / ;  
- / * ! 4 0 0 1 4   S E T   U N I Q U E _ C H E C K S = @ O L D _ U N I Q U E _ C H E C K S   * / ;  
- / * ! 4 0 1 0 1   S E T   C H A R A C T E R _ S E T _ C L I E N T = @ O L D _ C H A R A C T E R _ S E T _ C L I E N T   * / ;  
- / * ! 4 0 1 0 1   S E T   C H A R A C T E R _ S E T _ R E S U L T S = @ O L D _ C H A R A C T E R _ S E T _ R E S U L T S   * / ;  
- / * ! 4 0 1 0 1   S E T   C O L L A T I O N _ C O N N E C T I O N = @ O L D _ C O L L A T I O N _ C O N N E C T I O N   * / ;  
- / * ! 4 0 1 1 1   S E T   S Q L _ N O T E S = @ O L D _ S Q L _ N O T E S   * / ;  
-  
- - -   D u m p   c o m p l e t e d   o n   2 0 2 6 - 1 0 - 1 3   1 8 : 2 2 : 5 3  
- 
+-- Dump completed on 2026-10-13 18:33:39
