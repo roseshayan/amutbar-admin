@@ -77,6 +77,12 @@ $sidebarLogoHref = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-l
                         <span class="side-menu__label">تیکت‌ها و پشتیبانی</span>
                     </a>
                 </li>
+                <li class="slide">
+                    <a href="notifications.php" class="side-menu__item">
+                        <i class="ri-notification-3-line side-menu__icon"></i>
+                        <span class="side-menu__label">ارسال اعلان (نوتیفیکیشن)</span>
+                    </a>
+                </li>
 
                 <li class="slide__category"><span class="category-name">اطلاعات پایه و محتوا</span></li>
                 <li class="slide">

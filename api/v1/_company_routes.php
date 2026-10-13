@@ -447,8 +447,30 @@ if (!function_exists('company_routes')) {
             $priceType   = api_int($in, 'price_type') ?: 1;      // 1 سرویسی / 2 تنی
             if (!in_array($loadType, [1, 2], true)) api_err('نوع بار نامعتبر است', 422);
             if (!in_array($priceType, [1, 2], true)) api_err('نوع کرایه نامعتبر است', 422);
-            $vehicleType = api_int($in, 'primary_vehicle_type_id');
-            if (!$vehicleType || $vehicleType <= 0) api_err('نوع بارگیر الزامی است', 422);
+            // پشتیبانی از انتخاب چند نوع بارگیر (آرایه یا رشته کاما-جدا)
+            $rawVehicleIds = $in['vehicle_type_ids'] ?? [];
+            if (is_string($rawVehicleIds)) {
+                $decoded = json_decode($rawVehicleIds, true);
+                $rawVehicleIds = is_array($decoded) ? $decoded : explode(',', $rawVehicleIds);
+            }
+            $vehicleTypeIds = [];
+            if (is_array($rawVehicleIds)) {
+                foreach ($rawVehicleIds as $vid) {
+                    $vid = (int)$vid;
+                    if ($vid > 0 && !in_array($vid, $vehicleTypeIds, true)) {
+                        $vehicleTypeIds[] = $vid;
+                    }
+                }
+            }
+            $primaryVehicleType = api_int($in, 'primary_vehicle_type_id');
+            if ($primaryVehicleType && !in_array($primaryVehicleType, $vehicleTypeIds, true)) {
+                array_unshift($vehicleTypeIds, $primaryVehicleType);
+            }
+            if (empty($vehicleTypeIds)) {
+                api_err('انتخاب حداقل یک نوع بارگیر الزامی است', 422);
+            }
+            $vehicleType = $vehicleTypeIds[0];
+
             $cargoTypeId = api_int($in, 'cargo_type_id');
             if (!$cargoTypeId || $cargoTypeId <= 0) api_err('نوع کالا الزامی است', 422);
             $isTonnageFree = ((string)($in['is_tonnage_free'] ?? '0') === '1') ? 1 : 0;
@@ -470,9 +492,11 @@ if (!function_exists('company_routes')) {
                 api_err('ارزش واقعی کالا برای بیمه الزامی است', 422);
             }
 
-            $st = $pdo->prepare("SELECT 1 FROM vehicle_types WHERE id=? AND is_active=1 LIMIT 1");
-            $st->execute([$vehicleType]);
-            if (!$st->fetchColumn()) api_err('نوع بارگیر نامعتبر است', 422);
+            $inPlaceholders = implode(',', array_fill(0, count($vehicleTypeIds), '?'));
+            $st = $pdo->prepare("SELECT id FROM vehicle_types WHERE id IN ($inPlaceholders) AND is_active=1");
+            $st->execute($vehicleTypeIds);
+            if (count($st->fetchAll()) !== count($vehicleTypeIds)) api_err('نوع بارگیر انتخاب‌شده نامعتبر است', 422);
+
             $st = $pdo->prepare("SELECT 1 FROM cargos_list WHERE id=? LIMIT 1");
             $st->execute([$cargoTypeId]);
             if (!$st->fetchColumn()) api_err('نوع کالا نامعتبر است', 422);
@@ -497,6 +521,12 @@ if (!function_exists('company_routes')) {
                     $vehicleType, $hasInsurance, $insuranceValue,
                 ]);
                 $loadId = (int)$pdo->lastInsertId();
+
+                // ثبت همه ماشین‌های انتخاب‌شده در جدول load_vehicle_types
+                $stLvt = $pdo->prepare("INSERT IGNORE INTO load_vehicle_types (load_id, vehicle_type_id) VALUES (?, ?)");
+                foreach ($vehicleTypeIds as $vId) {
+                    $stLvt->execute([$loadId, $vId]);
+                }
             } catch (Throwable $e) {
                 error_log('company.load create failed: ' . $e->getMessage());
                 api_err('ثبت بار انجام نشد. لطفاً دوباره تلاش کنید.', 500);
@@ -518,12 +548,18 @@ if (!function_exists('company_routes')) {
             $companyId = (int)($st->fetchColumn() ?: 0);
             if ($companyId <= 0) api_ok(['items' => []]);
 
+            require_once __DIR__ . '/../../includes/settings.php';
+            $siteUrl = rtrim((string)settings_get('site.url', ''), '/');
+            if ($siteUrl === '') {
+                $siteUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') . ($_SERVER['HTTP_HOST'] ?? 'localhost');
+            }
+
             $st = $pdo->prepare("
                 SELECT l.id, l.public_code, l.load_status, l.load_type, l.weight_kg, l.is_tonnage_free,
                        l.proposed_price, l.price_type, l.created_at, l.published_at,
                        c1.name AS origin_city, p1.name AS origin_province,
                        c2.name AS dest_city, p2.name AS dest_province,
-                       vt.title AS vehicle_title, cl.title AS cargo_title
+                       vt.title AS vehicle_title, vt.icon AS vehicle_icon, cl.title AS cargo_title
                 FROM loads l
                 LEFT JOIN cities c1 ON l.origin_city_id = c1.id
                 LEFT JOIN provinces p1 ON c1.province_id = p1.id
@@ -536,13 +572,47 @@ if (!function_exists('company_routes')) {
                 LIMIT 100
             ");
             $st->execute([$companyId]);
+            $rawLoads = $st->fetchAll();
+
+            $loadIds = array_map(fn($r) => (int)$r['id'], $rawLoads);
+            $vehiclesMap = [];
+            if (!empty($loadIds)) {
+                $inIds = implode(',', $loadIds);
+                $stVts = $pdo->query("
+                    SELECT lvt.load_id, vt.id, vt.title, vt.icon
+                    FROM load_vehicle_types lvt
+                    JOIN vehicle_types vt ON lvt.vehicle_type_id = vt.id
+                    WHERE lvt.load_id IN ($inIds)
+                    ORDER BY vt.id ASC
+                ");
+                foreach ($stVts->fetchAll() as $vRow) {
+                    $lid = (int)$vRow['load_id'];
+                    $vIcon = !empty($vRow['icon']) ? (string)$vRow['icon'] : null;
+                    $vehiclesMap[$lid][] = [
+                        'id' => (int)$vRow['id'],
+                        'title' => (string)$vRow['title'],
+                        'icon_url' => $vIcon ? (preg_match('~^https?://~i', $vIcon) ? $vIcon : ($siteUrl . '/' . ltrim($vIcon, '/'))) : null,
+                    ];
+                }
+            }
 
             $statusText = [0 => 'پیش‌نویس', 1 => 'فعال', 2 => 'تخصیص‌یافته', 3 => 'بسته‌شده', 4 => 'لغوشده'];
 
-            $items = array_map(function ($r) use ($statusText) {
+            $items = array_map(function ($r) use ($statusText, $vehiclesMap, $siteUrl) {
                 $ls = (int)$r['load_status'];
+                $lid = (int)$r['id'];
+                $vList = $vehiclesMap[$lid] ?? [];
+                $vehicleTitle = !empty($vList)
+                    ? implode('، ', array_column($vList, 'title'))
+                    : ($r['vehicle_title'] ?? 'نامشخص');
+                $iconRel = !empty($r['vehicle_icon']) ? (string)$r['vehicle_icon'] : (!empty($vList[0]['icon_url']) ? $vList[0]['icon_url'] : null);
+                $vehicleIconUrl = null;
+                if ($iconRel !== null) {
+                    $vehicleIconUrl = preg_match('~^https?://~i', $iconRel) ? $iconRel : ($siteUrl . '/' . ltrim($iconRel, '/'));
+                }
+
                 return [
-                    'id'           => (int)$r['id'],
+                    'id'           => $lid,
                     'public_code'  => $r['public_code'],
                     'status_id'    => $ls,
                     'status_text'  => $statusText[$ls] ?? 'نامشخص',
@@ -551,14 +621,16 @@ if (!function_exists('company_routes')) {
                     'origin'       => $r['origin_city'] . ' (' . $r['origin_province'] . ')',
                     'destination'  => $r['dest_city'] . ' (' . $r['dest_province'] . ')',
                     'cargo_title'  => $r['cargo_title'] ?? 'کالا عمومی',
-                    'vehicle_title' => $r['vehicle_title'] ?? 'نامشخص',
+                    'vehicle_title' => $vehicleTitle,
+                    'vehicle_icon_url' => $vehicleIconUrl,
+                    'vehicle_types' => $vList,
                     'weight_text'  => (bool)$r['is_tonnage_free']
                         ? 'تناژ آزاد'
                         : ($r['weight_kg'] . ((int)$r['load_type'] === 1 ? ' تن' : ' کیلوگرم')),
                     'price'        => $r['proposed_price'] !== null ? number_format((float)$r['proposed_price']) : null,
                     'created_at'   => $r['created_at'],
                 ];
-            }, $st->fetchAll());
+            }, $rawLoads);
 
             api_ok(['items' => $items]);
         }

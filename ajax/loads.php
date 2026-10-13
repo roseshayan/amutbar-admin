@@ -15,7 +15,7 @@ function normalize_money($value): ?float
 {
     if ($value === null) return null;
     $value = str_replace(
-        ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'],
+        ['غ°', 'غ±', 'غ²', 'غ³', 'غ´', 'غµ', 'غ¶', 'غ·', 'غ¸', 'غ¹'],
         ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
         $value
     );
@@ -68,14 +68,14 @@ if ($action === 'get_avg_price') {
     exit;
 }
 
-// --- بخش ایجاد بار جدید ---
+// --- ط¨ط®ط´ ط§غŒط¬ط§ط¯ ط¨ط§ط± ط¬ط¯غŒط¯ ---
 if ($action === 'create') {
     try {
         $originCityId = (int)($_POST['origin_city_id'] ?? 0);
         $destCityId   = (int)($_POST['dest_city_id'] ?? 0);
 
         if ($originCityId <= 0 || $destCityId <= 0) {
-            throw new Exception('شهر مبدا یا مقصد به درستی انتخاب نشده است.');
+            throw new Exception('ط´ظ‡ط± ظ…ط¨ط¯ط§ غŒط§ ظ…ظ‚طµط¯ ط¨ظ‡ ط¯ط±ط³طھغŒ ط§ظ†طھط®ط§ط¨ ظ†ط´ط¯ظ‡ ط§ط³طھ.');
         }
 
         $st = $pdo->prepare("SELECT province_id FROM cities WHERE id=? LIMIT 1");
@@ -86,16 +86,16 @@ if ($action === 'create') {
         $st->execute([$destCityId]);
         $destProvinceId = $st->fetchColumn();
 
-        if (!$originProvinceId || !$destProvinceId) throw new Exception('استان مبدا یا مقصد پیدا نشد.');
+        if (!$originProvinceId || !$destProvinceId) throw new Exception('ط§ط³طھط§ظ† ظ…ط¨ط¯ط§ غŒط§ ظ…ظ‚طµط¯ ظ¾غŒط¯ط§ ظ†ط´ط¯.');
 
         $companyId = (int)($_POST['company_id'] ?? 0);
-        if ($companyId <= 0) throw new Exception('لطفا شرکت باربری را انتخاب کنید.');
+        if ($companyId <= 0) throw new Exception('ظ„ط·ظپط§ ط´ط±ع©طھ ط¨ط§ط±ط¨ط±غŒ ط±ط§ ط§ظ†طھط®ط§ط¨ ع©ظ†غŒط¯.');
 
         $publicCode = (string)rand(10000000, 99999999) . (string)rand(1000, 9999);
         $proposedPrice = normalize_money($_POST['proposed_price'] ?? null);
         $insuranceValue = normalize_money($_POST['insurance_value'] ?? null);
 
-        // مختصات نقشه
+        // ظ…ط®طھطµط§طھ ظ†ظ‚ط´ظ‡
         $oLat = !empty($_POST['origin_lat']) ? (float)$_POST['origin_lat'] : null;
         $oLng = !empty($_POST['origin_lng']) ? (float)$_POST['origin_lng'] : null;
         $dLat = !empty($_POST['dest_lat']) ? (float)$_POST['dest_lat'] : null;
@@ -145,6 +145,15 @@ if ($action === 'create') {
             $dLng
         ]);
 
+        $loadId = (int)$pdo->lastInsertId();
+        $rawVids = $_POST['vehicle_type_ids'] ?? [$_POST['primary_vehicle_type_id'] ?? 1];
+        if (!is_array($rawVids)) $rawVids = [$rawVids];
+        $stLvt = $pdo->prepare("INSERT IGNORE INTO load_vehicle_types (load_id, vehicle_type_id) VALUES (?, ?)");
+        foreach ($rawVids as $vid) {
+            $vid = (int)$vid;
+            if ($vid > 0) $stLvt->execute([$loadId, $vid]);
+        }
+
         echo json_encode(['ok' => $ok]);
     } catch (Throwable $e) {
         http_response_code(500);
@@ -153,12 +162,12 @@ if ($action === 'create') {
     exit;
 }
 
-// --- بخش ویرایش بار ---
+// --- ط¨ط®ط´ ظˆغŒط±ط§غŒط´ ط¨ط§ط± ---
 if ($action === 'update') {
     try {
         $id = (int)($_POST['id'] ?? 0);
         $companyId = (int)($_POST['company_id'] ?? 0);
-        if ($companyId <= 0) throw new Exception('لطفا شرکت باربری را انتخاب کنید.');
+        if ($companyId <= 0) throw new Exception('ظ„ط·ظپط§ ط´ط±ع©طھ ط¨ط§ط±ط¨ط±غŒ ط±ط§ ط§ظ†طھط®ط§ط¨ ع©ظ†غŒط¯.');
 
         $oLat = !empty($_POST['origin_lat']) ? (float)$_POST['origin_lat'] : null;
         $oLng = !empty($_POST['origin_lng']) ? (float)$_POST['origin_lng'] : null;
@@ -191,6 +200,18 @@ if ($action === 'update') {
             $dLng,
             $id
         ]);
+
+        if (isset($_POST['vehicle_type_ids'])) {
+            $rawVids = $_POST['vehicle_type_ids'];
+            if (!is_array($rawVids)) $rawVids = [$rawVids];
+            $pdo->prepare("DELETE FROM load_vehicle_types WHERE load_id=?")->execute([$id]);
+            $stLvt = $pdo->prepare("INSERT IGNORE INTO load_vehicle_types (load_id, vehicle_type_id) VALUES (?, ?)");
+            foreach ($rawVids as $vid) {
+                $vid = (int)$vid;
+                if ($vid > 0) $stLvt->execute([$id, $vid]);
+            }
+        }
+
         echo json_encode(['ok' => $ok]);
     } catch (Throwable $e) {
         http_response_code(500);
@@ -221,8 +242,29 @@ if ($action === 'list') {
     ");
     $rows = $st->fetchAll();
 
+    $loadIds = array_map(fn($r) => (int)$r['id'], $rows);
+    $loadVehiclesMap = [];
+    if (!empty($loadIds)) {
+        $inIds = implode(',', $loadIds);
+        $stVts = $pdo->query("
+            SELECT lvt.load_id, vt.title
+            FROM load_vehicle_types lvt
+            JOIN vehicle_types vt ON lvt.vehicle_type_id = vt.id
+            WHERE lvt.load_id IN ($inIds)
+            ORDER BY vt.id ASC
+        ");
+        foreach ($stVts->fetchAll() as $vRow) {
+            $lid = (int)$vRow['load_id'];
+            $loadVehiclesMap[$lid][] = (string)$vRow['title'];
+        }
+    }
+
     $data = [];
     foreach ($rows as $r) {
+        $lid = (int)$r['id'];
+        $vehicleDisplay = !empty($loadVehiclesMap[$lid])
+            ? implode('، ', $loadVehiclesMap[$lid])
+            : ($r['vehicle_title'] ?? 'روباری');
         $status = match ((int)$r['load_status']) {
             1 => '<span class="badge bg-success">فعال</span>',
             2 => '<span class="badge bg-info">تخصیص شده</span>',
@@ -237,14 +279,14 @@ if ($action === 'list') {
             'company_name' => $r['company_name'] ?? 'نامشخص',
             'origin' => $r['origin_city'] . ' (' . $r['origin_province'] . ')',
             'destination' => $r['dest_city'] . ' (' . $r['dest_province'] . ')',
-            'vehicle' => $r['vehicle_title'] ?? 'روباری',
+            'vehicle' => $vehicleDisplay,
             'cargo' => $r['cargo_title'],
             'price' => number_format((float)$r['proposed_price']),
             'status' => $status,
             'created_at' => jdate('Y/m/d', strtotime($r['created_at'])),
             'actions' => '
-                <a href="load_edit.php?id=' . $r['id'] . '" class="btn btn-sm btn-icon btn-primary" title="ویرایش"><i class="ri-edit-line"></i></a>
-                <button class="btn btn-sm btn-icon btn-danger" onclick="deleteLoad(' . $r['id'] . ')" title="حذف"><i class="ri-delete-bin-line"></i></button>
+                <a href="load_edit.php?id=' . $r['id'] . '" class="btn btn-sm btn-icon btn-primary" title="ظˆغŒط±ط§غŒط´"><i class="ri-edit-line"></i></a>
+                <button class="btn btn-sm btn-icon btn-danger" onclick="deleteLoad(' . $r['id'] . ')" title="ط­ط°ظپ"><i class="ri-delete-bin-line"></i></button>
             '
         ];
     }
@@ -255,7 +297,7 @@ if ($action === 'list') {
 if ($action === 'bulk_delete') {
     $ids = $_POST['ids'] ?? [];
     if (!is_array($ids) || empty($ids)) {
-        echo json_encode(['ok' => false, 'message' => 'هیچ موردی انتخاب نشده است']);
+        echo json_encode(['ok' => false, 'message' => 'ظ‡غŒع† ظ…ظˆط±ط¯غŒ ط§ظ†طھط®ط§ط¨ ظ†ط´ط¯ظ‡ ط§ط³طھ']);
         exit;
     }
     $cleanIds = array_map('intval', $ids);

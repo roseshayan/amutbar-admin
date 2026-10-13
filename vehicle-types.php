@@ -37,6 +37,7 @@ require_once "views/panel/sidebar.php";
                                 <thead>
                                 <tr>
                                     <th>ID</th>
+                                    <th>آیکون</th>
                                     <th>عنوان</th>
                                     <th>کد</th>
                                     <th>Parent</th>
@@ -64,9 +65,10 @@ require_once "views/panel/sidebar.php";
                 <h6 class="modal-title">وسیله نقلیه</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="vtForm">
+            <form id="vtForm" enctype="multipart/form-data">
                 <div class="modal-body">
                     <input type="hidden" name="id" id="vt_id">
+                    <input type="hidden" name="remove_icon" id="vt_remove_icon" value="0">
                     <div class="row g-2">
                         <div class="col-md-6">
                             <label for="vt_title" class="form-label">عنوان *</label>
@@ -99,6 +101,16 @@ require_once "views/panel/sidebar.php";
                                 <option value="0">غیرفعال</option>
                             </select>
                         </div>
+                        <div class="col-md-12">
+                            <label for="vt_icon" class="form-label">آیکون / تصویر ماشین (PNG, JPG, WebP, SVG)</label>
+                            <input type="file" class="form-control" name="icon" id="vt_icon" accept="image/png,image/jpeg,image/webp,image/svg+xml">
+                            <div id="vt_icon_preview_wrap" class="mt-2 d-none align-items-center gap-2">
+                                <img id="vt_icon_preview" src="" alt="آیکون" style="width:48px; height:48px; object-fit:contain; border-radius:6px; border:1px solid #ced4da; background:#f8f9fa; padding:3px;">
+                                <button type="button" class="btn btn-sm btn-outline-danger" id="vt_btn_remove_icon">
+                                    <i class="ri-delete-bin-line"></i> حذف آیکون فعلی
+                                </button>
+                            </div>
+                        </div>
                         <div class="col-12">
                             <label for="vt_description" class="form-label">توضیحات</label>
                             <textarea class="form-control" name="description" id="vt_description" rows="3"></textarea>
@@ -107,7 +119,7 @@ require_once "views/panel/sidebar.php";
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">بستن</button>
-                    <button type="submit" class="btn btn-primary">ذخیره</button>
+                    <button type="submit" class="btn btn-primary" id="vt_submit_btn">ذخیره</button>
                 </div>
             </form>
         </div>
@@ -124,6 +136,7 @@ require_once "views/panel/sidebar.php";
 
     function resetForm() {
         $('#vt_id').val('');
+        $('#vt_remove_icon').val('0');
         $('#vt_title').val('');
         $('#vt_code').val('');
         $('#vt_parent_id').val('');
@@ -131,6 +144,9 @@ require_once "views/panel/sidebar.php";
         $('#vt_max_weight_kg').val('');
         $('#vt_is_active').val('1');
         $('#vt_description').val('');
+        $('#vt_icon').val('');
+        $('#vt_icon_preview_wrap').addClass('d-none').removeClass('d-flex');
+        $('#vt_icon_preview').attr('src', '');
     }
 
     function loadParents() {
@@ -151,6 +167,7 @@ require_once "views/panel/sidebar.php";
             ajax: `${BASE_URL}/ajax/vehicle-types.php?action=list`,
             columns: [
                 {data: 'id'},
+                {data: 'icon_preview'},
                 {data: 'title'},
                 {data: 'code'},
                 {data: 'parent_id'},
@@ -175,23 +192,68 @@ require_once "views/panel/sidebar.php";
             loadParents();
         });
 
+        $('#vt_icon').on('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (evt) {
+                    $('#vt_icon_preview').attr('src', evt.target.result);
+                    $('#vt_icon_preview_wrap').removeClass('d-none').addClass('d-flex');
+                    $('#vt_remove_icon').val('0');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        $('#vt_btn_remove_icon').on('click', function () {
+            $('#vt_icon').val('');
+            $('#vt_remove_icon').val('1');
+            $('#vt_icon_preview_wrap').addClass('d-none').removeClass('d-flex');
+            $('#vt_icon_preview').attr('src', '');
+        });
+
         $('#vtForm').on('submit', function (e) {
             e.preventDefault();
-            const formData = $(this).serialize();
-            $.post(`${BASE_URL}/ajax/vehicle-types.php?action=save`, formData, function (res) {
-                if (res && res.ok) {
-                    toast('ذخیره شد');
-                    $('#vtModal').modal('hide');
-                    table.ajax.reload(null, false);
-                    resetForm();
-                    return;
+            const form = this;
+            const formData = new FormData(form);
+            formData.append('action', 'save');
+
+            const submitBtn = $('#vt_submit_btn');
+            submitBtn.prop('disabled', true).text('در حال ذخیره...');
+
+            $.ajax({
+                url: `${BASE_URL}/ajax/vehicle-types.php`,
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: 'json',
+                success: function (res) {
+                    submitBtn.prop('disabled', false).text('ذخیره');
+                    if (res && res.ok) {
+                        toast('ذخیره شد');
+                        $('#vtModal').modal('hide');
+                        table.ajax.reload(null, false);
+                        resetForm();
+                        return;
+                    }
+                    toast(res?.message || 'خطا در ذخیره');
+                },
+                error: function (xhr) {
+                    submitBtn.prop('disabled', false).text('ذخیره');
+                    const msg = xhr.responseJSON?.message || 'خطای سرور در ارتباط';
+                    toast(msg);
                 }
-                toast(res?.message || 'خطا');
-            }, 'json');
+            });
+        });
+
+        $('[data-bs-target="#vtModal"]').on('click', function () {
+            resetForm();
         });
 
         $(document).on('click', '.vt-edit', function () {
             const id = $(this).data('id');
+            resetForm();
             $.getJSON(`${BASE_URL}/ajax/vehicle-types.php?action=get&id=${id}`, function (res) {
                 if (!res || !res.ok) return toast('یافت نشد');
                 const it = res.item;
@@ -203,6 +265,14 @@ require_once "views/panel/sidebar.php";
                 $('#vt_max_weight_kg').val(it.max_weight_kg || '');
                 $('#vt_is_active').val(it.is_active ? '1' : '0');
                 $('#vt_description').val(it.description || '');
+
+                if (it.icon_url) {
+                    $('#vt_icon_preview').attr('src', it.icon_url);
+                    $('#vt_icon_preview_wrap').removeClass('d-none').addClass('d-flex');
+                } else {
+                    $('#vt_icon_preview_wrap').addClass('d-none').removeClass('d-flex');
+                }
+
                 $('#vtModal').modal('show');
             });
         });

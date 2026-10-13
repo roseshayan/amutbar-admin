@@ -53,8 +53,8 @@ $vehicles = $pdo->query("SELECT id, title FROM vehicle_types WHERE is_active=1 O
                                     </select>
                                 </div>
                                 <div class="col-md-4" id="vehicle_wrap">
-                                    <label class="form-label">نوع بارگیر مورد نیاز *</label>
-                                    <select name="primary_vehicle_type_id" id="primary_vehicle_type_id" class="form-select">
+                                    <label class="form-label">نوع بارگیر مورد نیاز (امکان انتخاب چند مورد) *</label>
+                                    <select name="vehicle_type_ids[]" id="vehicle_type_ids" class="form-control" multiple="multiple">
                                         <?php foreach ($vehicles as $v) echo "<option value='{$v['id']}'>{$v['title']}</option>"; ?>
                                     </select>
                                 </div>
@@ -266,6 +266,12 @@ $vehicles = $pdo->query("SELECT id, title FROM vehicle_types WHERE is_active=1 O
             placeholder: 'نام شرکت باربری را سرچ کنید...',
             minimumInputLength: 1
         });
+
+        $('#vehicle_type_ids').select2({
+            placeholder: 'انتخاب یک یا چند نوع بارگیر...',
+            dir: 'rtl',
+            width: '100%'
+        });
     });
 
     function checkLoadType() {
@@ -422,6 +428,8 @@ $vehicles = $pdo->query("SELECT id, title FROM vehicle_types WHERE is_active=1 O
         if (!$('#origin_city_search').val()) return Swal.fire('خطا', 'شهر مبدا الزامی است', 'warning');
         if (!$('#dest_city_search').val()) return Swal.fire('خطا', 'شهر مقصد الزامی است', 'warning');
         if (!$('#cargo_search').val()) return Swal.fire('خطا', 'نوع کالا الزامی است', 'warning');
+        let vids = $('#vehicle_type_ids').val();
+        if (!vids || vids.length === 0) return Swal.fire('خطا', 'انتخاب حداقل یک نوع بارگیر الزامی است', 'warning');
         if (!$('#free_ton').is(':checked') && !$('#weight_input').val()) return Swal.fire('خطا', 'وزن بار الزامی است', 'warning');
         if (!$('#proposed_price_hidden').val()) return Swal.fire('خطا', 'کرایه پیشنهادی الزامی است', 'warning');
 

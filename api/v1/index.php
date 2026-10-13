@@ -56,6 +56,7 @@ elseif ($path === '/me') $endpointKey = 'api.me.get';
 elseif ($path === '/me/avatar') $endpointKey = 'api.me.avatar';
 elseif ($path === '/me/notifications/unread-count') $endpointKey = 'api.me.notifications_count';
 elseif ($path === '/me/notifications') $endpointKey = 'api.me.notifications';
+elseif ($path === '/devices/push-token' || $path === '/me/push-token') $endpointKey = 'api.devices.push_token';
 
 // Onboarding
 elseif ($path === '/driver/profile') $endpointKey = 'api.driver.upsert';
@@ -312,16 +313,30 @@ if ($method === 'GET' && $path === '/meta/cities') {
 
 if ($method === 'GET' && $path === '/meta/vehicle-types') {
     $pdo = db();
-    $rows = $pdo->query("SELECT id, parent_id, code, title, body_type, max_weight_kg, description FROM vehicle_types WHERE is_active=1 ORDER BY parent_id ASC, id ASC")->fetchAll();
-    api_ok(['items' => array_map(fn($r) => [
-        'id' => (int)$r['id'],
-        'parent_id' => $r['parent_id'] !== null ? (int)$r['parent_id'] : null,
-        'code' => (string)$r['code'],
-        'title' => (string)$r['title'],
-        'body_type' => $r['body_type'] !== null ? (string)$r['body_type'] : null,
-        'max_weight_kg' => $r['max_weight_kg'] !== null ? (float)$r['max_weight_kg'] : null,
-        'description' => $r['description'] !== null ? (string)$r['description'] : null,
-    ], $rows)]);
+    require_once __DIR__ . '/../../includes/settings.php';
+    $siteUrl = rtrim((string)settings_get('site.url', ''), '/');
+    if ($siteUrl === '') {
+        $siteUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') . ($_SERVER['HTTP_HOST'] ?? 'localhost');
+    }
+    $rows = $pdo->query("SELECT id, parent_id, code, title, body_type, max_weight_kg, description, icon FROM vehicle_types WHERE is_active=1 ORDER BY parent_id ASC, id ASC")->fetchAll();
+    api_ok(['items' => array_map(function($r) use ($siteUrl) {
+        $icon = !empty($r['icon']) ? (string)$r['icon'] : null;
+        $iconUrl = null;
+        if ($icon !== null) {
+            $iconUrl = preg_match('~^https?://~i', $icon) ? $icon : ($siteUrl . '/' . ltrim($icon, '/'));
+        }
+        return [
+            'id' => (int)$r['id'],
+            'parent_id' => $r['parent_id'] !== null ? (int)$r['parent_id'] : null,
+            'code' => (string)$r['code'],
+            'title' => (string)$r['title'],
+            'body_type' => $r['body_type'] !== null ? (string)$r['body_type'] : null,
+            'max_weight_kg' => $r['max_weight_kg'] !== null ? (float)$r['max_weight_kg'] : null,
+            'description' => $r['description'] !== null ? (string)$r['description'] : null,
+            'icon' => $icon,
+            'icon_url' => $iconUrl,
+        ];
+    }, $rows)]);
 }
 
 // Auth: request OTP
@@ -1355,6 +1370,35 @@ if ($method === 'GET' && $path === '/me/notifications') {
     api_ok(['items' => $items]);
 }
 
+// ثبت یا به‌روزرسانی توکن نوتیفیکیشن دستگاه
+if ($method === 'POST' && ($path === '/devices/push-token' || $path === '/me/push-token')) {
+    $u = api_require_auth();
+    $in = api_input();
+    $token = api_str($in, 'token', 500);
+    $platform = api_str($in, 'platform', 32) ?: 'android';
+    $appType = api_int($in, 'app_type') ?: ((int)$u['user_type'] === 2 ? 2 : 1);
+
+    if (!$token) api_err('token الزامی است', 422);
+
+    require_once __DIR__ . '/../../includes/push_service.php';
+    $ok = push_register_device_token((int)$u['id'], $token, $platform, $appType);
+    if (!$ok) api_err('خطا در ثبت توکن دستگاه', 500);
+
+    api_ok(['message' => 'توکن دستگاه با موفقیت ثبت شد']);
+}
+
+// حذف توکن نوتیفیکیشن دستگاه
+if ($method === 'DELETE' && ($path === '/devices/push-token' || $path === '/me/push-token')) {
+    $u = api_require_auth();
+    $in = api_input();
+    $token = api_str($in, 'token', 500) ?: null;
+
+    require_once __DIR__ . '/../../includes/push_service.php';
+    push_unregister_device_token((int)$u['id'], $token);
+
+    api_ok(['message' => 'توکن دستگاه با موفقیت حذف شد']);
+}
+
 // ==========================================
 // Loads API (برای اپلیکیشن رانندگان)
 // ==========================================
@@ -1471,11 +1515,17 @@ if ($method === 'GET' && $path === '/driver/loads') {
     $originProvinceId = (isset($_GET['origin_province_id']) && trim($_GET['origin_province_id']) !== '') ? (int)$_GET['origin_province_id'] : null;
     $destProvinceId   = (isset($_GET['dest_province_id']) && trim($_GET['dest_province_id']) !== '') ? (int)$_GET['dest_province_id'] : null;
 
+    require_once __DIR__ . '/../../includes/settings.php';
+    $siteUrl = rtrim((string)settings_get('site.url', ''), '/');
+    if ($siteUrl === '') {
+        $siteUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') . ($_SERVER['HTTP_HOST'] ?? 'localhost');
+    }
+
     $queryStr = "
         SELECT l.*, 
                c1.name as origin_city, p1.name as origin_province,
                c2.name as dest_city, p2.name as dest_province,
-               vt.title as vehicle_title, cl.title as cargo_title
+               vt.title as vehicle_title, vt.icon as vehicle_icon, cl.title as cargo_title
         FROM loads l
         LEFT JOIN cities c1 ON l.origin_city_id = c1.id
         LEFT JOIN provinces p1 ON c1.province_id = p1.id
@@ -1509,6 +1559,29 @@ if ($method === 'GET' && $path === '/driver/loads') {
     $st = $pdo->prepare($queryStr);
     $st->execute($params);
     $loads = $st->fetchAll();
+
+    // دریافت ماشین‌های انتخاب‌شده برای بارهای بازگشتی
+    $driverLoadIds = array_map(fn($r) => (int)$r['id'], $loads);
+    $driverVehiclesMap = [];
+    if (!empty($driverLoadIds)) {
+        $inIds = implode(',', $driverLoadIds);
+        $stVts = $pdo->query("
+            SELECT lvt.load_id, vt.id, vt.title, vt.icon
+            FROM load_vehicle_types lvt
+            JOIN vehicle_types vt ON lvt.vehicle_type_id = vt.id
+            WHERE lvt.load_id IN ($inIds)
+            ORDER BY vt.id ASC
+        ");
+        foreach ($stVts->fetchAll() as $vRow) {
+            $lid = (int)$vRow['load_id'];
+            $vIcon = !empty($vRow['icon']) ? (string)$vRow['icon'] : null;
+            $driverVehiclesMap[$lid][] = [
+                'id' => (int)$vRow['id'],
+                'title' => (string)$vRow['title'],
+                'icon_url' => $vIcon ? (preg_match('~^https?://~i', $vIcon) ? $vIcon : ($siteUrl . '/' . ltrim($vIcon, '/'))) : null,
+            ];
+        }
+    }
 
     // میانگین بازار برای همه مسیرهای همین صفحه با یک query محاسبه می‌شود.
     $routeWhere = [];
@@ -1565,12 +1638,26 @@ if ($method === 'GET' && $path === '/driver/loads') {
             elseif ($currentPrice > $marketAvg * 1.1) $evaluation = "گران";
         }
 
+        $lid = (int)$r['id'];
+        $vList = $driverVehiclesMap[$lid] ?? [];
+        $vehicleTitle = !empty($vList)
+            ? implode('، ', array_column($vList, 'title'))
+            : ($r['vehicle_title'] ?? 'نامشخص');
+        $iconRel = !empty($r['vehicle_icon']) ? (string)$r['vehicle_icon'] : (!empty($vList[0]['icon_url']) ? $vList[0]['icon_url'] : null);
+        $vehicleIconUrl = null;
+        if ($iconRel !== null) {
+            $vehicleIconUrl = preg_match('~^https?://~i', $iconRel) ? $iconRel : ($siteUrl . '/' . ltrim($iconRel, '/'));
+        }
+
         $items[] = [
-            'id' => $r['id'],
+            'id' => $lid,
             'public_code' => $r['public_code'],
             'origin' => $r['origin_city'] . ' (' . $r['origin_province'] . ')',
             'destination' => $r['dest_city'] . ' (' . $r['dest_province'] . ')',
             'cargo_title' => $r['cargo_title'] ?? 'کالا عمومی',
+            'vehicle_title' => $vehicleTitle,
+            'vehicle_icon_url' => $vehicleIconUrl,
+            'vehicle_types' => $vList,
             'price' => number_format((float)$r['proposed_price']),
             'price_evaluation' => $evaluation,
             'distance_km' => amut_haversine_distance($r['origin_lat'], $r['origin_lng'], $r['dest_lat'], $r['dest_lng']),
@@ -1614,7 +1701,7 @@ if ($method === 'GET' && preg_match('~^/driver/loads/(\d+)$~', $path, $matches))
         : "NOW(3)";
 
     $st = $pdo->prepare("
-        SELECT l.*, comp.company_name, vt.title as vehicle_title, cl.title as cargo_title,
+        SELECT l.*, comp.company_name, vt.title as vehicle_title, vt.icon as vehicle_icon, cl.title as cargo_title,
                c1.name as origin_city, p1.name as origin_province,
                c2.name as dest_city, p2.name as dest_province
         FROM loads l
@@ -1636,6 +1723,39 @@ if ($method === 'GET' && preg_match('~^/driver/loads/(\d+)$~', $path, $matches))
 
     if (!$load) api_err('بار یافت نشد', 404);
 
+    require_once __DIR__ . '/../../includes/settings.php';
+    $siteUrl = rtrim((string)settings_get('site.url', ''), '/');
+    if ($siteUrl === '') {
+        $siteUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') . ($_SERVER['HTTP_HOST'] ?? 'localhost');
+    }
+
+    $stVts = $pdo->prepare("
+        SELECT vt.id, vt.title, vt.icon
+        FROM load_vehicle_types lvt
+        JOIN vehicle_types vt ON lvt.vehicle_type_id = vt.id
+        WHERE lvt.load_id = ?
+        ORDER BY vt.id ASC
+    ");
+    $stVts->execute([$loadId]);
+    $vRows = $stVts->fetchAll();
+    $vList = [];
+    foreach ($vRows as $vRow) {
+        $vIcon = !empty($vRow['icon']) ? (string)$vRow['icon'] : null;
+        $vList[] = [
+            'id' => (int)$vRow['id'],
+            'title' => (string)$vRow['title'],
+            'icon_url' => $vIcon ? (preg_match('~^https?://~i', $vIcon) ? $vIcon : ($siteUrl . '/' . ltrim($vIcon, '/'))) : null,
+        ];
+    }
+    $vehicleTitle = !empty($vList)
+        ? implode('، ', array_column($vList, 'title'))
+        : ($load['vehicle_title'] ?? 'نامشخص');
+    $iconRel = !empty($load['vehicle_icon']) ? (string)$load['vehicle_icon'] : (!empty($vList[0]['icon_url']) ? $vList[0]['icon_url'] : null);
+    $vehicleIconUrl = null;
+    if ($iconRel !== null) {
+        $vehicleIconUrl = preg_match('~^https?://~i', $iconRel) ? $iconRel : ($siteUrl . '/' . ltrim($iconRel, '/'));
+    }
+
     $weightText = $load['is_tonnage_free'] == 1
         ? 'تناژ آزاد'
         : ($load['weight_kg'] . ((int)$load['load_type'] == 1 ? ' تن' : ' کیلوگرم'));
@@ -1649,7 +1769,9 @@ if ($method === 'GET' && preg_match('~^/driver/loads/(\d+)$~', $path, $matches))
         'public_code' => $load['public_code'],
         'company_id' => $load['company_id'],
         'company_name' => $load['company_name'],
-        'vehicle_title' => $load['vehicle_title'] ?? 'نامشخص',
+        'vehicle_title' => $vehicleTitle,
+        'vehicle_icon_url' => $vehicleIconUrl,
+        'vehicle_types' => $vList,
         'load_type_text' => (int)$load['load_type'] === 1 ? 'دربستی' : 'روباری',
         'weight_text' => $weightText,
         'price_type_text' => (int)$load['price_type'] === 1 ? 'صافی سرویسی' : 'صافی تنی',

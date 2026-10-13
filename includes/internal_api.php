@@ -37,6 +37,7 @@ function internal_api_endpoints_catalog(): array
         'api.me.avatar' => ['آپلود آواتار', 'Profile', true, true],
         'api.me.notifications_count' => ['تعداد اعلان‌های نخوانده', 'Notifications', true, true],
         'api.me.notifications' => ['لیست کامل اعلان‌ها', 'Notifications', true, true],
+        'api.devices.push_token' => ['ثبت توکن نوتیفیکیشن دستگاه', 'Notifications', true, true],
 
         // ---------- Onboarding ----------
         'api.driver.upsert' => ['ثبت/ویرایش پروفایل راننده', 'Onboarding', true, false],

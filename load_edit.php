@@ -28,6 +28,13 @@ if (!$load) redirect('loads_list.php');
 
 $vehicles = $pdo->query("SELECT id, title FROM vehicle_types WHERE is_active=1 ORDER BY title ASC")->fetchAll();
 
+$stLvt = $pdo->prepare("SELECT vehicle_type_id FROM load_vehicle_types WHERE load_id=?");
+$stLvt->execute([$id]);
+$selectedVehicleIds = array_map('intval', $stLvt->fetchAll(PDO::FETCH_COLUMN) ?: []);
+if (empty($selectedVehicleIds) && !empty($load['primary_vehicle_type_id'])) {
+    $selectedVehicleIds = [(int)$load['primary_vehicle_type_id']];
+}
+
 require_once "views/panel/header.php";
 require_once "views/panel/sidebar.php";
 
@@ -96,10 +103,10 @@ $hasMapData = (!empty($load['origin_lat']) && !empty($load['dest_lat']));
                                     </select>
                                 </div>
                                 <div class="col-md-4" id="vehicle_wrap">
-                                    <label class="form-label">نوع بارگیر مورد نیاز *</label>
-                                    <select name="primary_vehicle_type_id" class="form-select">
+                                    <label class="form-label">نوع بارگیر مورد نیاز (امکان انتخاب چند مورد) *</label>
+                                    <select name="vehicle_type_ids[]" id="vehicle_type_ids" class="form-control" multiple="multiple">
                                         <?php foreach ($vehicles as $v): ?>
-                                            <option value="<?= $v['id'] ?>" <?= $load['primary_vehicle_type_id'] == $v['id'] ? 'selected' : '' ?>><?= $v['title'] ?></option>
+                                            <option value="<?= $v['id'] ?>" <?= in_array((int)$v['id'], $selectedVehicleIds, true) ? 'selected' : '' ?>><?= $v['title'] ?></option>
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
@@ -297,6 +304,12 @@ $hasMapData = (!empty($load['origin_lat']) && !empty($load['dest_lat']));
         initCitySearch('#origin_city_search');
         initCitySearch('#dest_city_search');
 
+        $('#vehicle_type_ids').select2({
+            placeholder: 'انتخاب یک یا چند نوع بارگیر...',
+            dir: 'rtl',
+            width: '100%'
+        });
+
         // اگر از قبل مختصات دارد، نقشه‌ها همان اول لود شوند
         if ($('#map_check').is(':checked')) {
             initMaps();
@@ -398,6 +411,8 @@ $hasMapData = (!empty($load['origin_lat']) && !empty($load['dest_lat']));
     function submitEditForm() {
         if (!$('#company_search').val()) return Swal.fire('خطا', 'انتخاب شرکت باربری الزامی است', 'warning');
         if (!$('#phone_coordination').val()) return Swal.fire('خطا', 'شماره تلفن هماهنگی الزامی است', 'warning');
+        let vids = $('#vehicle_type_ids').val();
+        if (!vids || vids.length === 0) return Swal.fire('خطا', 'انتخاب حداقل یک نوع بارگیر الزامی است', 'warning');
         if (!$('#proposed_price_hidden').val()) return Swal.fire('خطا', 'کرایه پیشنهادی الزامی است', 'warning');
 
         $.post('<?= base_url() ?>/ajax/loads.php?action=update', $('#loadEditForm').serialize(), function(res) {

@@ -18,3 +18,4 @@
 *.jks
 
 node_modules/
+.env
