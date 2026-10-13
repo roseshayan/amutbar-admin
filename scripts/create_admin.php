@@ -48,10 +48,10 @@ if ($existing) {
 } else {
     $pdo->prepare("
         INSERT INTO users (
-            full_name, phone, phone_active, password_hash, 
+            full_name, phone, password_hash, 
             user_type, status, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, 3, 1, NOW(3), NOW(3))
-    ")->execute([$fullName, $phone, $phone, $hash]);
+        ) VALUES (?, ?, ?, 3, 1, NOW(3), NOW(3))
+    ")->execute([$fullName, $phone, $hash]);
 
     echo "======================================================" . PHP_EOL;
     echo " اکانت ادمین جدید ساخته شد!" . PHP_EOL;
