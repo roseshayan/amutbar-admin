@@ -53,6 +53,9 @@ final class IdentityVerificationRunner
         $required = match ($path) {
             '/api/sw1/ShahkarLite', '/api/sw1/Shahkar', '/api/sw1/ShahkarPro' => ['nationalCode', 'mobile'],
             '/api/sw1/PersonData', '/api/sw1/PersonInfo' => ['nationalCode', 'birthDate'],
+            '/api/sw1/DrivingLicense', '/api/sw1/DrivingLisense' => ['nationalCode', 'mobile'],
+            '/api/sw1/DrivingScore' => ['nationalCode', 'mobile', 'licenseNumber'],
+            '/api/sw1/CallOTP', '/api/sw1/CallOTPalt' => ['code', 'number'],
             '/api/sw1/VideoVerify' => ['nationalCode', 'birthDate', 'serialNumber', 'videoBase64', 'speechText'],
             default => null,
         };
@@ -64,7 +67,11 @@ final class IdentityVerificationRunner
             $svc['available'] = false;
             $svc['description'] = 'این سرویس در قرارداد فعلی موجود نیست؛ از شاهکار لایت یا VideoVerify استفاده کنید.';
         } elseif ($path === '/api/sw1/PersonData') {
-            $svc['description'] = 'نیازمند کد ملی و تاریخ تولد ذخیره‌شده؛ بدون نیاز به سریال کارت.';
+            $svc['description'] = 'نیازمند کد ملی و تاریخ تولد ذخیره‌شده؛ استعلام مشخصات و تصویر هویتی.';
+        } elseif ($path === '/api/sw1/PersonInfo') {
+            $svc['description'] = 'نیازمند کد ملی و تاریخ تولد ذخیره‌شده؛ استعلام مشخصات سجلی بدون تصویر.';
+        } elseif (in_array($path, ['/api/sw1/DrivingLicense', '/api/sw1/DrivingLisense'], true)) {
+            $svc['description'] = 'استعلام اصالت و وضعیت گواهینامه راننده بر اساس کد ملی و شماره موبایل.';
         } elseif ($path === '/api/sw1/VideoVerify') {
             $svc['description'] = 'اجرای مجدد آخرین ویدئوی همین اپ با متن اصلی ضبط؛ استعلام مجدد ممکن است هزینه داشته باشد.';
         }
@@ -182,6 +189,15 @@ final class IdentityVerificationRunner
             if ($svc['provider_slug'] === 'api_ir') {
                 if (in_array($svc['code'], ['ShahkarLite', 'Shahkar', 'ShahkarPro'], true)) $verified = $normalized['data'] === true;
                 if ($svc['code'] === 'VideoVerify') $verified = verification_video_passed($normalized);
+                if (in_array($svc['code'], ['PersonData', 'PersonInfo'], true)) {
+                    $verified = is_array($normalized['data']) && ($normalized['data']['alive'] ?? true) !== false;
+                }
+                if (in_array($svc['code'], ['DrivingLicense', 'DrivingLisense'], true)) {
+                    $verified = !empty($normalized['data']) && ($normalized['success'] ?? false) === true;
+                }
+                if (in_array($svc['code'], ['CallOTP', 'CallOTPalt'], true)) {
+                    $verified = ($normalized['data'] ?? false) === true;
+                }
             }
             $this->finishJob($jobId, $normalized, $verified !== false);
 

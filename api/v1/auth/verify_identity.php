@@ -45,14 +45,19 @@ try {
     $providerSlug = 'api_ir';
 
     if ($policy['require_shahkar']) {
-        // --- 1. استعلام شاهکار لایت (همیشه اجرا می‌شود) ---
+        // --- 1. استعلام شاهکار بر اساس سرویس انتخابی (پیش‌فرض شاهکار لایت) ---
+        $shahkarService = (string)settings_get('verification.shahkar_service', 'ShahkarLite');
+        $shahkarEndpoint = ($shahkarService === 'Shahkar') ? '/api/sw1/Shahkar' : '/api/sw1/ShahkarLite';
         $shahkarBody = [
             'mobile' => $user_mobile,
             'nationalCode' => $national_code
         ];
+        if ($shahkarEndpoint === '/api/sw1/Shahkar') {
+            $shahkarBody['isCompany'] = false;
+        }
 
         try {
-            $shahkarRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/ShahkarLite', 'POST', $shahkarBody);
+            $shahkarRes = $apiHelper->callExternalApi($providerSlug, $shahkarEndpoint, 'POST', $shahkarBody);
         } catch (VerificationServiceException $e) {
             api_verification_error($e);
         } catch (Throwable $e) {
@@ -68,8 +73,28 @@ try {
         if (($shahkarRes['data'] ?? false) !== true) {
             api_err('کد ملی وارد شده متعلق به این شماره موبایل نیست.');
         }
+    }
 
-
+    // استعلام گواهینامه رانندگی
+    if (!empty($policy['require_driving_license'])) {
+        $licenseService = (string)settings_get('verification.driver.driving_license_service', 'DrivingLicense');
+        $licenseEndpoint = ($licenseService === 'DrivingLisense') ? '/api/sw1/DrivingLisense' : '/api/sw1/DrivingLicense';
+        $licenseBody = [
+            'mobile' => $user_mobile,
+            'nationalCode' => $national_code
+        ];
+        try {
+            $licenseRes = $apiHelper->callExternalApi($providerSlug, $licenseEndpoint, 'POST', $licenseBody);
+            if (empty($licenseRes['success']) || $licenseRes['success'] !== true) {
+                error_log('legacy.verify_identity license rejected: ' . (string)($licenseRes['message'] ?? 'provider rejected'));
+                api_err('استعلام گواهینامه رانندگی با خطا مواجه شد: ' . ($licenseRes['message'] ?? 'عدم تایید گواهینامه'), 422);
+            }
+        } catch (VerificationServiceException $e) {
+            api_verification_error($e);
+        } catch (Throwable $e) {
+            error_log('legacy.verify_identity license failed: ' . $e->getMessage());
+            api_err('ارتباط با سرویس استعلام گواهینامه برقرار نشد', 502);
+        }
     }
 
     // --- 2. استعلام عکس هویتی (فقط اگر سریال کارت فعال باشد) ---

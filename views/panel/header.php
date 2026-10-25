@@ -86,6 +86,12 @@ if (preg_match('/^09\d{9}$/', $supportHref)) {
                         }
                     }
                 });
+                window.jQuery(document).ajaxSend((event, xhr, settings) => {
+                    const method = String(settings.type || 'GET').toUpperCase();
+                    if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+                        xhr.setRequestHeader('X-CSRF-Token', token);
+                    }
+                });
             }
 
             const nativeFetch = window.fetch.bind(window);
@@ -267,15 +273,25 @@ if (preg_match('/^09\d{9}$/', $supportHref)) {
                         <ul class="main-header-dropdown dropdown-menu pt-0 overflow-hidden header-profile-dropdown dropdown-menu-end"
                             aria-labelledby="mainHeaderProfile">
                             <li>
-                                <div class="py-2 px-3 text-center"><span class="fw-semibold"> <?= htmlspecialchars($admin_name, ENT_QUOTES, 'UTF-8'); ?> </span> <span
-                                        class="d-block fs-12 text-muted"> <?= user_type_label($admin_info['user_type']); ?> </span></div>
+                                <div class="py-2 px-3 text-center">
+                                    <span class="fw-semibold"> <?= htmlspecialchars($admin_name, ENT_QUOTES, 'UTF-8'); ?> </span>
+                                    <div class="mt-1">
+                                        <?php if (is_super_admin()): ?>
+                                            <span class="badge bg-danger-transparent text-danger fs-11"><i class="ri-shield-star-line me-1"></i>مدیر کل</span>
+                                        <?php else: ?>
+                                            <span class="badge bg-info-transparent text-info fs-11"><i class="ri-user-star-line me-1"></i>کارمند</span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
                             </li>
                             <li><a class="dropdown-item d-flex align-items-center" href="profile.php"><i
                                         class="ti ti-user text-primary me-2 fs-16"></i>حساب کاربری</a>
                             </li>
+                            <?php if (is_super_admin()): ?>
                             <li><a class="dropdown-item d-flex align-items-center" href="site-settings.php"><i
                                         class="ti ti-settings text-info me-2 fs-16"></i>تنظیمات</a>
                             </li>
+                            <?php endif; ?>
                             <?php if ($supportHref !== ''): ?>
                                 <li><a class="dropdown-item d-flex align-items-center" href="tel:<?= htmlspecialchars($supportHref, ENT_QUOTES, 'UTF-8') ?>"><i
                                             class="ti ti-headset text-warning me-2 fs-16"></i>پشتیبانی</a>

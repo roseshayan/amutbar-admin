@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/includes/init.php';
-require_admin();
+require_super_admin();
 require_once __DIR__ . '/includes/jalali.php';
 
 // -----------------------------

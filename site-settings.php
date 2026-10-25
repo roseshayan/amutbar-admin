@@ -1,5 +1,6 @@
 <?php
 require_once "views/panel/header.php";
+require_super_admin();
 require_once "views/panel/sidebar.php";
 ?>
 
@@ -222,7 +223,26 @@ require_once "views/panel/sidebar.php";
                             <!-- Verification -->
                             <div class="tab-pane fade" id="pane-verify" role="tabpanel">
                                 <div class="row g-3">
-                                    <?php foreach (['driver' => 'اپ رانندگان', 'cargo' => 'اپ اعلام بار'] as $appKey => $appTitle): ?>
+                                    <div class="col-12 mb-2">
+                                         <div class="border rounded p-3 bg-light">
+                                             <label class="form-label fw-semibold" for="shahkar_service">سرویس فعال تطبیق شاهکار (سراسری)</label>
+                                             <select class="form-control" id="shahkar_service" data-verification-setting="verification.shahkar_service">
+                                                 <option value="ShahkarLite">شاهکار لایت (ShahkarLite) — پیش‌فرض، استعلام سریع و کم‌هزینه</option>
+                                                 <option value="Shahkar">شاهکار جامع سازمانی (Shahkar) — پشتیبانی از اشخاص حقیقی و حقوقی</option>
+                                             </select>
+                                             <div class="text-muted small mt-1">هر دو سرویس از پلتفرم api.ir فراخوانی می‌شوند.</div>
+                                         </div>
+                                         <div class="border rounded p-3 bg-light mt-3">
+                                             <div class="form-check form-switch mb-0">
+                                                 <input class="form-check-input" type="checkbox" id="auth_require_iran_ip" data-verification-setting="auth.require_iran_ip">
+                                                 <label class="form-check-label fw-semibold" for="auth_require_iran_ip">
+                                                     الزام ورود با آی‌پی ایران و مسدودسازی VPN (سرویس switch1 / IPIsIran)
+                                                 </label>
+                                                 <div class="text-muted small mt-1">در لحظهٔ ورود به اپلیکیشن رانندگان و اعلام بار، آی‌پی کاربر از طریق وب‌سرویس api.ir بررسی شده و در صورت روشن بودن VPN یا آی‌پی غیرایران، اخطار خاموش کردن فیلترشکن نمایش داده می‌شود.</div>
+                                             </div>
+                                         </div>
+                                     </div>
+                                     <?php foreach (['driver' => 'اپ رانندگان', 'cargo' => 'اپ اعلام بار'] as $appKey => $appTitle): ?>
                                     <div class="col-md-6">
                                         <div class="border rounded p-3 h-100">
                                             <h5><?= $appTitle ?></h5>
@@ -232,14 +252,52 @@ require_once "views/panel/sidebar.php";
                                                 <label class="form-check-label" for="<?= $appKey . '_' . $setting ?>"><?= $label ?></label>
                                             </div>
                                             <?php endforeach; ?>
+
+                                            <?php if ($appKey === 'driver'): ?>
+                                            <div class="form-check form-switch my-3">
+                                                <input class="form-check-input" type="checkbox" id="driver_require_driving_license" data-verification-setting="verification.driver.require_driving_license">
+                                                <label class="form-check-label" for="driver_require_driving_license">استعلام اصالت گواهینامه رانندگی (پیش‌فرض غیرفعال)</label>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label small" for="driver_driving_license_service">سوئیچ استعلام گواهینامه</label>
+                                                <select class="form-control form-control-sm" id="driver_driving_license_service" data-verification-setting="verification.driver.driving_license_service">
+                                                    <option value="DrivingLicense">سوئیچ جدید (DrivingLicense)</option>
+                                                    <option value="DrivingLisense">سوئیچ قدیم / پشتیبان (DrivingLisense)</option>
+                                                </select>
+                                            </div>
+                                            <?php endif; ?>
+
                                             <label class="form-label" for="<?= $appKey ?>_guide_text">متن راهنمای ضبط ویدئو</label>
                                             <textarea class="form-control mb-3" rows="3" maxlength="4000" id="<?= $appKey ?>_guide_text" data-verification-setting="verification.<?= $appKey ?>.video_guide_text"></textarea>
                                             <label class="form-label" for="<?= $appKey ?>_guide_url">لینک ویدئوی آموزشی</label>
                                             <input type="text" dir="ltr" class="form-control" id="<?= $appKey ?>_guide_url" data-verification-setting="verification.<?= $appKey ?>.video_guide_url" placeholder="https://.../guide.mp4">
-                                            <div class="text-muted small my-2">لینک مستقیم MP4 وارد کنید یا ویدئو را آپلود کنید. برای حذف راهنما، لینک را خالی و تنظیمات را ذخیره کنید.</div>
+                                            <div class="text-muted small my-2">لینک مستقیم MP4 وارد کنید یا ویدئو را آپلود کنید.</div>
                                             <input type="file" class="form-control" accept="video/mp4,.mp4" id="<?= $appKey ?>_guide_file">
-                                            <button type="button" class="btn btn-outline-primary mt-2" data-upload-guide="<?= $appKey ?>">آپلود ویدئوی راهنما</button>
-                                            <div class="text-muted small mt-2">حداکثر ۵۰ مگابایت، با توجه به محدودیت آپلود سرور؛ پس از آپلود، تنظیمات را ذخیره کنید.</div>
+                                            <div class="d-flex align-items-center gap-2 mt-2">
+                                                <button type="button" class="btn btn-outline-primary" data-upload-guide="<?= $appKey ?>">
+                                                    <i class="ri-upload-cloud-line me-1"></i> آپلود ویدئوی راهنما
+                                                </button>
+                                                <button type="button" class="btn btn-outline-danger" data-delete-guide="<?= $appKey ?>" id="<?= $appKey ?>_delete_guide_btn" style="display: none;">
+                                                    <i class="ri-delete-bin-line me-1"></i> حذف ویدئو
+                                                </button>
+                                            </div>
+                                            <div class="text-muted small mt-2">حداکثر ۵۰ مگابایت؛ پس از آپلود یا ویرایش، تنظیمات را ذخیره کنید.</div>
+
+                                            <!-- پیش‌نمایش ویدئو -->
+                                            <div class="mt-3 p-3 border rounded bg-white" id="<?= $appKey ?>_video_preview_wrap" style="display: none;">
+                                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                                    <span class="fw-semibold small text-primary"><i class="ri-play-circle-line me-1"></i> پیش‌نمایش ویدئوی راهنما:</span>
+                                                    <a href="#" target="_blank" id="<?= $appKey ?>_video_direct_link" class="small text-muted text-decoration-none">
+                                                        <i class="ri-external-link-line me-1"></i> مشاهده مستقیم
+                                                    </a>
+                                                </div>
+                                                <div class="ratio ratio-16x9 bg-black rounded overflow-hidden shadow-sm" style="max-height: 220px;">
+                                                    <video id="<?= $appKey ?>_video_player" controls playsinline preload="metadata" style="width: 100%; height: 100%; object-fit: contain;">
+                                                        <source src="" type="video/mp4">
+                                                        مرورگر شما از پخش ویدئو پشتیبانی نمی‌کند.
+                                                    </video>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                     <?php endforeach; ?>
@@ -317,6 +375,15 @@ require_once "views/panel/sidebar.php";
                                                     <i class="ri-send-plane-fill align-middle me-1"></i> ارسال پیامک تست
                                                 </button>
                                             </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 mt-3">
+                                        <div class="border rounded p-3 bg-light">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="otp_voice_fallback" data-verification-setting="auth.otp_voice_fallback">
+                                                <label class="form-check-label fw-semibold" for="otp_voice_fallback">تماس صوتی اعلام کد OTP در صورت عدم تحویل یا اختلال پیامک (CallOTP / CallOTPalt از api.ir)</label>
+                                            </div>
+                                            <div class="text-muted small mt-1">در صورت روشن بودن، چنانچه ارسال پیامک با خطای سامانه مواجه شود، سیستم به‌طور خودکار از طریق وب‌سرویس تماس صوتی api.ir کد را برای کاربر می‌خواند.</div>
                                         </div>
                                     </div>
                                     <div class="col-12 mt-4">
@@ -553,6 +620,9 @@ require_once "views/panel/footer.php";
             els.liveness_threshold.value = it['verification.api_ir.liveness_threshold'] || '80';
             els.matching_threshold.value = it['verification.api_ir.matching_threshold'] || '90';
             els.speech_threshold.value = it['verification.api_ir.speech_threshold'] || '50';
+
+            updateVideoPreview('driver');
+            updateVideoPreview('cargo');
         }
 
         async function save() {
@@ -682,6 +752,38 @@ require_once "views/panel/footer.php";
             }
         }
 
+        function updateVideoPreview(app) {
+            const urlInput = document.getElementById(app + '_guide_url');
+            const wrap = document.getElementById(app + '_video_preview_wrap');
+            const player = document.getElementById(app + '_video_player');
+            const deleteBtn = document.getElementById(app + '_delete_guide_btn');
+            const directLink = document.getElementById(app + '_video_direct_link');
+            if (!urlInput || !wrap || !player) return;
+
+            const url = (urlInput.value || '').trim();
+            if (url) {
+                wrap.style.display = 'block';
+                if (deleteBtn) deleteBtn.style.display = 'inline-block';
+                if (directLink) directLink.href = url;
+                const srcEl = player.querySelector('source');
+                if (srcEl && srcEl.getAttribute('src') !== url) {
+                    srcEl.src = url;
+                    player.load();
+                }
+            } else {
+                wrap.style.display = 'none';
+                if (deleteBtn) deleteBtn.style.display = 'none';
+                player.pause();
+                const srcEl = player.querySelector('source');
+                if (srcEl) srcEl.removeAttribute('src');
+            }
+        }
+
+        ['driver', 'cargo'].forEach(app => {
+            const el = document.getElementById(app + '_guide_url');
+            if (el) el.addEventListener('input', () => updateVideoPreview(app));
+        });
+
         document.querySelectorAll('[data-upload-guide]').forEach(button => {
             button.addEventListener('click', async () => {
                 const app = button.dataset.uploadGuide;
@@ -701,12 +803,52 @@ require_once "views/panel/footer.php";
                     const json = await res.json();
                     if (!res.ok || !json.ok) throw new Error(json.message || 'آپلود ناموفق بود');
                     document.getElementById(app + '_guide_url').value = json.path;
-                    Swal.fire('آپلود شد', 'برای اعمال ویدئو، تنظیمات را ذخیره کنید.', 'success');
+                    updateVideoPreview(app);
+                    Swal.fire('آپلود شد', 'ویدئو با موفقیت آپلود شد. برای اعمال نهایی، دکمه ذخیره تنظیمات را بزنید.', 'success');
                 } catch (error) {
                     Swal.fire('خطا', error.message || 'ارتباط با سرور برقرار نشد', 'error');
                 } finally {
                     button.disabled = false;
                     button.textContent = oldText;
+                }
+            });
+        });
+
+        document.querySelectorAll('[data-delete-guide]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const app = btn.dataset.deleteGuide;
+                const appName = app === 'driver' ? 'اپ رانندگان' : 'اپ اعلام بار';
+                const confirmRes = await Swal.fire({
+                    title: 'حذف ویدئوی راهنما',
+                    text: `آیا از حذف ویدئوی راهنمای ${appName} اطمینان دارید؟`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'بله، حذف شود',
+                    cancelButtonText: 'انصراف'
+                });
+                if (!confirmRes.isConfirmed) return;
+
+                btn.disabled = true;
+                try {
+                    const fd = new FormData();
+                    fd.append('action', 'delete_verification_guide');
+                    fd.append('app', app);
+                    const res = await fetch('ajax/site-settings.php', { method: 'POST', body: fd, credentials: 'same-origin' });
+                    const json = await res.json();
+                    if (!res.ok || !json.ok) throw new Error(json.message || 'خطا در حذف ویدئو');
+
+                    document.getElementById(app + '_guide_url').value = '';
+                    const fileInput = document.getElementById(app + '_guide_file');
+                    if (fileInput) fileInput.value = '';
+                    updateVideoPreview(app);
+
+                    Swal.fire('حذف شد', json.message || 'ویدئوی راهنما با موفقیت حذف گردید.', 'success');
+                } catch (e) {
+                    Swal.fire('خطا', e.message || 'خطا در ارتباط با سرور', 'error');
+                } finally {
+                    btn.disabled = false;
                 }
             });
         });

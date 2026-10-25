@@ -38,6 +38,10 @@ final class ApiIrContract
             '/api/sw1/PersonData', '/api/sw1/PersonInfo' => ['nationalCode', 'birthDate'],
             '/api/sw1/VideoVerifySpeechText' => [],
             '/api/sw1/VideoVerify' => ['nationalCode', 'birthDate', 'serialNumber', 'videoBase64', 'speechText', 'matchingThreshold', 'livenessThreshold', 'speechThreshold'],
+            '/api/sw1/CallOTP', '/api/sw1/CallOTPalt' => ['code', 'number'],
+            '/api/sw1/DrivingLicense', '/api/sw1/DrivingLisense' => ['nationalCode', 'mobile'],
+            '/api/sw1/DrivingScore' => ['nationalCode', 'mobile', 'licenseNumber'],
+            '/api/sw1/IPIsIran' => ['ip'],
             default => null,
         };
         if ($fields !== null) {
@@ -54,6 +58,18 @@ final class ApiIrContract
         }
         if (isset($data['mobile']) && !preg_match('/^09\d{9}$/D', $data['mobile'])) {
             throw new VerificationServiceException('invalid_mobile', 'شماره موبایل معتبر وارد کنید.', 422);
+        }
+        if (isset($data['code']) && !preg_match('/^\d{4,8}$/D', (string)$data['code'])) {
+            throw new VerificationServiceException('invalid_otp_code', 'کد ارسالی نامعتبر است.', 422);
+        }
+        if (isset($data['number']) && !preg_match('/^0\d{9,10}$/D', (string)$data['number'])) {
+            throw new VerificationServiceException('invalid_mobile', 'شماره تماس معتبر وارد کنید.', 422);
+        }
+        if (isset($data['licenseNumber']) && mb_strlen(trim((string)$data['licenseNumber'])) < 4) {
+            throw new VerificationServiceException('invalid_license_number', 'شماره گواهینامه معتبر وارد کنید.', 422);
+        }
+        if (isset($data['ip']) && !filter_var($data['ip'], FILTER_VALIDATE_IP)) {
+            throw new VerificationServiceException('invalid_ip_address', 'آدرس آی‌پی معتبر وارد کنید.', 422);
         }
         if (isset($data['birthDate'])) {
             if (!preg_match('~^(1[34]\d{2})/(0?[1-9]|1[0-2])/(0?[1-9]|[12]\d|3[01])$~D', $data['birthDate'], $date)) {
@@ -76,6 +92,9 @@ final class ApiIrContract
         $timeout = match ($endpoint) {
             '/api/sw1/VideoVerify' => 120000,
             '/api/sw1/PersonData' => 60000,
+            '/api/sw1/DrivingLicense', '/api/sw1/DrivingLisense', '/api/sw1/DrivingScore' => 45000,
+            '/api/sw1/CallOTP', '/api/sw1/CallOTPalt' => 20000,
+            '/api/sw1/IPIsIran' => 10000,
             default => 30000,
         };
         return ['endpoint' => $endpoint, 'data' => $data, 'timeout_ms' => $timeout];
@@ -107,9 +126,11 @@ final class ApiIrContract
     {
         $data = $result['data'];
         $valid = match ($endpoint) {
-            '/api/sw1/ShahkarLite', '/api/sw1/Shahkar', '/api/sw1/ShahkarPro' => is_bool($data),
+            '/api/sw1/ShahkarLite', '/api/sw1/Shahkar', '/api/sw1/ShahkarPro', '/api/sw1/IPIsIran' => is_bool($data),
+            '/api/sw1/CallOTP', '/api/sw1/CallOTPalt' => is_bool($data) || is_array($data),
             '/api/sw1/PersonData', '/api/sw1/PersonInfo' => is_array($data) && !array_is_list($data),
-            '/api/sw1/VideoVerifySpeechText' => is_string($data) && mb_strlen(trim($data)) >= 10,
+            '/api/sw1/VideoVerifySpeechText' => is_string($data) && mb_strlen(trim($data)) >= 5,
+            '/api/sw1/DrivingLicense', '/api/sw1/DrivingLisense', '/api/sw1/DrivingScore' => is_array($data) || is_bool($data),
             '/api/sw1/VideoVerify' => is_array($data)
                 && count(array_filter(['isPassed', 'isMatch', 'isLiveness', 'isSpeechMatched'], fn($key) => isset($data[$key]) && is_bool($data[$key]))) === 4,
             default => true,

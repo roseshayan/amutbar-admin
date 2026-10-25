@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once "views/panel/header.php";
+require_super_admin();
 require_once "views/panel/sidebar.php";
 require_once "includes/backup_service.php";
 require_once "includes/FilesIrClient.php";

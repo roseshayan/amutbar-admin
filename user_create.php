@@ -126,10 +126,21 @@
                                             onchange="toggleExtraFields()">
                                             <option selected disabled>-- انتخاب کنید --</option>
                                             <option value="1">راننده</option>
-                                            <option value="2">باربری</option>
-                                            <option value="3">ادمین</option>
+                                            <option value="2">صاحب بار / شرکت</option>
+                                            <?php if (is_super_admin()): ?>
+                                            <option value="3">مدیر سیستم (ادمین)</option>
+                                            <?php endif; ?>
                                         </select>
                                     </div>
+                                    <?php if (is_super_admin()): ?>
+                                    <div class="col-md-6 col-lg-3 mb-3 d-none" id="adminRoleWrap">
+                                        <label for="admin_role" class="form-label">سطح دسترسی ادمین</label>
+                                        <select id="admin_role" class="form-select" name="admin_role">
+                                            <option value="staff" selected>کارمند (دسترسی محدود به عملیات)</option>
+                                            <option value="super_admin">مدیر کل (دسترسی کامل و نامحدود)</option>
+                                        </select>
+                                    </div>
+                                    <?php endif; ?>
                                 </div>
 
                                 <div class="row">
@@ -1053,9 +1064,13 @@
             const userType = document.getElementById('user_type').value;
             const driverFields = document.getElementById('driverFields');
             const companyFields = document.getElementById('companyFields');
+            const adminRoleWrap = document.getElementById('adminRoleWrap');
 
             driverFields.style.display = userType === '1' ? 'block' : 'none';
             companyFields.style.display = userType === '2' ? 'block' : 'none';
+            if (adminRoleWrap) {
+                adminRoleWrap.classList.toggle('d-none', userType !== '3');
+            }
 
             // تنظیم مجدد Select2 پس از نمایش بخش‌ها
             setTimeout(() => {

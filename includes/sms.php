@@ -51,3 +51,22 @@ function payamak_send_otp(string $to, string $code): array
 
     return ['ok' => false, 'code' => $data['Value'] ?? null, 'raw' => $data, 'message' => 'SMS failed'];
 }
+
+/**
+ * تماس صوتی یکبار مصرف از طریق api.ir (پشتیبانی از CallOTP و مسیر جایگزین CallOTPalt)
+ */
+function api_ir_send_call_otp(string $to, string $code): array
+{
+    require_once __DIR__ . '/ExternalApiHelper.php';
+    try {
+        $helper = new ExternalApiHelper(db());
+        $res = $helper->sendCallOtp($code, $to);
+        if ($res['success'] ?? false) {
+            return ['ok' => true, 'channel' => $res['channel'] ?? 'CallOTP', 'message' => $res['message'] ?? 'OK'];
+        }
+        return ['ok' => false, 'message' => $res['error'] ?? 'تماس صوتی برقرار نشد'];
+    } catch (Throwable $e) {
+        error_log('api_ir_send_call_otp exception: ' . $e->getMessage());
+        return ['ok' => false, 'message' => $e->getMessage()];
+    }
+}

@@ -44,6 +44,7 @@ elseif ($path === '/meta/cargos/search') $endpointKey = 'api.meta.cargos_search'
 elseif ($path === '/meta/vehicle-types') $endpointKey = 'api.meta.vehicle_types';
 
 // Auth
+elseif ($path === '/auth/check-ip') $endpointKey = 'api.auth.check_ip';
 elseif ($path === '/auth/request-otp') $endpointKey = 'api.auth.request_otp';
 elseif ($path === '/auth/verify-otp') $endpointKey = 'api.auth.verify_otp';
 elseif ($path === '/auth/video-challenge') $endpointKey = 'api.auth.video_challenge';
@@ -339,8 +340,26 @@ if ($method === 'GET' && $path === '/meta/vehicle-types') {
     }, $rows)]);
 }
 
+// Auth: check IP (Iran / VPN verification)
+if ($path === '/auth/check-ip') {
+    $ip = api_client_ip();
+    require_once __DIR__ . '/../../includes/ExternalApiHelper.php';
+    $helper = new ExternalApiHelper(db());
+    $res = $helper->checkIranIp($ip);
+    api_ok([
+        'ip' => $ip,
+        'is_iran' => (bool)($res['is_iran'] ?? false),
+        'is_private' => (bool)($res['is_private'] ?? false),
+        'vpn_detected' => !($res['is_iran'] ?? false),
+        'message' => ($res['is_iran'] ?? false)
+            ? 'آی‌پی ایران تایید شد'
+            : 'لطفاً فیلترشکن خود را خاموش کنید. ورود تنها با آی‌پی ایران مجاز است.'
+    ]);
+}
+
 // Auth: request OTP
 if ($method === 'POST' && $path === '/auth/request-otp') {
+    api_enforce_iran_ip();
     $in = api_input();
     $phone = api_require_phone((string)($in['phone'] ?? ''));
     // 1=driver, 2=company (برای اپ رانندگان معمولاً 1 ارسال می‌شود)
@@ -348,13 +367,18 @@ if ($method === 'POST' && $path === '/auth/request-otp') {
     $userType = (int)($in['user_type'] ?? 1);
     if (!in_array($userType, [1, 2], true)) api_err('user_type نامعتبر است', 422);
 
-    $res = otp_issue($phone, 1, api_otp_ttl_sec(), api_otp_cooldown_sec());
+    $channel = strtolower(trim((string)($in['channel'] ?? 'sms')));
+    if (!in_array($channel, ['sms', 'call'], true)) $channel = 'sms';
+
+    $res = otp_issue($phone, 1, api_otp_ttl_sec(), api_otp_cooldown_sec(), $channel);
     if (!$res['ok']) api_err($res['message'], (int)($res['status'] ?? 400), $res);
-    api_ok(['message' => 'کد تایید ارسال شد'] + $res);
+    $msg = ($res['channel'] ?? '') === 'call' ? 'تماس صوتی برای خواندن کد تایید برقرار شد' : 'کد تایید ارسال شد';
+    api_ok(['message' => $msg] + $res);
 }
 
 // Auth: verify OTP + issue token
 if ($method === 'POST' && $path === '/auth/verify-otp') {
+    api_enforce_iran_ip();
     $in = api_input();
     $phone = api_require_phone((string)($in['phone'] ?? ''));
     $code = preg_replace('/\D+/', '', (string)($in['code'] ?? ''));
@@ -455,13 +479,18 @@ if ($method === 'POST' && $path === '/auth/verify-identity') {
     $providerSlug = 'api_ir';
 
     if ($policy['require_shahkar']) {
-        // 1) شاهکار لایت: تطبیق موبایل و کد ملی (طبق تنظیمات اپ)
+        // 1) شاهکار: استعلام بر اساس سرویس فعال (پیش‌فرض شاهکار لایت)
+        $shahkarService = (string)settings_get('verification.shahkar_service', 'ShahkarLite');
+        $shahkarEndpoint = ($shahkarService === 'Shahkar') ? '/api/sw1/Shahkar' : '/api/sw1/ShahkarLite';
         $shahkarBody = [
             'mobile' => (string)$u['phone'],
             'nationalCode' => $nationalCode,
         ];
+        if ($shahkarEndpoint === '/api/sw1/Shahkar') {
+            $shahkarBody['isCompany'] = false;
+        }
         try {
-            $shahkarRes = $apiHelper->callExternalApi($providerSlug, '/api/sw1/ShahkarLite', 'POST', $shahkarBody);
+            $shahkarRes = $apiHelper->callExternalApi($providerSlug, $shahkarEndpoint, 'POST', $shahkarBody);
         } catch (VerificationServiceException $e) {
             api_verification_error($e);
         } catch (Throwable $e) {
@@ -475,7 +504,28 @@ if ($method === 'POST' && $path === '/auth/verify-identity') {
         if (($shahkarRes['data'] ?? false) !== true) {
             api_err('کد ملی وارد شده متعلق به این شماره موبایل نیست.', 422);
         }
+    }
 
+    // استعلام گواهینامه رانندگی (در صورت فعال بودن در تنظیمات)
+    if (!empty($policy['require_driving_license'])) {
+        $licenseService = (string)settings_get('verification.driver.driving_license_service', 'DrivingLicense');
+        $licenseEndpoint = ($licenseService === 'DrivingLisense') ? '/api/sw1/DrivingLisense' : '/api/sw1/DrivingLicense';
+        $licenseBody = [
+            'mobile' => (string)$u['phone'],
+            'nationalCode' => $nationalCode,
+        ];
+        try {
+            $licenseRes = $apiHelper->callExternalApi($providerSlug, $licenseEndpoint, 'POST', $licenseBody);
+            if (empty($licenseRes['success']) || $licenseRes['success'] !== true) {
+                error_log('driver.verify_identity driving license rejected: ' . (string)($licenseRes['message'] ?? 'provider rejected'));
+                api_err('استعلام گواهینامه رانندگی با خطا مواجه شد: ' . ($licenseRes['message'] ?? 'عدم تایید گواهینامه'), 422);
+            }
+        } catch (VerificationServiceException $e) {
+            api_verification_error($e);
+        } catch (Throwable $e) {
+            error_log('driver.verify_identity license failed: ' . $e->getMessage());
+            api_err('ارتباط با سرویس استعلام گواهینامه برقرار نشد', 502);
+        }
     }
 
     // 2) استعلام عکس (فقط و فقط اگر سریال کارت ملی در تنظیمات فعال باشد)
@@ -1374,7 +1424,7 @@ if ($method === 'GET' && $path === '/me/notifications') {
 if ($method === 'POST' && ($path === '/devices/push-token' || $path === '/me/push-token')) {
     $u = api_require_auth();
     $in = api_input();
-    $token = api_str($in, 'token', 500);
+    $token = api_str($in, 'token', 500) ?: api_str($in, 'push_token', 500);
     $platform = api_str($in, 'platform', 32) ?: 'android';
     $appType = api_int($in, 'app_type') ?: ((int)$u['user_type'] === 2 ? 2 : 1);
 
@@ -1391,7 +1441,7 @@ if ($method === 'POST' && ($path === '/devices/push-token' || $path === '/me/pus
 if ($method === 'DELETE' && ($path === '/devices/push-token' || $path === '/me/push-token')) {
     $u = api_require_auth();
     $in = api_input();
-    $token = api_str($in, 'token', 500) ?: null;
+    $token = api_str($in, 'token', 500) ?: api_str($in, 'push_token', 500) ?: null;
 
     require_once __DIR__ . '/../../includes/push_service.php';
     push_unregister_device_token((int)$u['id'], $token);
@@ -1497,13 +1547,16 @@ if ($method === 'GET' && $path === '/driver/loads') {
     if ((int)($u['user_type'] ?? 0) !== 1) api_err('Forbidden', 403);
     $pdo = db();
 
-    $stDriver = $pdo->prepare("SELECT rating_avg FROM drivers WHERE user_id=? AND deleted_at IS NULL LIMIT 1");
+    $stDriver = $pdo->prepare("SELECT rating_avg, rating_count FROM drivers WHERE user_id=? AND deleted_at IS NULL LIMIT 1");
     $stDriver->execute([$u['id']]);
-    $rating = (float)($stDriver->fetchColumn() ?: 0.0);
+    $driverRow = $stDriver->fetch(PDO::FETCH_ASSOC) ?: [];
+    $rating = (float)($driverRow['rating_avg'] ?? 0.0);
+    $ratingCount = (int)($driverRow['rating_count'] ?? 0);
 
     $timeCondition = "NOW(3)";
-    $infoMessage = "بارهای اعلام شده به صورت آنی به شما نمایش داده می‌شوند. (امتیاز بالا)";
-    if ($rating < 4.0) {
+    $infoMessage = "بارهای اعلام شده به صورت آنی به شما نمایش داده می‌شوند.";
+    // تأخیر ۵ دقیقه فقط برای رانندگانی که حداقل ۵ نظر ثبت‌شده دارند و میانگین امتیازشان واقعاً کمتر از ۴ است
+    if ($ratingCount >= 5 && $rating < 4.0) {
         $timeCondition = "DATE_SUB(NOW(3), INTERVAL 5 MINUTE)";
         $infoMessage = "رانندگان با امتیاز بالاتر بارها را سریع‌تر مشاهده می‌کنند. بارهای جاری با ۵ دقیقه تاخیر برای شما لود شده است.";
     }
@@ -1654,6 +1707,14 @@ if ($method === 'GET' && $path === '/driver/loads') {
             'public_code' => $r['public_code'],
             'origin' => $r['origin_city'] . ' (' . $r['origin_province'] . ')',
             'destination' => $r['dest_city'] . ' (' . $r['dest_province'] . ')',
+            'origin_city_id' => (int)$r['origin_city_id'],
+            'origin_city' => $r['origin_city'],
+            'origin_province_id' => (int)$r['origin_province_id'],
+            'origin_province' => $r['origin_province'],
+            'dest_city_id' => (int)$r['dest_city_id'],
+            'dest_city' => $r['dest_city'],
+            'dest_province_id' => (int)$r['dest_province_id'],
+            'dest_province' => $r['dest_province'],
             'cargo_title' => $r['cargo_title'] ?? 'کالا عمومی',
             'vehicle_title' => $vehicleTitle,
             'vehicle_icon_url' => $vehicleIconUrl,

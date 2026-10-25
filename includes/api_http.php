@@ -121,3 +121,60 @@ function api_require_phone(string $phone): string
     if (!preg_match('/^09\d{9}$/', $p)) api_err('شماره موبایل نامعتبر است', 422);
     return $p;
 }
+
+function api_client_ip(): string
+{
+    $headers = [
+        'HTTP_CF_CONNECTING_IP',
+        'HTTP_X_REAL_IP',
+        'HTTP_CLIENT_IP',
+        'HTTP_X_FORWARDED_FOR',
+        'REMOTE_ADDR'
+    ];
+    foreach ($headers as $header) {
+        if (!empty($_SERVER[$header])) {
+            $val = trim((string)$_SERVER[$header]);
+            if ($header === 'HTTP_X_FORWARDED_FOR') {
+                $parts = explode(',', $val);
+                foreach ($parts as $part) {
+                    $part = trim($part);
+                    if (filter_var($part, FILTER_VALIDATE_IP)) {
+                        return $part;
+                    }
+                }
+            } elseif (filter_var($val, FILTER_VALIDATE_IP)) {
+                return $val;
+            }
+        }
+    }
+    return (string)($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
+}
+
+function api_enforce_iran_ip(): void
+{
+    require_once __DIR__ . '/settings.php';
+    require_once __DIR__ . '/ExternalApiHelper.php';
+
+    // بررسی فعال بودن بررسی آی‌پی ایران از تنظیمات (پیش‌فرض: فعال)
+    $required = (string)settings_get('auth.require_iran_ip', '1') === '1';
+    if (!$required) {
+        return;
+    }
+
+    $ip = api_client_ip();
+    $helper = new ExternalApiHelper(db());
+    $check = $helper->checkIranIp($ip);
+
+    if (!($check['is_iran'] ?? false)) {
+        api_err(
+            'لطفاً ابتدا فیلترشکن (VPN) خود را خاموش کرده و مجدداً تلاش نمایید. ورود به برنامه تنها با آی‌پی ایران امکان‌پذیر است.',
+            403,
+            [
+                'code' => 'vpn_detected',
+                'client_ip' => $ip,
+                'is_iran' => false,
+                'hint' => 'Disable VPN or proxy and try again'
+            ]
+        );
+    }
+}

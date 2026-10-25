@@ -31,11 +31,13 @@ require_once "views/panel/sidebar.php";
                     </ol>
                 </nav>
             </div>
+            <?php if (is_super_admin()): ?>
             <div class="btn-list">
                 <button class="btn btn-outline-secondary btn-wave" data-bs-toggle="modal" data-bs-target="#fcmSettingsModal">
                     <i class="ri-settings-4-line align-middle me-1"></i> تنظیمات کلید Firebase (FCM)
                 </button>
             </div>
+            <?php endif; ?>
         </div>
 
         <!-- آمار کلی مخاطبین -->
@@ -196,7 +198,7 @@ require_once "views/panel/sidebar.php";
                         <div class="p-3 rounded-3 shadow-sm border" style="background: #ffffff; border-color: #e2e8f0;">
                             <div class="d-flex align-items-center justify-content-between mb-2">
                                 <div class="d-flex align-items-center gap-2">
-                                    <img src="assets/images/logo.png" alt="AmutBar" style="width: 22px; height: 22px; border-radius: 4px;" onerror="this.src='data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'22\' height=\'22\' viewBox=\'0 0 24 24\' fill=\'%2300bffe\'><path d=\'M19 13v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6H3l9-9 9 9h-2z\'/></svg>'">
+                                    <img src="assets/images/brand-logos/toggle-logo.png" alt="AmutBar" style="width: 22px; height: 22px; border-radius: 4px;" onerror="this.src='assets/images/logo.png'">
                                     <span class="fw-bold fs-12 text-dark">آموت‌بار</span>
                                     <span class="text-muted fs-11">• الآن</span>
                                 </div>

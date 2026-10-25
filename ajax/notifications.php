@@ -14,9 +14,9 @@ $action = (string)($_GET['action'] ?? $_POST['action'] ?? 'list');
 
 if ($action === 'list') {
     $st = $pdo->query("
-        SELECT l.*, a.username AS admin_username, u.phone AS target_phone, u.full_name AS target_name
+        SELECT l.*, COALESCE(a.full_name, a.phone, 'سیستم') AS admin_username, u.phone AS target_phone, u.full_name AS target_name
         FROM push_broadcast_logs l
-        LEFT JOIN admins a ON l.admin_id = a.id
+        LEFT JOIN users a ON l.admin_id = a.id
         LEFT JOIN users u ON l.target_user_id = u.id
         ORDER BY l.id DESC
         LIMIT 200
@@ -138,6 +138,7 @@ if ($action === 'users_search') {
 }
 
 if ($action === 'get_settings') {
+    require_super_admin();
     $settings = push_get_settings();
     $stTokens = $pdo->query("SELECT COUNT(*) AS total_tokens, COUNT(DISTINCT user_id) AS total_users FROM user_push_tokens");
     $stats = $stTokens->fetch() ?: ['total_tokens' => 0, 'total_users' => 0];
@@ -153,6 +154,7 @@ if ($action === 'get_settings') {
 }
 
 if ($action === 'save_settings') {
+    require_super_admin();
     require_post();
     $serverKey = trim((string)($_POST['server_key'] ?? ''));
     $channelId = trim((string)($_POST['channel_id'] ?? 'amutbar_high_importance'));

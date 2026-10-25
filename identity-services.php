@@ -1,5 +1,6 @@
 <?php
 require_once "views/panel/header.php";
+require_super_admin();
 require_once "views/panel/sidebar.php";
 ?>
 

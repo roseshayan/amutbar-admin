@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/includes/init.php';
+require_super_admin();
 ?>
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">

@@ -227,14 +227,27 @@ try {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') throw new InvalidArgumentException('روش درخواست نامعتبر است');
         $file = $_FILES['video'] ?? null;
         if (!is_array($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-            throw new InvalidArgumentException('آپلود ناموفق بود؛ محدودیت حجم آپلود سرور را بررسی کنید');
+            $errCode = is_array($file) ? ($file['error'] ?? UPLOAD_ERR_NO_FILE) : UPLOAD_ERR_NO_FILE;
+            $msg = match ($errCode) {
+                UPLOAD_ERR_INI_SIZE => 'حجم فایل بیشتر از حد مجاز سرور (upload_max_filesize) است. لطفاً فایل کوچک‌تری انتخاب کنید یا تنظیمات php.ini را افزایش دهید.',
+                UPLOAD_ERR_FORM_SIZE => 'حجم فایل بیشتر از حداکثر مجاز فرم است.',
+                UPLOAD_ERR_PARTIAL => 'فایل به صورت ناقص آپلود شد. لطفاً مجدداً تلاش نمایید.',
+                UPLOAD_ERR_NO_FILE => 'هیچ فایلی برای آپلود انتخاب نشده است.',
+                UPLOAD_ERR_NO_TMP_DIR => 'پوشه موقت سرور یافت نشد.',
+                UPLOAD_ERR_CANT_WRITE => 'ذخیره فایل در دیسک سرور ناموفق بود (دسترسی‌های نوشتن را بررسی کنید).',
+                default => 'آپلود ناموفق بود؛ محدودیت حجم آپلود سرور را بررسی کنید (کد خطا: ' . $errCode . ')'
+            };
+            throw new InvalidArgumentException($msg);
         }
         $tmp = (string)($file['tmp_name'] ?? '');
         if (!is_uploaded_file($tmp) || filesize($tmp) <= 0 || filesize($tmp) > 50 * 1024 * 1024) {
             throw new InvalidArgumentException('حداکثر حجم ویدئوی راهنما ۵۰ مگابایت است');
         }
-        if ((new finfo(FILEINFO_MIME_TYPE))->file($tmp) !== 'video/mp4') {
-            throw new InvalidArgumentException('ویدئوی راهنما باید MP4 باشد');
+        $mime = (new finfo(FILEINFO_MIME_TYPE))->file($tmp);
+        $ext = strtolower(pathinfo((string)($file['name'] ?? ''), PATHINFO_EXTENSION));
+        $validMimes = ['video/mp4', 'video/quicktime', 'video/x-m4v', 'video/x-msvideo', 'video/webm', 'application/octet-stream'];
+        if ($ext !== 'mp4' && !in_array($mime, $validMimes, true)) {
+            throw new InvalidArgumentException('ویدئوی راهنما باید MP4 باشد (فرمت شناسایی شده: ' . $mime . ')');
         }
         $directory = BASE_PATH . '/storage/uploads/system';
         ensure_dir($directory);
@@ -242,6 +255,28 @@ try {
         if (!move_uploaded_file($tmp, $directory . '/' . $name)) throw new RuntimeException('ذخیره فایل ناموفق بود');
         chmod($directory . '/' . $name, 0644);
         echo json_encode(['ok' => true, 'path' => 'storage/uploads/system/' . $name]);
+        exit;
+    }
+
+    if ($action === 'delete_verification_guide') {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') throw new InvalidArgumentException('روش درخواست نامعتبر است');
+        $app = trim((string)($_POST['app'] ?? ''));
+        if (!in_array($app, ['driver', 'cargo'], true)) throw new InvalidArgumentException('نوع اپلیکیشن نامعتبر است');
+        
+        $key = "verification.{$app}.video_guide_url";
+        $currentPath = (string)settings_get($key, '');
+        if ($currentPath !== '') {
+            $storagePrefix = 'storage/uploads/system/';
+            if (str_starts_with($currentPath, $storagePrefix)) {
+                $filename = basename($currentPath);
+                $filePath = BASE_PATH . '/storage/uploads/system/' . $filename;
+                if (file_exists($filePath)) {
+                    @unlink($filePath);
+                }
+            }
+            settings_set($key, '', $adminId);
+        }
+        echo json_encode(['ok' => true, 'message' => 'ویدئو با موفقیت حذف گردید']);
         exit;
     }
 

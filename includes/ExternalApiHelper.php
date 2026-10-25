@@ -56,7 +56,16 @@ class ExternalApiHelper {
     /**
      * دریافت اعتبارنامه فعال برای یک ارائه‌دهنده
      */
-    public function getActiveCredential($providerId, $env = 3) {
+    public function getActiveCredential($providerId, $env = null) {
+        if ($env === null) {
+            $appEnv = strtolower((string)env('APP_ENV', 'production'));
+            $env = match ($appEnv) {
+                'local', 'dev', 'development' => 1,
+                'stage', 'staging', 'test' => 2,
+                default => 3,
+            };
+        }
+
         $stmt = $this->pdo->prepare("
             SELECT * FROM external_api_credentials 
             WHERE provider_id = ? AND env = ? AND status = 1
@@ -66,6 +75,18 @@ class ExternalApiHelper {
         $stmt->execute([$providerId, $env]);
         $credential = $stmt->fetch();
         
+        // اگر برای این محیط یافت نشد، استفاده از هر اعتبارنامه فعال دیگر (fallback)
+        if (!$credential) {
+            $fallbackStmt = $this->pdo->prepare("
+                SELECT * FROM external_api_credentials 
+                WHERE provider_id = ? AND status = 1
+                ORDER BY (env = ?) DESC, created_at DESC 
+                LIMIT 1
+            ");
+            $fallbackStmt->execute([$providerId, $env]);
+            $credential = $fallbackStmt->fetch();
+        }
+
         if (!$credential) {
             return null;
         }
@@ -118,7 +139,7 @@ class ExternalApiHelper {
     /**
      * ارسال درخواست به API خارجی
      */
-    public function callExternalApi($providerSlug, $endpoint, $method = 'GET', $data = [], $env = 3) {
+    public function callExternalApi($providerSlug, $endpoint, $method = 'GET', $data = [], $env = null) {
         $requestId = bin2hex(random_bytes(16));
         $provider = null;
         $credential = null;
@@ -145,6 +166,7 @@ class ExternalApiHelper {
                 $method = 'POST';
                 $token = trim((string)(($credential['bearer_token'] ?? '') ?: ($credential['api_key'] ?? '')));
                 if ($token === '' || preg_match('/[\r\n]/', $token)) throw new VerificationServiceException('provider_credentials_error', 'کلید سرویس احراز هویت نیاز به بررسی پشتیبانی دارد.', 503);
+                $token = preg_replace('/^Bearer\s+/i', '', $token);
                 $headers[] = 'Authorization: Bearer ' . $token;
             } else {
                 $url = rtrim($provider['base_url'], '/') . '/' . ltrim($endpoint, '/');
@@ -230,7 +252,8 @@ class ExternalApiHelper {
                 
             case 2: // Bearer Token
                 if (!empty($credential['bearer_token'])) {
-                    $headers[] = "Authorization: Bearer " . $credential['bearer_token'];
+                    $token = preg_replace('/^Bearer\s+/i', '', trim((string)$credential['bearer_token']));
+                    $headers[] = "Authorization: Bearer " . $token;
                 }
                 break;
                 
@@ -243,7 +266,8 @@ class ExternalApiHelper {
                 
             case 4: // OAuth 2.0
                 if (!empty($credential['bearer_token'])) {
-                    $headers[] = "Authorization: Bearer " . $credential['bearer_token'];
+                    $token = preg_replace('/^Bearer\s+/i', '', trim((string)$credential['bearer_token']));
+                    $headers[] = "Authorization: Bearer " . $token;
                 }
                 break;
         }
@@ -338,65 +362,197 @@ class ExternalApiHelper {
     }
     
     /**
-     * مثال: احراز هویت با API ایران
+     * احراز هویت شاهکار لایت
      */
-    public function verifyWithApiIr($nationalCode, $phoneNumber, $isCompany = false) {
+    public function verifyWithShahkarLite($nationalCode, $mobile) {
         try {
-            $data = [
-                'nationalCode' => $nationalCode,
-                'mobile' => $phoneNumber,
-                'isCompany' => $isCompany
-            ];
-            
-            $response = $this->callExternalApi(
-                'api_ir',        // slug ارائه‌دهنده
-                '/api/sw1/Shahkar',
-                'POST',
-                $data
-            );
-            
+            $response = $this->callExternalApi('api_ir', '/api/sw1/ShahkarLite', 'POST', [
+                'nationalCode' => (string)$nationalCode,
+                'mobile' => (string)$mobile
+            ]);
             return [
                 'success' => $response['success'] ?? false,
                 'data' => $response['data'] ?? false,
                 'message' => $response['message'] ?? null
             ];
-            
         } catch (Exception $e) {
-            return [
-                'success' => false,
-                'error' => $e->getMessage()
-            ];
+            return ['success' => false, 'error' => $e->getMessage()];
         }
+    }
+
+    /**
+     * احراز هویت شاهکار جامع (شخصی یا حقوقی)
+     */
+    public function verifyWithShahkar($nationalCode, $phoneNumber, $isCompany = false) {
+        try {
+            $response = $this->callExternalApi('api_ir', '/api/sw1/Shahkar', 'POST', [
+                'nationalCode' => (string)$nationalCode,
+                'mobile' => (string)$phoneNumber,
+                'isCompany' => (bool)$isCompany
+            ]);
+            return [
+                'success' => $response['success'] ?? false,
+                'data' => $response['data'] ?? false,
+                'message' => $response['message'] ?? null
+            ];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    public function verifyWithApiIr($nationalCode, $phoneNumber, $isCompany = false) {
+        return $this->verifyWithShahkar($nationalCode, $phoneNumber, $isCompany);
     }
     
     /**
-     * مثال: دریافت اطلاعات هویتی از API ایران
+     * دریافت اطلاعات هویتی و تصویر از ثبت احوال
      */
-    public function getIdentityInfo($nationalCode, $birthDate) {
+    public function getPersonData($nationalCode, $birthDate) {
         try {
-            $data = [
-                'nationalCode' => $nationalCode,
-                'birthDate' => $birthDate
-            ];
-            
-            $response = $this->callExternalApi(
-                'api_ir',
-                '/api/sw1/PersonData',
-                'POST',
-                $data
-            );
-            
+            $response = $this->callExternalApi('api_ir', '/api/sw1/PersonData', 'POST', [
+                'nationalCode' => (string)$nationalCode,
+                'birthDate' => (string)$birthDate
+            ]);
             return [
                 'success' => $response['success'] ?? false,
                 'data' => $response['data'] ?? null,
                 'message' => $response['message'] ?? null
             ];
-            
         } catch (Exception $e) {
-            return [
-                'success' => false,
-                'error' => $e->getMessage()
-            ];
+            return ['success' => false, 'error' => $e->getMessage()];
         }
+    }
+
+    /**
+     * دریافت اطلاعات هویتی ثبت احوال بدون تصویر
+     */
+    public function getPersonInfo($nationalCode, $birthDate) {
+        try {
+            $response = $this->callExternalApi('api_ir', '/api/sw1/PersonInfo', 'POST', [
+                'nationalCode' => (string)$nationalCode,
+                'birthDate' => (string)$birthDate
+            ]);
+            return [
+                'success' => $response['success'] ?? false,
+                'data' => $response['data'] ?? null,
+                'message' => $response['message'] ?? null
+            ];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    public function getIdentityInfo($nationalCode, $birthDate) {
+        return $this->getPersonData($nationalCode, $birthDate);
+    }
+
+    /**
+     * ارسال تماس صوتی اعلام کد یکبار مصرف (با فال‌بک خودکار به مسیر دوم)
+     */
+    public function sendCallOtp($code, $number) {
+        $num = preg_replace('/\D+/', '', (string)$number);
+        if (str_starts_with($num, '98')) $num = '0' . substr($num, 2);
+
+        // تلاش اول از طریق CallOTP
+        try {
+            $res = $this->callExternalApi('api_ir', '/api/sw1/CallOTP', 'POST', [
+                'code' => (string)$code,
+                'number' => $num
+            ]);
+            if (($res['success'] ?? false) && ($res['data'] ?? false) === true) {
+                return ['success' => true, 'channel' => 'CallOTP', 'message' => 'تماس صوتی با موفقیت برقرار شد.'];
+            }
+        } catch (Throwable $e1) {
+            error_log("CallOTP failed: " . $e1->getMessage() . ". Trying CallOTPalt...");
+        }
+
+        // تلاش دوم از طریق مسیر جایگزین CallOTPalt
+        try {
+            $resAlt = $this->callExternalApi('api_ir', '/api/sw1/CallOTPalt', 'POST', [
+                'code' => (string)$code,
+                'number' => $num
+            ]);
+            if (($resAlt['success'] ?? false) && ($resAlt['data'] ?? false) === true) {
+                return ['success' => true, 'channel' => 'CallOTPalt', 'message' => 'تماس صوتی از مسیر جایگزین برقرار شد.'];
+            }
+            return ['success' => false, 'error' => $resAlt['message'] ?? 'تماس برقرار نشد'];
+        } catch (Throwable $e2) {
+            return ['success' => false, 'error' => $e2->getMessage()];
+        }
+    }
+
+    /**
+     * استعلام گواهینامه رانندگی
+     */
+    public function inquiryDrivingLicense($nationalCode, $mobile, $useNewEndpoint = true) {
+        $endpoint = $useNewEndpoint ? '/api/sw1/DrivingLicense' : '/api/sw1/DrivingLisense';
+        try {
+            $res = $this->callExternalApi('api_ir', $endpoint, 'POST', [
+                'nationalCode' => (string)$nationalCode,
+                'mobile' => (string)$mobile
+            ]);
+            return [
+                'success' => $res['success'] ?? false,
+                'data' => $res['data'] ?? null,
+                'message' => $res['message'] ?? null
+            ];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * بررسی تعلق آی‌پی به کشور ایران (سرویس switch1 / IPIsIran)
+     * جهت جلوگیری از ورود با VPN یا پروکسی خارجی
+     */
+    public function checkIranIp(string $ip): array {
+        $ip = trim($ip);
+        if ($ip === '' || !filter_var($ip, FILTER_VALIDATE_IP)) {
+            return ['is_iran' => false, 'is_private' => false, 'error' => 'invalid_ip'];
+        }
+
+        // بررسی آی‌پی‌های خصوصی / لوکال (لوکال‌هاست، شبکه محلی، داکر و...)
+        $isPrivate = !filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
+        if ($isPrivate) {
+            $isDev = in_array(strtolower((string)env('APP_ENV', 'local')), ['local', 'dev', 'development', 'test'], true) || (string)env('APP_DEBUG', '0') === '1';
+            return ['is_iran' => $isDev, 'is_private' => true, 'cached' => false];
+        }
+
+        // بررسی حافظه نهان (Cache) جهت کاهش درخواست به API و بالا بردن سرعت ورود
+        $cacheDir = defined('BASE_PATH') ? BASE_PATH . '/storage/cache/ip_checks' : __DIR__ . '/../storage/cache/ip_checks';
+        if (!is_dir($cacheDir)) {
+            @mkdir($cacheDir, 0775, true);
+        }
+        $cacheFile = $cacheDir . '/ip_' . md5($ip) . '.json';
+        if (file_exists($cacheFile)) {
+            $cached = json_decode((string)@file_get_contents($cacheFile), true);
+            if (is_array($cached) && isset($cached['is_iran'], $cached['expires_at']) && time() < $cached['expires_at']) {
+                return ['is_iran' => (bool)$cached['is_iran'], 'is_private' => false, 'cached' => true];
+            }
+        }
+
+        try {
+            $res = $this->callExternalApi('api_ir', '/api/sw1/IPIsIran', 'POST', ['ip' => $ip]);
+            $isIran = (bool)($res['data'] ?? false);
+            // آی‌پی ایران ۱۲ ساعت و آی‌پی خارجی ۱۵ دقیقه کش می‌شود
+            $ttl = $isIran ? 43200 : 900;
+            @file_put_contents($cacheFile, json_encode([
+                'ip' => $ip,
+                'is_iran' => $isIran,
+                'expires_at' => time() + $ttl,
+                'checked_at' => date('Y-m-d H:i:s')
+            ], JSON_UNESCAPED_UNICODE));
+
+            return ['is_iran' => $isIran, 'is_private' => false, 'cached' => false];
+        } catch (Throwable $e) {
+            error_log("IP check error for {$ip}: " . $e->getMessage());
+            // در صورت بروز خطای اضطراری وب‌سرویس خارجی، اجازه ورود مشروط داده می‌شود تا سرویس اصلی مسدود نشود
+            return ['is_iran' => true, 'is_private' => false, 'fallback' => true, 'error' => $e->getMessage()];
+        }
+    }
+
+    public function isIranIp(string $ip): bool {
+        $result = $this->checkIranIp($ip);
+        return (bool)($result['is_iran'] ?? false);
     }
 }

@@ -53,6 +53,58 @@ function require_admin(): void
     }
 }
 
+function current_admin(): ?array
+{
+    $id = admin_id();
+    if (!$id) return null;
+    static $cached = null;
+    if ($cached && (int)$cached['id'] === $id) return $cached;
+
+    $pdo = db();
+    $st = $pdo->prepare("SELECT id, full_name, phone, user_type, status, admin_role, avatar_key FROM users WHERE id = ? LIMIT 1");
+    $st->execute([$id]);
+    $cached = $st->fetch() ?: null;
+    return $cached;
+}
+
+function admin_role(): string
+{
+    $admin = current_admin();
+    $role = (string)($admin['admin_role'] ?? 'staff');
+    return in_array($role, ['super_admin', 'staff'], true) ? $role : 'staff';
+}
+
+function is_super_admin(): bool
+{
+    return admin_role() === 'super_admin';
+}
+
+function is_staff(): bool
+{
+    return admin_role() === 'staff';
+}
+
+function require_super_admin(): void
+{
+    require_admin();
+    if (!is_super_admin()) {
+        if (is_ajax()) {
+            json_out(['ok' => false, 'message' => 'دسترسی غیرمجاز. این بخش فقط برای مدیر کل مجاز است.'], 403);
+        }
+        if (function_exists('set_flash')) {
+            set_flash('error', 'شما به این بخش حساس دسترسی ندارید. (فقط مدیر کل)');
+        }
+        header('Location: ' . url_path('dashboard.php'));
+        exit;
+    }
+}
+
+function admin_role_label(?string $role = null): string
+{
+    $r = $role ?? admin_role();
+    return $r === 'super_admin' ? 'مدیر کل' : 'کارمند';
+}
+
 function create_remember_token(int $user_id): void
 {
     $token = bin2hex(random_bytes(32));

@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 header('Content-Type: application/json');
 
-require_once '../includes/init.php';
+require_once __DIR__ . '/../includes/init.php';
 
 // بررسی احراز هویت ادمین
 require_admin();
@@ -264,7 +264,7 @@ try {
                 'key_id' => trim($_POST['key_id'] ?? null),
                 'api_key_enc' => !empty($_POST['api_key']) ? encrypt_data($_POST['api_key']) : null,
                 'api_secret_enc' => !empty($_POST['api_secret']) ? encrypt_data($_POST['api_secret']) : null,
-                'bearer_token_enc' => !empty($_POST['bearer_token']) ? encrypt_data($_POST['bearer_token']) : null,
+                'bearer_token_enc' => !empty($_POST['bearer_token']) ? encrypt_data(preg_replace('/^Bearer\s+/i', '', trim($_POST['bearer_token']))) : null,
                 'extra_json' => null,
                 'status' => intval($_POST['status'] ?? 1),
                 'created_by_user_id' => $_SESSION['admin_user_id']
@@ -344,7 +344,7 @@ try {
 
             $bearerToken = trim($_POST['bearer_token'] ?? '');
             if ($bearerToken !== '') {
-                $data['bearer_token_enc'] = encrypt_data($bearerToken);
+                $data['bearer_token_enc'] = encrypt_data(preg_replace('/^Bearer\s+/i', '', $bearerToken));
             } elseif (isset($current['bearer_token_enc'])) {
                 $data['bearer_token_enc'] = $current['bearer_token_enc'];
             }

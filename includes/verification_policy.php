@@ -10,6 +10,7 @@ function verification_policy(int $role): array
         'require_shahkar' => (string)settings_get($prefix . 'require_shahkar', '1') === '1',
         'require_national_serial' => (string)settings_get($prefix . 'require_national_serial', settings_get('auth.require_national_serial', '0')) === '1',
         'require_video' => (string)settings_get($prefix . 'require_video', $role === 1 ? settings_get('onboarding.require_verification_video', '0') : '0') === '1',
+        'require_driving_license' => (string)settings_get($prefix . 'require_driving_license', '0') === '1',
         'video_guide_url' => (string)settings_get($prefix . 'video_guide_url', settings_get('verification.video_guide_url', '')),
         'video_guide_text' => (string)settings_get($prefix . 'video_guide_text', settings_get('verification.video_guide_text', '')),
     ];
@@ -17,9 +18,14 @@ function verification_policy(int $role): array
 
 function verification_policy_keys(): array
 {
-    $keys = [];
+    $keys = [
+        'verification.shahkar_service',
+        'verification.driver.driving_license_service',
+        'auth.otp_voice_fallback',
+        'auth.require_iran_ip'
+    ];
     foreach (['driver', 'cargo'] as $app) {
-        foreach (['require_shahkar', 'require_national_serial', 'require_video', 'video_guide_url', 'video_guide_text'] as $key) {
+        foreach (['require_shahkar', 'require_national_serial', 'require_video', 'require_driving_license', 'video_guide_url', 'video_guide_text'] as $key) {
             $keys[] = "verification.$app.$key";
         }
     }

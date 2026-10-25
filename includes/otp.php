@@ -25,7 +25,7 @@ function otp_hash(string $phone, int $purpose, string $code): string
     return hash('sha256', $phone . '|' . $purpose . '|' . $code . '|' . otp_pepper());
 }
 
-function otp_issue(string $phone, int $purpose, int $expiresSec = 300, int $cooldownSec = 60): array
+function otp_issue(string $phone, int $purpose, int $expiresSec = 300, int $cooldownSec = 60, ?string $channel = 'sms'): array
 {
     $pdo = db();
 
@@ -95,8 +95,38 @@ function otp_issue(string $phone, int $purpose, int $expiresSec = 300, int $cool
     $ins->execute([$phone, $purpose, $hash, $expiresSec, $ipBin ?: null]);
     $otpId = (int)$pdo->lastInsertId();
 
-    $sms = payamak_send_otp($phone, $code);
-    if (!$sms['ok']) {
+    $useChannel = $channel ?? 'sms';
+    $sent = false;
+    $sentChannel = 'sms';
+
+    if ($useChannel === 'call') {
+        $call = api_ir_send_call_otp($phone, $code);
+        if ($call['ok']) {
+            $sent = true;
+            $sentChannel = 'call';
+        }
+    }
+
+    if (!$sent) {
+        $sms = payamak_send_otp($phone, $code);
+        if ($sms['ok']) {
+            $sent = true;
+            $sentChannel = 'sms';
+        } else {
+            // در صورت عدم موفقیت پیامک، فال‌بک خودکار به تماس صوتی api.ir (CallOTP / CallOTPalt)
+            $voiceFallbackEnabled = (string)settings_get('auth.otp_voice_fallback', '1') === '1';
+            if ($voiceFallbackEnabled) {
+                error_log("SMS delivery failed for $phone. Triggering api.ir CallOTP voice fallback...");
+                $call = api_ir_send_call_otp($phone, $code);
+                if ($call['ok']) {
+                    $sent = true;
+                    $sentChannel = 'call';
+                }
+            }
+        }
+    }
+
+    if (!$sent) {
         // Dev fallback: allow local testing without SMS credentials.
         if ((string)env('APP_ENV', 'local') === 'local') {
             return [
@@ -105,15 +135,16 @@ function otp_issue(string $phone, int $purpose, int $expiresSec = 300, int $cool
                 'expires_in_sec' => $expiresSec,
                 'resend_in_sec' => $cooldownSec,
                 'dev_code' => $code,
-                'dev_note' => 'SMS provider not configured; returning code because APP_ENV=local',
+                'dev_note' => 'SMS and Voice Call providers not available; returning code because APP_ENV=local',
             ];
         }
-        return ['ok' => false, 'status' => 500, 'message' => 'ارسال پیامک ناموفق بود'];
+        return ['ok' => false, 'status' => 500, 'message' => 'ارسال پیامک و تماس صوتی ناموفق بود'];
     }
 
     return [
         'ok' => true,
         'otp_id' => $otpId,
+        'channel' => $sentChannel,
         'expires_in_sec' => $expiresSec,
         'resend_in_sec' => $cooldownSec,
     ];

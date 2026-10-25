@@ -116,6 +116,7 @@ $sidebarLogoHref = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-l
                     </a>
                 </li>
 
+                <?php if (is_super_admin()): ?>
                 <li class="slide__category"><span class="category-name">تنظیمات و توسعه‌دهندگان</span></li>
                 <li class="slide">
                     <a href="site-settings.php" class="side-menu__item">
@@ -159,14 +160,17 @@ $sidebarLogoHref = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-l
                         <span class="side-menu__label">پشتیبان‌گیری و بازیابی ابری</span>
                     </a>
                 </li>
+                <?php endif; ?>
 
                 <li class="slide__category"><span class="category-name">گزارشات</span></li>
+                <?php if (is_super_admin()): ?>
                 <li class="slide">
                     <a href="auth-report.php" class="side-menu__item">
                         <i class="ri-file-chart-line side-menu__icon"></i>
                         <span class="side-menu__label">گزارش ورود و خروج</span>
                     </a>
                 </li>
+                <?php endif; ?>
                 <li class="slide">
                     <a href="driver-activities.php" class="side-menu__item">
                         <i class="ri-route-line side-menu__icon"></i>

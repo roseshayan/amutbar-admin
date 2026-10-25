@@ -1,5 +1,6 @@
 <?php
 require_once "views/panel/header.php";
+require_super_admin();
 require_once "views/panel/sidebar.php";
 ?>
 
@@ -575,7 +576,7 @@ require_once "views/panel/footer.php";
             $.ajax({
                 url: baseUrl,
                 type: 'POST',
-                data: formData + '&action=' + action,
+                data: formData + '&action=' + action + '&_csrf_token=' + encodeURIComponent(window.AMUT_CSRF_TOKEN || ''),
                 dataType: 'json',
                 beforeSend: function () {
                     Swal.fire({
@@ -610,9 +611,10 @@ require_once "views/panel/footer.php";
                 },
                 error: function (xhr, status, error) {
                     Swal.close();
+                    const msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : error;
                     Swal.fire({
                         title: 'خطا',
-                        text: 'خطا در ذخیره اطلاعات: ' + error,
+                        text: 'خطا در ذخیره اطلاعات: ' + msg,
                         icon: 'error'
                     });
                 }
@@ -644,7 +646,8 @@ require_once "views/panel/footer.php";
                         type: 'POST',
                         data: {
                             id: id,
-                            action: 'delete_provider'
+                            action: 'delete_provider',
+                            _csrf_token: window.AMUT_CSRF_TOKEN || ''
                         },
                         dataType: 'json',
                         beforeSend: function () {
@@ -767,7 +770,7 @@ require_once "views/panel/footer.php";
             $.ajax({
                 url: baseUrl,
                 type: 'POST',
-                data: formData + '&action=' + action,
+                data: formData + '&action=' + action + '&_csrf_token=' + encodeURIComponent(window.AMUT_CSRF_TOKEN || ''),
                 dataType: 'json',
                 beforeSend: function () {
                     Swal.fire({
@@ -799,9 +802,10 @@ require_once "views/panel/footer.php";
                 },
                 error: function (xhr, status, error) {
                     Swal.close();
+                    const msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : error;
                     Swal.fire({
                         title: 'خطا',
-                        text: 'خطا در ذخیره اطلاعات: ' + error,
+                        text: 'خطا در ذخیره اطلاعات: ' + msg,
                         icon: 'error'
                     });
                 }
@@ -827,7 +831,8 @@ require_once "views/panel/footer.php";
                         type: 'POST',
                         data: {
                             id: id,
-                            action: 'delete_credential'
+                            action: 'delete_credential',
+                            _csrf_token: window.AMUT_CSRF_TOKEN || ''
                         },
                         dataType: 'json',
                         beforeSend: function () {

@@ -6,12 +6,12 @@ declare(strict_types=1);
 // Users (Admin Panel CRUD)
 // -----------------------------
 
-function user_type_label(int $t): string
+function user_type_label(int $t, ?string $adminRole = null): string
 {
     return match ($t) {
         1 => 'راننده',
-        2 => 'باربری',
-        3 => 'ادمین',
+        2 => 'صاحب بار',
+        3 => ($adminRole === 'super_admin' ? 'مدیر کل' : ($adminRole === 'staff' ? 'کارمند' : 'مدیر سیستم')),
         default => 'نامشخص'
     };
 }
@@ -141,6 +141,11 @@ function users_save(array $in): array
 
     // Update
     if ($id > 0) {
+        $existing = users_get($id);
+        if ($existing && (int)$existing['user_type'] === 3 && !is_super_admin()) {
+            return ['ok' => false, 'message' => 'شما مجوز ویرایش حساب کاربری ادمین را ندارید. (فقط مدیر کل)'];
+        }
+
         $st = $pdo->prepare("SELECT id FROM users WHERE phone = ? AND id <> ? AND deleted_at IS NULL LIMIT 1");
         $st->execute([$phone, $id]);
         if ($st->fetchColumn()) return ['ok' => false, 'message' => 'این شماره موبایل قبلاً ثبت شده است'];
@@ -161,14 +166,16 @@ function users_save(array $in): array
         $setPass = ($password !== '');
         if ($setPass && strlen($password) < 8) return ['ok' => false, 'message' => 'رمز عبور حداقل 8 کاراکتر باشد'];
 
+        $adminRole = (isset($data['admin_role']) && $data['admin_role'] === 'super_admin' && is_super_admin()) ? 'super_admin' : ($existing['admin_role'] ?? 'staff');
+
         try {
             if ($setPass) {
                 $passHash = password_hash($password, PASSWORD_DEFAULT);
-                $st = $pdo->prepare("UPDATE users SET full_name=?, phone=?, email=?, user_type=?, status=?, password_hash=?, updated_at=NOW(3), code_meli=?, birth_date=?, father_name=?, gender=?, national_card_serial=?, display_name=? WHERE id=? AND deleted_at IS NULL");
-                $st->execute([$full_name, $phone, ($email === '' ? null : $email), $user_type, $status, $passHash, ($code_meli === '' ? null : $code_meli), ($birth_date === '' ? null : $birth_date), ($father_name === '' ? null : $father_name), $gender, ($national_card_serial === '' ? null : $national_card_serial), ($display_name === '' ? null : $display_name), $id]);
+                $st = $pdo->prepare("UPDATE users SET full_name=?, phone=?, email=?, user_type=?, admin_role=?, status=?, password_hash=?, updated_at=NOW(3), code_meli=?, birth_date=?, father_name=?, gender=?, national_card_serial=?, display_name=? WHERE id=? AND deleted_at IS NULL");
+                $st->execute([$full_name, $phone, ($email === '' ? null : $email), $user_type, ($user_type === 3 ? $adminRole : null), $status, $passHash, ($code_meli === '' ? null : $code_meli), ($birth_date === '' ? null : $birth_date), ($father_name === '' ? null : $father_name), $gender, ($national_card_serial === '' ? null : $national_card_serial), ($display_name === '' ? null : $display_name), $id]);
             } else {
-                $st = $pdo->prepare("UPDATE users SET full_name=?, phone=?, email=?, user_type=?, status=?, updated_at=NOW(3), code_meli=?, birth_date=?, father_name=?, gender=?, national_card_serial=?, display_name=? WHERE id=? AND deleted_at IS NULL");
-                $st->execute([$full_name, $phone, ($email === '' ? null : $email), $user_type, $status, ($code_meli === '' ? null : $code_meli), ($birth_date === '' ? null : $birth_date), ($father_name === '' ? null : $father_name), $gender, ($national_card_serial === '' ? null : $national_card_serial), ($display_name === '' ? null : $display_name), $id]);
+                $st = $pdo->prepare("UPDATE users SET full_name=?, phone=?, email=?, user_type=?, admin_role=?, status=?, updated_at=NOW(3), code_meli=?, birth_date=?, father_name=?, gender=?, national_card_serial=?, display_name=? WHERE id=? AND deleted_at IS NULL");
+                $st->execute([$full_name, $phone, ($email === '' ? null : $email), $user_type, ($user_type === 3 ? $adminRole : null), $status, ($code_meli === '' ? null : $code_meli), ($birth_date === '' ? null : $birth_date), ($father_name === '' ? null : $father_name), $gender, ($national_card_serial === '' ? null : $national_card_serial), ($display_name === '' ? null : $display_name), $id]);
             }
             return ['ok' => true, 'id' => $id];
         } catch (Throwable $e) {
@@ -178,8 +185,13 @@ function users_save(array $in): array
     }
 
     // Create
-    if ($user_type === 3 && $password === '') {
-        return ['ok' => false, 'message' => 'برای ادمین، رمز عبور الزامی است'];
+    if ($user_type === 3) {
+        if (!is_super_admin()) {
+            return ['ok' => false, 'message' => 'فقط مدیر کل می‌تواند کاربر ادمین ایجاد کند.'];
+        }
+        if ($password === '') {
+            return ['ok' => false, 'message' => 'برای ادمین، رمز عبور الزامی است'];
+        }
     }
     if ($password !== '' && strlen($password) < 8) {
         return ['ok' => false, 'message' => 'رمز عبور حداقل 8 کاراکتر باشد'];
@@ -203,14 +215,16 @@ function users_save(array $in): array
     }
 
     $passHash = ($password !== '') ? password_hash($password, PASSWORD_DEFAULT) : null;
+    $adminRole = ($user_type === 3 && isset($data['admin_role']) && $data['admin_role'] === 'super_admin' && is_super_admin()) ? 'super_admin' : ($user_type === 3 ? 'staff' : null);
 
-    $st = $pdo->prepare("INSERT INTO users (full_name, phone, email, password_hash, user_type, status, code_meli, birth_date, father_name, gender, national_card_serial, display_name, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(3), NOW(3))");
+    $st = $pdo->prepare("INSERT INTO users (full_name, phone, email, password_hash, user_type, admin_role, status, code_meli, birth_date, father_name, gender, national_card_serial, display_name, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(3), NOW(3))");
     $st->execute([
         $full_name,
         $phone,
         ($email === '' ? null : $email),
         $passHash,
         $user_type,
+        $adminRole,
         $status,
         ($code_meli === '' ? null : $code_meli),
         ($birth_date === '' ? null : $birth_date),
@@ -258,7 +272,7 @@ function users_datatable(array $req): array
     $st->execute($params);
     $filtered = (int)$st->fetchColumn();
 
-    $sql = "SELECT id, full_name, phone, email, user_type, status, created_at, code_meli, display_name
+    $sql = "SELECT id, full_name, phone, email, user_type, admin_role, status, created_at, code_meli, display_name
             FROM users
             WHERE {$where}
             ORDER BY {$orderCol} {$orderDir}
@@ -275,7 +289,8 @@ function users_datatable(array $req): array
             'phone' => htmlspecialchars((string)$r['phone'], ENT_QUOTES, 'UTF-8'),
             'email' => htmlspecialchars((string)($r['email'] ?? ''), ENT_QUOTES, 'UTF-8'),
             'user_type' => (int)$r['user_type'],
-            'user_type_label' => user_type_label((int)$r['user_type']),
+            'admin_role' => (string)($r['admin_role'] ?? ''),
+            'user_type_label' => user_type_label((int)$r['user_type'], $r['admin_role'] ?? null),
             'status' => (int)$r['status'],
             'status_label' => user_status_label((int)$r['status']),
             'created_at' => (string)$r['created_at'],
