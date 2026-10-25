@@ -602,6 +602,7 @@ function jdate_words($array, $mod = '')
  * 990=30*33 & 12053=(365*33)+(32/4) & 36524=(365*100)+(100/4)-(100/100)
  * 1461=(365*4)+(4/4) & 146097=(365*400)+(400/4)-(400/100)+(400/400)  */
 
+if (!function_exists('gregorian_to_jalali')) {
 /*	F	*/
 function gregorian_to_jalali($gy, $gm, $gd, $mod = ''): array|string
 {
@@ -626,7 +627,9 @@ function gregorian_to_jalali($gy, $gm, $gd, $mod = ''): array|string
     }
     return ($mod == '') ? array($jy, $jm, $jd) : $jy . $mod . $jm . $mod . $jd;
 }
+}
 
+if (!function_exists('jalali_to_gregorian')) {
 /*	F	*/
 function jalali_to_gregorian($jy, $jm, $jd, $mod = ''): array|string
 {
@@ -650,4 +653,5 @@ function jalali_to_gregorian($jy, $jm, $jd, $mod = ''): array|string
     $sal_a = array(0, 31, (($gy % 4 == 0 and $gy % 100 != 0) or ($gy % 400 == 0)) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31);
     for ($gm = 0; $gm < 13 and $gd > $sal_a[$gm]; $gm++) $gd -= $sal_a[$gm];
     return ($mod == '') ? array($gy, $gm, $gd) : $gy . $mod . $gm . $mod . $gd;
+}
 }

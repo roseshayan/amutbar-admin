@@ -204,10 +204,17 @@ function jalali_date($date): string
 {
     if (!$date) return '-';
 
-    $timestamp = strtotime($date);
-    if (!$timestamp) return $date;
+    $timestamp = is_numeric($date) ? (int)$date : strtotime((string)$date);
+    if (!$timestamp) return (string)$date;
 
-    return jdate('Y/m/d H:i', $timestamp);
+    if (function_exists('jdate')) {
+        return (string)jdate('Y/m/d H:i', $timestamp);
+    }
+    if (function_exists('gdate_to_jalali_str')) {
+        return gdate_to_jalali_str(date('Y-m-d', $timestamp)) . ' ' . date('H:i', $timestamp);
+    }
+
+    return date('Y-m-d H:i', $timestamp);
 }
 
 function convertPersianNumbersToEnglishPHP($string): array|string

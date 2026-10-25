@@ -30,37 +30,39 @@ ini_set('error_log', BASE_PATH . '/storage/logs/php-error.log');
 
 ob_start();
 
-session_name((string)env('SESSION_NAME', 'AMUTBARSESSID'));
+if (session_status() === PHP_SESSION_NONE) {
+    session_name((string)env('SESSION_NAME', 'AMUTBARSESSID'));
 
-$appEnv = (string)env('APP_ENV', 'local');
+    $appEnv = (string)env('APP_ENV', 'local');
 
-// روی لوکال، Secure را همیشه false نگه دار (حتی اگر سرور اشتباه HTTPS را on بدهد)
-$secureCookie = false;
+    // روی لوکال، Secure را همیشه false نگه دار (حتی اگر سرور اشتباه HTTPS را on بدهد)
+    $secureCookie = false;
 
-if ($appEnv !== 'local') {
-    $secureCookie =
-        (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-        || (($_SERVER['REQUEST_SCHEME'] ?? '') === 'https')
-        || ((int)($_SERVER['SERVER_PORT'] ?? 0) === 443)
-        || (strtolower($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+    if ($appEnv !== 'local') {
+        $secureCookie =
+            (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || (($_SERVER['REQUEST_SCHEME'] ?? '') === 'https')
+            || ((int)($_SERVER['SERVER_PORT'] ?? 0) === 443)
+            || (strtolower($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+    }
+
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'secure' => $secureCookie,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+
+    session_start();
 }
-
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path' => '/',
-    'secure' => $secureCookie,
-    'httponly' => true,
-    'samesite' => 'Lax',
-]);
-
-session_start();
 
 date_default_timezone_set('Asia/Tehran');
 
 
 require_once __DIR__ . '/db.php';
-
-//require_once __DIR__ . '/jdf.php';
+require_once __DIR__ . '/jdf.php';
+require_once __DIR__ . '/jalali.php';
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/settings.php';
 require_once __DIR__ . '/internal_api.php';
