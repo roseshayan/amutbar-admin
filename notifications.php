@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/init.php';
 require_once __DIR__ . '/includes/push_service.php';
 require_admin();
+require_permission('notifications.send');
 
 $pdo = db();
 $driversCount = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE user_type=1 AND deleted_at IS NULL")->fetchColumn();

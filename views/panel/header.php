@@ -102,7 +102,10 @@ if (preg_match('/^09\d{9}$/', $supportHref)) {
                 if (target.origin === window.location.origin && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
                     const headers = new Headers(init.headers || (typeof input !== 'string' ? input.headers : undefined));
                     headers.set('X-CSRF-Token', token);
-                    init = {...init, headers};
+                    init = {
+                        ...init,
+                        headers
+                    };
                 }
                 return nativeFetch(input, init);
             };
@@ -118,6 +121,43 @@ if (preg_match('/^09\d{9}$/', $supportHref)) {
     <script src="assets/js/main.js"></script>
 
     <audio id="notifSound" src="assets/audio/ding.mp3" preload="auto"></audio>
+    <style>
+        .show-password-button {
+            position: absolute !important;
+            top: 50% !important;
+            transform: translateY(-115%) !important;
+            inset-block-start: auto !important;
+            inset-inline-end: 8px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            height: 34px !important;
+            width: 36px !important;
+            padding: 0 !important;
+            background-color: var(--primary01, rgba(115, 93, 255, 0.1)) !important;
+            border-radius: 6px !important;
+            z-index: 5 !important;
+            text-decoration: none !important;
+            transition: all 0.2s ease;
+        }
+
+        .show-password-button:hover {
+            background-color: var(--primary02, rgba(115, 93, 255, 0.2)) !important;
+        }
+
+        .show-password-button i {
+            font-size: 1.15rem !important;
+            line-height: 1 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            color: var(--primary-color, #735dff) !important;
+        }
+
+        .position-relative input.form-control {
+            padding-inline-end: 50px !important;
+        }
+    </style>
 </head>
 
 <body>
@@ -288,9 +328,9 @@ if (preg_match('/^09\d{9}$/', $supportHref)) {
                                         class="ti ti-user text-primary me-2 fs-16"></i>حساب کاربری</a>
                             </li>
                             <?php if (is_super_admin()): ?>
-                            <li><a class="dropdown-item d-flex align-items-center" href="site-settings.php"><i
-                                        class="ti ti-settings text-info me-2 fs-16"></i>تنظیمات</a>
-                            </li>
+                                <li><a class="dropdown-item d-flex align-items-center" href="site-settings.php"><i
+                                            class="ti ti-settings text-info me-2 fs-16"></i>تنظیمات</a>
+                                </li>
                             <?php endif; ?>
                             <?php if ($supportHref !== ''): ?>
                                 <li><a class="dropdown-item d-flex align-items-center" href="tel:<?= htmlspecialchars($supportHref, ENT_QUOTES, 'UTF-8') ?>"><i

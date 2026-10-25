@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/includes/init.php';
 require_admin();
+require_permission('driver_activities.view');
 require_once __DIR__ . '/includes/jalali.php';
 
 try { driver_activity_ensure_schema(); } catch (Throwable $e) {}

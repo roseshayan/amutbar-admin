@@ -33,7 +33,7 @@ function payamak_send_otp(string $to, string $code): array
     $resp = curl_exec($ch);
     $err  = curl_error($ch);
     $http = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
+    unset($ch);
 
     if ($resp === false) {
         return ['ok' => false, 'message' => 'cURL error: ' . $err];

@@ -20,17 +20,20 @@ $cloudKeepLast = (int)env('FILES_IR_KEEP_LAST', 2);
         <!-- Page Header -->
         <div class="my-4 page-header-breadcrumb d-flex align-items-center justify-content-between flex-wrap gap-2">
             <div>
-                <h1 class="page-title fw-medium fs-18 mb-2">مدیریت پشتیبان‌گیری و بازیابی (Backup & Disaster Recovery)</h1>
+                <h1 class="page-title fw-medium fs-18 mb-2">مدیریت پشتیبان‌گیری و بازیابی پایگاه داده (Backup & Restore)</h1>
                 <div>
                     <nav>
                         <ol class="breadcrumb mb-0">
                             <li class="breadcrumb-item"><a href="javascript:void(0);">ابزارها و تنظیمات</a></li>
-                            <li class="breadcrumb-item active" aria-current="page">پشتیبان‌گیری و ابری</li>
+                            <li class="breadcrumb-item active" aria-current="page">پشتیبان‌گیری و بازیابی</li>
                         </ol>
                     </nav>
                 </div>
             </div>
             <div class="btn-list d-flex gap-2">
+                <button class="btn btn-warning btn-wave text-dark" onclick="openImportModal()">
+                    <i class="ri-upload-cloud-2-line align-middle me-1"></i> ایمپورت و بازیابی دیتابیس
+                </button>
                 <button class="btn btn-outline-primary btn-wave" data-bs-toggle="modal" data-bs-target="#settingsModal">
                     <i class="ri-settings-4-line align-middle"></i> تنظیمات ابری و زمان‌بندی
                 </button>
@@ -103,7 +106,7 @@ $cloudKeepLast = (int)env('FILES_IR_KEEP_LAST', 2);
                             <div>
                                 <span class="d-block mb-1 text-muted fs-13">سیاست چرخش و نگهداری</span>
                                 <h4 class="fw-semibold mb-0 fs-15 text-primary"><?= $cloudKeepLast ?> نسخه ابری / <?= $localKeepLast ?> نسخه محلی</h4>
-                                <span class="fs-12 text-muted mt-1 d-block">حذف خودکار نسخه‌های قدیمی‌تر</span>
+                                <span class="fs-12 text-muted mt-1 d-block">حفظ خودکار نسخه‌های اخیر</span>
                             </div>
                             <div class="avatar bg-warning-transparent text-warning p-2 fs-20">
                                 <i class="ri-recycle-line"></i>
@@ -194,12 +197,12 @@ $cloudKeepLast = (int)env('FILES_IR_KEEP_LAST', 2);
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h6 class="modal-title">ایجاد نسخه پشتیبان کامل (Full System Backup)</h6>
+                <h6 class="modal-title fw-semibold">ایجاد نسخه پشتیبان کامل (Full System Backup)</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <p class="text-muted fs-13 mb-3">
-                    این فرآیند از تمام پایگاه‌داده (تمامی جداول، مایگریشن‌ها، سوابق بارها و رانندگان) به همراه مستندات بارگذاری‌شده (تصاویر مدارک هویتی و گواهینامه‌ها) یک آرشیو جامع <code>.zip</code> ایجاد می‌کند.
+                    این فرآیند از تمام پایگاه‌داده (تمامی جداول، مایگریشن‌ها، سوابق بارها و رانندگان) به همراه مستندات بارگذاری‌شده یک آرشیو جامع <code>.zip</code> ایجاد می‌کند.
                 </p>
 
                 <div class="form-check form-switch mb-3">
@@ -229,27 +232,100 @@ $cloudKeepLast = (int)env('FILES_IR_KEEP_LAST', 2);
     </div>
 </div>
 
-<!-- Restore Confirmation Modal -->
-<div class="modal fade" id="restoreModal" tabindex="-1" aria-hidden="true">
+<!-- Import & Restore Backup Modal (ایمپورت و بازیابی مستقیم) -->
+<div class="modal fade" id="importBackupModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning-transparent">
+                <h6 class="modal-title text-warning-emphasis fw-bold">
+                    <i class="ri-upload-cloud-2-line align-middle me-1"></i> ایمپورت و بازیابی پایگاه داده (Import & Restore)
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info fs-13 mb-3">
+                    <i class="ri-information-line align-middle me-1"></i>
+                    <strong>راهنما:</strong> شما می‌توانید فایل پایگاه داده با پسوند <code>.sql</code> یا نسخه فشرده <code>.sql.gz</code> و یا آرشیو کامل <code>.zip</code> را انتخاب نمایید تا دیتابیس مستقیماً روی سرور بازیابی شود.
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold fs-13">انتخاب فایل بک‌آپ از روی سیستم:</label>
+                    <div class="p-4 border border-dashed rounded text-center bg-light" id="importDropZone" style="cursor: pointer;" onclick="document.getElementById('importFileInput').click()">
+                        <i class="ri-upload-cloud-fill fs-36 text-primary mb-2 d-block"></i>
+                        <span class="fs-14 fw-medium text-dark d-block mb-1">برای انتخاب فایل دیتابیس کلیک کنید یا فایل را اینجا رها کنید</span>
+                        <small class="text-muted d-block">فرمت‌های مجاز: <code>.sql</code> ، <code>.sql.gz</code> ، <code>.zip</code> (تا حجم ۱۰۰ مگابایت)</small>
+                        <input type="file" id="importFileInput" class="d-none" accept=".sql,.gz,.zip" onchange="onFileSelected(this)">
+                    </div>
+                </div>
+
+                <div id="selectedFileInfo" class="d-none p-3 bg-light rounded border mb-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="ri-file-code-line fs-24 text-primary" id="fileTypeIcon"></i>
+                            <div>
+                                <span class="fw-bold font-monospace d-block text-dark" id="selectedFileName">filename.sql</span>
+                                <small class="text-muted" id="selectedFileSize">0 KB</small>
+                            </div>
+                        </div>
+                        <span class="badge bg-primary-transparent fs-12" id="selectedFileTypeBadge">فایل SQL</span>
+                    </div>
+                </div>
+
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="chkImportAutoBackup" checked>
+                    <label class="form-check-label fs-13 fw-medium" for="chkImportAutoBackup">
+                        تهیه خودکار نسخه پشتیبان اضطراری از دیتابیس فعلی قبل از ایمپورت (توصیه شده جهت بازگشت سریع)
+                    </label>
+                </div>
+
+                <div id="importProgressBox" class="d-none mt-3">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="spinner-border spinner-border-sm text-warning" role="status"></div>
+                        <span class="fs-13 text-warning-emphasis fw-medium" id="importStatusText">در حال ارسال فایل به سرور و ایمپورت در پایگاه داده...</span>
+                    </div>
+                    <div class="progress progress-xs">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" style="width: 100%"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal" id="btnCancelImport">انصراف</button>
+                <button type="button" class="btn btn-warning text-dark px-4 fw-medium" id="btnStartImport" onclick="startImportProcess()" disabled>
+                    <i class="ri-check-double-line align-middle me-1"></i> تایید و شروع بازیابی
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Restore Confirmation Modal (برای بک‌آپ‌های موجود) -->
+<div class="modal fade" id="restoreModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header bg-danger-transparent">
-                <h6 class="modal-title text-danger">
-                    <i class="ri-alert-fill align-middle me-1"></i> تایید بازیابی اضطراری (Disaster Recovery Restore)
+                <h6 class="modal-title text-danger fw-bold">
+                    <i class="ri-alert-fill align-middle me-1"></i> تایید بازیابی اطلاعات (Database Restore)
                 </h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="alert alert-warning fs-13 mb-3">
-                    <strong>هشدار بسیار مهم:</strong> با انجام عملیات بازیابی، کلیه اطلاعات فعلی پایگاه داده با نسخه موجود در فایل بک‌آپ جایگزین خواهند شد.
+                    <strong>هشدار مهم:</strong> با انجام عملیات بازیابی، اطلاعات پایگاه داده با نسخه موجود در فایل بک‌آپ بازگردانی خواهند شد.
                 </div>
-                <p class="fs-13 text-muted">آیا از بازیابی فایل زیر اطمینان کامل دارید؟</p>
-                <div class="p-2 bg-light rounded text-center fw-bold fs-14 text-dark font-monospace" id="restoreTargetFilename">---</div>
+                <p class="fs-13 text-muted mb-2">فایل انتخابی جهت بازیابی:</p>
+                <div class="p-2 bg-light rounded text-center fw-bold fs-14 text-dark font-monospace mb-3" id="restoreTargetFilename">---</div>
+
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="chkRestoreAutoBackup" checked>
+                    <label class="form-check-label fs-13 fw-medium" for="chkRestoreAutoBackup">
+                        تهیه خودکار نسخه پشتیبان اضطراری از دیتابیس فعلی قبل از بازیابی
+                    </label>
+                </div>
 
                 <div id="restoreProgressBox" class="d-none mt-3">
                     <div class="d-flex align-items-center gap-2 mb-2">
                         <div class="spinner-border spinner-border-sm text-danger" role="status"></div>
-                        <span class="fs-13 text-danger fw-medium" id="restoreStatusText">در حال ایمپورت پایگاه داده و جایگزینی فایل‌ها...</span>
+                        <span class="fs-13 text-danger fw-medium" id="restoreStatusText">در حال اجرای کوئری‌های پایگاه داده و جایگزینی فایل‌ها...</span>
                     </div>
                     <div class="progress progress-xs">
                         <div class="progress-bar progress-bar-striped progress-bar-animated bg-danger" style="width: 100%"></div>
@@ -259,7 +335,7 @@ $cloudKeepLast = (int)env('FILES_IR_KEEP_LAST', 2);
             <div class="modal-footer">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal" id="btnCancelRestore">لغو</button>
                 <button type="button" class="btn btn-danger" id="btnConfirmRestore" onclick="executeRestore()">
-                    <i class="ri-refresh-line align-middle"></i> تایید و بازیابی اطلاعات
+                    <i class="ri-refresh-line align-middle me-1"></i> تایید و بازیابی اطلاعات
                 </button>
             </div>
         </div>
@@ -271,7 +347,7 @@ $cloudKeepLast = (int)env('FILES_IR_KEEP_LAST', 2);
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h6 class="modal-title">تنظیمات پشتیبان‌گیری ابری و زمان‌بندی خودکار</h6>
+                <h6 class="modal-title fw-semibold">تنظیمات پشتیبان‌گیری ابری و زمان‌بندی خودکار</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -364,9 +440,11 @@ $cloudKeepLast = (int)env('FILES_IR_KEEP_LAST', 2);
 
 <script>
 let currentRestoreFile = '';
+let selectedImportFile = null;
 
 document.addEventListener('DOMContentLoaded', function () {
     loadBackups();
+    setupDragAndDrop();
 });
 
 function showAlert(message, type = 'success') {
@@ -376,7 +454,7 @@ function showAlert(message, type = 'success') {
     el.classList.remove('d-none');
     setTimeout(() => {
         el.classList.add('d-none');
-    }, 8000);
+    }, 10000);
 }
 
 function loadBackups() {
@@ -406,14 +484,18 @@ function loadBackups() {
             // Render Local Table
             const tbody = document.getElementById('backupsTbody');
             if (locals.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">هنوز هیچ نسخه پشتیبانی ایجاد نشده است. برای ایجاد روی دکمه «ایجاد بک‌آپ جدید» کلیک کنید.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">هنوز هیچ نسخه پشتیبانی ایجاد نشده است. برای ایجاد روی دکمه «ایجاد بک‌آپ جدید» یا «ایمپورت فایل» کلیک کنید.</td></tr>';
             } else {
                 let html = '';
                 locals.forEach((b, idx) => {
+                    const preBadge = b.is_pre_restore ? '<span class="badge bg-warning-transparent text-warning me-1"><i class="ri-shield-flash-line"></i> بک‌آپ اضطراری پیش از بازیابی</span>' : '';
                     html += `
                         <tr>
                             <td>${idx + 1}</td>
-                            <td><strong class="font-monospace text-primary">${escapeHtml(b.filename)}</strong></td>
+                            <td>
+                                <strong class="font-monospace text-primary">${escapeHtml(b.filename)}</strong>
+                                ${preBadge ? `<div class="mt-1">${preBadge}</div>` : ''}
+                            </td>
                             <td><i class="ri-time-line text-muted me-1"></i>${escapeHtml(b.created_at)}</td>
                             <td><span class="badge bg-light text-dark fs-12">${escapeHtml(b.size_formatted)}</span></td>
                             <td>
@@ -526,6 +608,7 @@ function executeRestore() {
     const btn = document.getElementById('btnConfirmRestore');
     const cancelBtn = document.getElementById('btnCancelRestore');
     const progressBox = document.getElementById('restoreProgressBox');
+    const autoBackup = document.getElementById('chkRestoreAutoBackup').checked ? '1' : '0';
 
     btn.disabled = true;
     cancelBtn.disabled = true;
@@ -534,6 +617,7 @@ function executeRestore() {
     const formData = new FormData();
     formData.append('action', 'restore');
     formData.append('filename', currentRestoreFile);
+    formData.append('auto_backup', autoBackup);
 
     fetch('ajax/backup_action.php', {
         method: 'POST',
@@ -543,7 +627,12 @@ function executeRestore() {
     .then(data => {
         bootstrap.Modal.getInstance(document.getElementById('restoreModal')).hide();
         if (data.ok) {
-            showAlert(`<strong>بازیابی با موفقیت کامل انجام شد!</strong> ${data.message} (${data.restored_files_count} فایل مستندات بازیابی شدند).`, 'success');
+            let successMsg = `<strong>بازیابی با موفقیت کامل انجام شد!</strong> ${data.message}`;
+            if (data.pre_backup_file) {
+                successMsg += `<br><small class="text-muted">نسخه پشتیبان اضطراری قبل از بازیابی با نام <code>${data.pre_backup_file}</code> ذخیره شد.</small>`;
+            }
+            showAlert(successMsg, 'success');
+            loadBackups();
         } else {
             showAlert('خطا در بازیابی: ' + (data.message || 'خطای نامشخص'), 'danger');
         }
@@ -552,6 +641,170 @@ function executeRestore() {
         bootstrap.Modal.getInstance(document.getElementById('restoreModal')).hide();
         showAlert('خطای ارتباط با سرور: ' + err.message, 'danger');
     });
+}
+
+// -------------------------------------------------------------
+// مدیریت بخش ایمپورت و بازیابی فایل (Import & Restore)
+// -------------------------------------------------------------
+function openImportModal() {
+    selectedImportFile = null;
+    document.getElementById('importFileInput').value = '';
+    document.getElementById('selectedFileInfo').classList.add('d-none');
+    document.getElementById('btnStartImport').disabled = true;
+    document.getElementById('btnCancelImport').disabled = false;
+    document.getElementById('importProgressBox').classList.add('d-none');
+
+    const modal = new bootstrap.Modal(document.getElementById('importBackupModal'));
+    modal.show();
+}
+
+function onFileSelected(input) {
+    if (input.files && input.files[0]) {
+        handleFileObject(input.files[0]);
+    }
+}
+
+function handleFileObject(file) {
+    selectedImportFile = file;
+    const name = file.name;
+    const size = formatBytes(file.size);
+    const lower = name.toLowerCase();
+
+    let badgeText = 'فایل پشتیبان';
+    let iconClass = 'ri-file-code-line text-primary';
+
+    if (lower.endsWith('.sql')) {
+        badgeText = 'فایل پایگاه داده MySQL (.sql)';
+        iconClass = 'ri-database-2-line text-primary';
+    } else if (lower.endsWith('.sql.gz') || lower.endsWith('.gz')) {
+        badgeText = 'فایل فشرده پایگاه داده (.sql.gz)';
+        iconClass = 'ri-file-zip-line text-warning';
+    } else if (lower.endsWith('.zip')) {
+        badgeText = 'آرشیو جامع سیستم (.zip)';
+        iconClass = 'ri-folder-zip-line text-info';
+    } else {
+        Swal.fire({
+            icon: 'warning',
+            title: 'فرمت نامعتبر',
+            text: 'تنها فایل‌های با پسوند .sql یا .sql.gz یا .zip مجاز هستند.'
+        });
+        selectedImportFile = null;
+        document.getElementById('selectedFileInfo').classList.add('d-none');
+        document.getElementById('btnStartImport').disabled = true;
+        return;
+    }
+
+    document.getElementById('selectedFileName').innerText = name;
+    document.getElementById('selectedFileSize').innerText = size;
+    document.getElementById('selectedFileTypeBadge').innerText = badgeText;
+    document.getElementById('fileTypeIcon').className = `fs-24 ${iconClass}`;
+    document.getElementById('selectedFileInfo').classList.remove('d-none');
+    document.getElementById('btnStartImport').disabled = false;
+}
+
+function setupDragAndDrop() {
+    const dropZone = document.getElementById('importDropZone');
+    if (!dropZone) return;
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.add('border-primary', 'bg-light-subtle');
+        }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.remove('border-primary', 'bg-light-subtle');
+        }, false);
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        if (dt.files && dt.files[0]) {
+            handleFileObject(dt.files[0]);
+        }
+    }, false);
+}
+
+async function startImportProcess() {
+    if (!selectedImportFile) {
+        Swal.fire({ icon: 'warning', title: 'توجه', text: 'لطفاً ابتدا یک فایل بک‌آپ انتخاب کنید.' });
+        return;
+    }
+
+    const autoBackup = document.getElementById('chkImportAutoBackup').checked;
+
+    const confirm = await Swal.fire({
+        title: 'شروع ایمپورت و جایگزینی پایگاه داده',
+        html: `آیا از بازیابی فایل <code>${escapeHtml(selectedImportFile.name)}</code> اطمینان کامل دارید؟<br><span class="text-danger small">اطلاعات فعلی دیتابیس با محتویات این فایل جایگزین خواهند شد.</span>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e0a800',
+        confirmButtonText: 'بله، ایمپورت و بازیابی کن',
+        cancelButtonText: 'لغو'
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    const btn = document.getElementById('btnStartImport');
+    const cancelBtn = document.getElementById('btnCancelImport');
+    const progressBox = document.getElementById('importProgressBox');
+    const statusText = document.getElementById('importStatusText');
+
+    btn.disabled = true;
+    cancelBtn.disabled = true;
+    progressBox.classList.remove('d-none');
+    statusText.innerText = 'در حال ارسال فایل به سرور و اجرای کوئری‌ها روی پایگاه داده...';
+
+    const formData = new FormData();
+    formData.append('action', 'import_restore');
+    formData.append('backup_file', selectedImportFile);
+    formData.append('auto_backup', autoBackup ? '1' : '0');
+
+    try {
+        const res = await fetch('ajax/backup_action.php', {
+            method: 'POST',
+            body: formData
+        });
+        const json = await res.json();
+
+        bootstrap.Modal.getInstance(document.getElementById('importBackupModal')).hide();
+
+        if (json.ok) {
+            let msg = `<strong>عملیات با موفقیت انجام شد:</strong> ${json.message}`;
+            if (json.pre_backup_file) {
+                msg += `<br><span class="text-success"><i class="ri-shield-check-line"></i> نسخه اضطراری دیتابیس قبلی با نام <code>${json.pre_backup_file}</code> ذخیره گردید.</span>`;
+            }
+            showAlert(msg, 'success');
+            Swal.fire({
+                icon: 'success',
+                title: 'بازیابی موفق',
+                html: msg,
+                confirmButtonText: 'متوجه شدم'
+            });
+            loadBackups();
+        } else {
+            showAlert('خطا در ایمپورت: ' + (json.message || 'خطای سرور'), 'danger');
+            Swal.fire({
+                icon: 'error',
+                title: 'خطا در ایمپورت',
+                text: json.message || 'عملیات با خطا مواجه شد'
+            });
+        }
+    } catch (err) {
+        console.error(err);
+        bootstrap.Modal.getInstance(document.getElementById('importBackupModal')).hide();
+        showAlert('خطای ارتباط با سرور: ' + err.message, 'danger');
+        Swal.fire({
+            icon: 'error',
+            title: 'خطای ارتباط',
+            text: 'ارتباط با سرور برقرار نشد: ' + err.message
+        });
+    }
 }
 
 function deleteBackup(filename) {

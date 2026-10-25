@@ -24,6 +24,7 @@ $sidebarLogoHref = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-l
             </div>
             <ul class="main-menu">
 
+                <?php if (has_permission('dashboard.view')): ?>
                 <li class="slide__category"><span class="category-name">اصلی</span></li>
                 <li class="slide">
                     <a href="dashboard.php" class="side-menu__item">
@@ -31,7 +32,9 @@ $sidebarLogoHref = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-l
                         <span class="side-menu__label">داشبورد</span>
                     </a>
                 </li>
+                <?php endif; ?>
 
+                <?php if (has_permission('loads.view', 'loads.create')): ?>
                 <li class="slide__category"><span class="category-name">عملیات حمل و نقل</span></li>
                 <li class="slide has-sub">
                     <a href="javascript:void(0);" class="side-menu__item">
@@ -43,16 +46,32 @@ $sidebarLogoHref = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-l
                         <li class="slide side-menu__label1">
                             <a href="javascript:void(0)">بارها</a>
                         </li>
+                        <?php if (has_permission('loads.view')): ?>
                         <li class="slide">
                             <a href="loads_list.php" class="side-menu__item">لیست بارها</a>
                         </li>
+                        <?php endif; ?>
+                        <?php if (has_permission('loads.create')): ?>
                         <li class="slide">
                             <a href="load_create.php" class="side-menu__item">اعلام بار جدید</a>
                         </li>
+                        <?php endif; ?>
                     </ul>
                 </li>
+                <?php endif; ?>
 
+                <?php 
+                $canViewUsers = has_permission('drivers.view', 'cargos_users.view');
+                $canCreateUser = has_permission('drivers.create', 'cargos_users.create');
+                $canTickets = has_permission('tickets.view');
+                $canNotifications = has_permission('notifications.send');
+                $canStaffManagement = is_super_admin();
+                ?>
+
+                <?php if ($canViewUsers || $canCreateUser || $canTickets || $canNotifications || $canStaffManagement): ?>
                 <li class="slide__category"><span class="category-name">کاربران و پشتیبانی</span></li>
+                
+                <?php if ($canViewUsers || $canCreateUser): ?>
                 <li class="slide has-sub">
                     <a href="javascript:void(0);" class="side-menu__item">
                         <i class="ri-arrow-right-s-line side-menu__angle"></i>
@@ -63,58 +82,99 @@ $sidebarLogoHref = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-l
                         <li class="slide side-menu__label1">
                             <a href="javascript:void(0)">کاربران</a>
                         </li>
+                        <?php if ($canViewUsers): ?>
                         <li class="slide">
                             <a href="users_list.php" class="side-menu__item">لیست کاربران</a>
                         </li>
+                        <?php endif; ?>
+                        <?php if ($canCreateUser): ?>
                         <li class="slide">
                             <a href="user_create.php" class="side-menu__item">افزودن کاربر جدید</a>
                         </li>
+                        <?php endif; ?>
                     </ul>
                 </li>
+                <?php endif; ?>
+
+                <?php if ($canStaffManagement): ?>
+                <li class="slide">
+                    <a href="admins.php" class="side-menu__item">
+                        <i class="ri-shield-user-line side-menu__icon"></i>
+                        <span class="side-menu__label">مدیریت کارمندان و دسترسی‌ها</span>
+                    </a>
+                </li>
+                <?php endif; ?>
+
+                <?php if ($canTickets): ?>
                 <li class="slide">
                     <a href="support_tickets.php" class="side-menu__item">
                         <i class="ri-customer-service-2-line side-menu__icon"></i>
                         <span class="side-menu__label">تیکت‌ها و پشتیبانی</span>
                     </a>
                 </li>
+                <?php endif; ?>
+
+                <?php if ($canNotifications): ?>
                 <li class="slide">
                     <a href="notifications.php" class="side-menu__item">
                         <i class="ri-notification-3-line side-menu__icon"></i>
                         <span class="side-menu__label">ارسال اعلان (نوتیفیکیشن)</span>
                     </a>
                 </li>
+                <?php endif; ?>
+                <?php endif; ?>
 
+                <?php 
+                $canCargos = has_permission('cargo_types.view');
+                $canVehicles = has_permission('vehicle_types.view');
+                $canBanners = has_permission('banners.view');
+                $canFaqs = has_permission('faqs.view');
+                $canMedia = has_permission('media.view');
+                ?>
+
+                <?php if ($canCargos || $canVehicles || $canBanners || $canFaqs || $canMedia): ?>
                 <li class="slide__category"><span class="category-name">اطلاعات پایه و محتوا</span></li>
+                <?php if ($canCargos): ?>
                 <li class="slide">
                     <a href="cargos_list.php" class="side-menu__item">
                         <i class="ri-box-3-line side-menu__icon"></i>
                         <span class="side-menu__label">مدیریت کالاها</span>
                     </a>
                 </li>
+                <?php endif; ?>
+                <?php if ($canVehicles): ?>
                 <li class="slide">
                     <a href="vehicle-types.php" class="side-menu__item">
                         <i class="ri-truck-line side-menu__icon"></i>
                         <span class="side-menu__label">انواع وسایل نقلیه</span>
                     </a>
                 </li>
+                <?php endif; ?>
+                <?php if ($canBanners): ?>
                 <li class="slide">
                     <a href="banners_list.php" class="side-menu__item">
                         <i class="ri-advertisement-line side-menu__icon"></i>
                         <span class="side-menu__label">بنرهای تبلیغاتی</span>
                     </a>
                 </li>
+                <?php endif; ?>
+                <?php if ($canFaqs): ?>
                 <li class="slide">
                     <a href="faqs.php" class="side-menu__item">
                         <i class="ri-question-answer-line side-menu__icon"></i>
                         <span class="side-menu__label">سوالات متداول</span>
                     </a>
                 </li>
+                <?php endif; ?>
+                <?php if ($canMedia): ?>
                 <li class="slide">
                     <a href="media-library.php" class="side-menu__item">
                         <i class="ri-folder-image-line side-menu__icon"></i>
                         <span class="side-menu__label">مدیریت رسانه‌ها</span>
                     </a>
                 </li>
+                <?php endif; ?>
+                <?php endif; ?>
 
                 <?php if (is_super_admin()): ?>
                 <li class="slide__category"><span class="category-name">تنظیمات و توسعه‌دهندگان</span></li>
@@ -162,8 +222,13 @@ $sidebarLogoHref = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-l
                 </li>
                 <?php endif; ?>
 
+                <?php 
+                $canAuthReport = is_super_admin();
+                $canActivities = has_permission('driver_activities.view');
+                ?>
+                <?php if ($canAuthReport || $canActivities): ?>
                 <li class="slide__category"><span class="category-name">گزارشات</span></li>
-                <?php if (is_super_admin()): ?>
+                <?php if ($canAuthReport): ?>
                 <li class="slide">
                     <a href="auth-report.php" class="side-menu__item">
                         <i class="ri-file-chart-line side-menu__icon"></i>
@@ -171,12 +236,15 @@ $sidebarLogoHref = $siteLogoPath !== '' ? $siteLogoPath : 'assets/images/brand-l
                     </a>
                 </li>
                 <?php endif; ?>
+                <?php if ($canActivities): ?>
                 <li class="slide">
                     <a href="driver-activities.php" class="side-menu__item">
                         <i class="ri-route-line side-menu__icon"></i>
                         <span class="side-menu__label">فعالیت رانندگان</span>
                     </a>
                 </li>
+                <?php endif; ?>
+                <?php endif; ?>
 
             </ul>
             <div class="slide-right" id="slide-right">

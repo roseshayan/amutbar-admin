@@ -1,4 +1,11 @@
     <?php
+require_once __DIR__ . '/includes/init.php';
+require_admin();
+if (is_staff() && !has_permission('drivers.create', 'cargos_users.create')) {
+    header('Location: ' . url_path('users_list.php'));
+    exit;
+}
+
     require_once "views/panel/header.php";
     require_once "views/panel/sidebar.php";
 
@@ -125,8 +132,12 @@
                                         <select id="user_type" class="form-select" name="user_type" required
                                             onchange="toggleExtraFields()">
                                             <option selected disabled>-- انتخاب کنید --</option>
+                                            <?php if (is_super_admin() || has_permission('drivers.create')): ?>
                                             <option value="1">راننده</option>
+                                            <?php endif; ?>
+                                            <?php if (is_super_admin() || has_permission('cargos_users.create')): ?>
                                             <option value="2">صاحب بار / شرکت</option>
+                                            <?php endif; ?>
                                             <?php if (is_super_admin()): ?>
                                             <option value="3">مدیر سیستم (ادمین)</option>
                                             <?php endif; ?>

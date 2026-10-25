@@ -7,21 +7,64 @@ if (admin_id()) {
 }
 ?>
 
+<style>
+    .position-relative {
+        position: relative !important;
+    }
+
+    .show-password-button {
+        position: absolute !important;
+        top: 50% !important;
+        transform: translateY(-115%) !important;
+        inset-block-start: auto !important;
+        inset-inline-end: 8px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        height: 34px !important;
+        width: 36px !important;
+        padding: 0 !important;
+        background-color: var(--primary01, rgba(115, 93, 255, 0.1)) !important;
+        border-radius: 6px !important;
+        z-index: 5 !important;
+        text-decoration: none !important;
+        cursor: pointer !important;
+    }
+
+    .show-password-button i {
+        font-size: 1.15rem !important;
+        line-height: 1 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        color: var(--primary-color, #735dff) !important;
+    }
+
+    .position-relative input.form-control {
+        padding-inline-end: 50px !important;
+    }
+</style>
+
 <div id="forgotAlert" class="alert alert-danger d-none"></div>
 <div id="forgotOk" class="alert alert-success d-none"></div>
 
 <form id="forgotForm" class="row gy-3" onsubmit="return false;">
     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
-    <div class="col-xl-12">
-        <label for="fp-phone" class="form-label text-default">شماره موبایل</label>
+    <div class="col-xl-12" id="phoneGroup">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            <label for="fp-phone" class="form-label text-default mb-0">شماره موبایل</label>
+            <a href="javascript:void(0);" id="changePhoneBtn" class="fs-12 text-primary d-none text-decoration-none" onclick="editPhone()">
+                <i class="ri-edit-line align-middle me-1"></i>ویرایش شماره
+            </a>
+        </div>
         <div class="position-relative">
             <input type="tel" class="form-control form-control-lg" id="fp-phone" name="phone"
                 placeholder="0912*******" maxlength="11" style="direction:ltr">
         </div>
     </div>
 
-    <div class="col-xl-12 d-grid">
-        <button type="button" class="btn btn-outline-primary" onclick="sendOtp()">ارسال کد تایید</button>
+    <div class="col-xl-12 d-grid" id="sendOtpBtnWrap">
+        <button type="button" class="btn btn-outline-primary" id="btnSendOtp" onclick="sendOtp()">ارسال کد تایید</button>
     </div>
 
     <div id="step2" class="row gy-3 d-none p-0 m-0">
@@ -146,14 +189,39 @@ if (admin_id()) {
         }, 1000);
     }
 
-    async function sendOtp(){
+    function showAlert(msg, isSuccess = false) {
+        const alertBox = document.getElementById('forgotAlert');
+        const okBox = document.getElementById('forgotOk');
+        if (isSuccess) {
+            if (alertBox) alertBox.classList.add('d-none');
+            if (okBox) {
+                okBox.textContent = msg;
+                okBox.classList.remove('d-none');
+            }
+        } else {
+            if (okBox) okBox.classList.add('d-none');
+            if (alertBox) {
+                alertBox.textContent = msg;
+                alertBox.classList.remove('d-none');
+            }
+        }
+    }
+
+    async function sendOtp() {
+        showAlert('', false);
         const form = document.getElementById('forgotForm');
         const fd = new FormData(form);
 
-        // اعتبارسنجی سریع سمت کلاینت (اختیاری ولی بهتر)
         const phone = (fd.get('phone') || '').toString().trim();
-        if (!phone) {
-            Swal.fire({icon:'warning', title:'خطا', text:'شماره موبایل را وارد کنید'});
+        if (!phone || !/^09\d{9}$/.test(phone)) {
+            const msg = 'شماره موبایل را به صورت ۱۱ رقمی و معتبر (مانند 09121234567) وارد کنید.';
+            showAlert(msg, false);
+            Swal.fire({
+                icon: 'warning',
+                title: 'شماره نامعتبر',
+                text: msg,
+                confirmButtonText: 'متوجه شدم'
+            });
             return;
         }
 
@@ -162,79 +230,205 @@ if (admin_id()) {
         try {
             const res = await fetch('<?= url_path("ajax/auth_forgot_send.php") ?>', {
                 method: 'POST',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
                 credentials: 'same-origin',
                 body: fd
             });
 
-            // اگر سرور JSON نمی‌دهد، این بخش جلوی کرش را می‌گیرد
             const text = await res.text();
             let data;
-            try { data = JSON.parse(text); }
-            catch(e){
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
                 console.error('Non-JSON response:', text);
-                Swal.fire({icon:'error', title:'خطای سرور', text:'پاسخ سرور معتبر نیست. کنسول را بررسی کنید.'});
+                Swal.fire({
+                    icon: 'error',
+                    title: 'خطای سرور',
+                    text: 'پاسخ سرور معتبر نیست. لطفاً مجدداً تلاش کنید.'
+                });
                 return;
             }
 
             if (!data.ok) {
-                Swal.fire({icon:'error', title:'خطا', text: data.message || 'ارسال ناموفق بود'});
+                const msg = data.message || 'ارسال ناموفق بود';
+                showAlert(msg, false);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'خطا',
+                    text: msg,
+                    confirmButtonText: 'متوجه شدم'
+                });
                 return;
             }
 
-            Swal.fire({icon:'success', title:'ارسال شد', text: data.message || 'کد تایید ارسال شد'});
+            showAlert(data.message || 'کد تایید ارسال شد', true);
+            Swal.fire({
+                icon: 'success',
+                title: 'ارسال شد',
+                text: data.message || 'کد تایید ارسال شد',
+                timer: 2500,
+                showConfirmButton: false
+            });
 
-            // نمایش مرحله دوم (اگر دارید)
             document.getElementById('step2')?.classList.remove('d-none');
+            document.getElementById('sendOtpBtnWrap')?.classList.add('d-none');
+            document.getElementById('changePhoneBtn')?.classList.remove('d-none');
+            const phoneInput = document.getElementById('fp-phone');
+            if (phoneInput) {
+                phoneInput.readOnly = true;
+                phoneInput.classList.add('bg-light');
+            }
 
-            // اگر تایمر دارید (اختیاری)
             if (data.expires_in_sec) startExpiryTimer(data.expires_in_sec);
             if (data.resend_in_sec) startResendTimer(data.resend_in_sec);
 
         } catch (err) {
             console.error(err);
-            Swal.fire({icon:'error', title:'خطا', text:'خطا در ارتباط با سرور'});
-        } finally {
-            hideLoader();
+            const msg = 'خطا در برقراری ارتباط با سرور. اتصال اینترنت را بررسی کنید.';
+            showAlert(msg, false);
+            Swal.fire({
+                icon: 'error',
+                title: 'خطا',
+                text: msg,
+                confirmButtonText: 'متوجه شدم'
+            });
         }
     }
 
-    async function resetPass(){
+    function editPhone() {
+        document.getElementById('step2')?.classList.add('d-none');
+        document.getElementById('sendOtpBtnWrap')?.classList.remove('d-none');
+        document.getElementById('changePhoneBtn')?.classList.add('d-none');
+        const phoneInput = document.getElementById('fp-phone');
+        if (phoneInput) {
+            phoneInput.readOnly = false;
+            phoneInput.classList.remove('bg-light');
+            phoneInput.focus();
+        }
+        if (resendInterval) clearInterval(resendInterval);
+        if (expiryInterval) clearInterval(expiryInterval);
+        const lbl = document.getElementById('otpTimer');
+        if (lbl) lbl.textContent = '';
+        showAlert('', false);
+    }
+
+    async function resetPass() {
+        showAlert('', false);
         const form = document.getElementById('forgotForm');
         const fd = new FormData(form);
+
+        const phone = (fd.get('phone') || '').toString().trim();
+        const code = (fd.get('code') || '').toString().trim();
+        const new1 = (fd.get('new_password') || '').toString();
+        const new2 = (fd.get('new_password_confirm') || '').toString();
+
+        if (!phone || !/^09\d{9}$/.test(phone)) {
+            const msg = 'شماره موبایل نامعتبر است.';
+            showAlert(msg, false);
+            Swal.fire({
+                icon: 'warning',
+                title: 'خطا',
+                text: msg,
+                confirmButtonText: 'متوجه شدم'
+            });
+            return;
+        }
+
+        if (!code || code.length !== 6) {
+            const msg = 'لطفاً کد تایید ۶ رقمی را وارد کنید.';
+            showAlert(msg, false);
+            Swal.fire({
+                icon: 'warning',
+                title: 'خطا',
+                text: msg,
+                confirmButtonText: 'متوجه شدم'
+            });
+            return;
+        }
+
+        if (new1.length < 12) {
+            const msg = 'رمز عبور باید حداقل ۱۲ کاراکتر باشد.';
+            showAlert(msg, false);
+            Swal.fire({
+                icon: 'warning',
+                title: 'خطا در رمز عبور',
+                text: msg,
+                confirmButtonText: 'متوجه شدم'
+            });
+            return;
+        }
+
+        if (new1 !== new2) {
+            const msg = 'تکرار رمز عبور جدید با رمز عبور وارد شده یکسان نیست.';
+            showAlert(msg, false);
+            Swal.fire({
+                icon: 'warning',
+                title: 'خطا در تکرار رمز',
+                text: msg,
+                confirmButtonText: 'متوجه شدم'
+            });
+            return;
+        }
 
         showLoader('در حال تغییر رمز عبور...');
 
         try {
             const res = await fetch('<?= url_path("ajax/auth_forgot_reset.php") ?>', {
                 method: 'POST',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
                 credentials: 'same-origin',
                 body: fd
             });
 
             const text = await res.text();
             let data;
-            try { data = JSON.parse(text); }
-            catch(e){
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
                 console.error('Non-JSON response:', text);
-                Swal.fire({icon:'error', title:'خطای سرور', text:'پاسخ سرور معتبر نیست. کنسول را بررسی کنید.'});
+                Swal.fire({
+                    icon: 'error',
+                    title: 'خطای سرور',
+                    text: 'پاسخ سرور معتبر نیست. کنسول را بررسی کنید.'
+                });
                 return;
             }
 
             if (!data.ok) {
-                Swal.fire({icon:'error', title:'خطا', text: data.message || 'عملیات ناموفق بود'});
+                const msg = data.message || 'عملیات ناموفق بود';
+                showAlert(msg, false);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'خطا',
+                    text: msg,
+                    confirmButtonText: 'متوجه شدم'
+                });
                 return;
             }
 
-            Swal.fire({icon:'success', title:'موفق', text: data.message || 'رمز عبور تغییر کرد'});
-            setTimeout(()=> location.href='<?= url_path("login.php") ?>', 700);
+            showAlert(data.message || 'رمز عبور تغییر کرد', true);
+            await Swal.fire({
+                icon: 'success',
+                title: 'موفق',
+                text: data.message || 'رمز عبور تغییر کرد',
+                confirmButtonText: 'ورود به پنل'
+            });
+            location.href = '<?= url_path("login.php") ?>';
 
         } catch (err) {
             console.error(err);
-            Swal.fire({icon:'error', title:'خطا', text:'خطا در ارتباط با سرور'});
-        } finally {
-            hideLoader();
+            const msg = 'خطا در ارتباط با سرور.';
+            showAlert(msg, false);
+            Swal.fire({
+                icon: 'error',
+                title: 'خطا',
+                text: msg,
+                confirmButtonText: 'متوجه شدم'
+            });
         }
     }
 
@@ -252,7 +446,6 @@ if (admin_id()) {
     function hideLoader() {
         Swal.close();
     }
-
 </script>
 
 

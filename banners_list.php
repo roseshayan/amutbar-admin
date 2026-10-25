@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/includes/init.php';
 require_admin();
+require_permission('banners.view');
 require_once "views/panel/header.php";
 require_once "views/panel/sidebar.php";
 ?>

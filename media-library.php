@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/init.php';
 require_admin();
+require_permission('media.view');
 
 require_once "views/panel/header.php";
 require_once "views/panel/sidebar.php";

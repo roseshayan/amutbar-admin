@@ -170,7 +170,7 @@ try {
 
         $result = curl_exec($ch);
         $curl_error = curl_error($ch);
-        curl_close($ch);
+        unset($ch);
 
         if ($curl_error) {
             echo json_encode(['ok' => false, 'message' => 'خطا در ارتباط با سرور: ' . $curl_error]);
@@ -205,7 +205,7 @@ try {
 
         $result = curl_exec($ch);
         $curl_error = curl_error($ch);
-        curl_close($ch);
+        unset($ch);
 
         if ($curl_error) {
             echo json_encode(['ok' => false, 'message' => 'خطا در ارتباط با سرور پیامک']);

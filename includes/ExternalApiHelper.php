@@ -236,7 +236,7 @@ class ExternalApiHelper {
             curl_setopt_array($ch, $options);
             curl_exec($ch);
             return ['status' => (int)curl_getinfo($ch, CURLINFO_HTTP_CODE), 'errno' => curl_errno($ch), 'body' => $body];
-        } finally { curl_close($ch); }
+        } finally { unset($ch); }
     }
 
     /**

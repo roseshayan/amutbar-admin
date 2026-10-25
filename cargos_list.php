@@ -1,6 +1,7 @@
 <?php
 require_once "includes/init.php";
 require_admin();
+require_permission('cargo_types.view');
 require_once "views/panel/header.php";
 require_once "views/panel/sidebar.php";
 ?>

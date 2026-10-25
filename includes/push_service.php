@@ -134,7 +134,7 @@ function push_send_fcm(array $tokens, string $title, string $body, array $data =
 
         $result = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+        unset($ch);
 
         if ($httpCode === 200 && $result) {
             $response = json_decode($result, true);

@@ -34,6 +34,48 @@ if (in_array($currentAdminId, $ids, true)) {
 
 $pdo = db();
 
+// بررسی امنیتی و سطوح دسترسی روی کاربران انتخاب شده
+$placeholders = implode(',', array_fill(0, count($ids), '?'));
+$stCheck = $pdo->prepare("SELECT id, user_type, admin_role FROM users WHERE id IN ($placeholders)");
+$stCheck->execute($ids);
+$targets = $stCheck->fetchAll(PDO::FETCH_ASSOC);
+
+foreach ($targets as $target) {
+    $tId = (int)$target['id'];
+    $tType = (int)$target['user_type'];
+    $tRole = (string)($target['admin_role'] ?? '');
+    $isTargetAdmin = ($tType === 3 || in_array($tRole, ['super_admin', 'staff'], true));
+
+    // ۱. حفاظت ۱۰۰٪ از مدیر کل و مدیران سیستم در برابر کارمندان
+    if (is_staff() && $isTargetAdmin) {
+        json_out(['ok' => false, 'message' => 'دسترسی غیرمجاز. کارمندان به هیچ وجه مجاز به حذف یا تغییر وضعیت حساب‌های مدیران و کارمندان نیستند.'], 403);
+    }
+
+    // ۲. مدیر کل اصلی سیستم تحت هیچ شرایطی حذف یا غیرفعال نمی‌شود
+    if ($tId === 1 || ($tRole === 'super_admin' && ($action === 'delete' || $action === 'deactivate'))) {
+        json_out(['ok' => false, 'message' => 'امکان حذف یا غیرفعال‌سازی مدیر کل اصلی سیستم وجود ندارد.'], 403);
+    }
+
+    // ۳. بررسی پرمیشن کارمند برای رانندگان و صاحبان بار
+    if (is_staff()) {
+        if ($action === 'delete') {
+            if ($tType === 1 && !has_permission('drivers.delete')) {
+                json_out(['ok' => false, 'message' => 'شما مجوز حذف حساب‌های رانندگان را ندارید.'], 403);
+            }
+            if ($tType === 2 && !has_permission('cargos_users.delete')) {
+                json_out(['ok' => false, 'message' => 'شما مجوز حذف حساب‌های صاحبان بار را ندارید.'], 403);
+            }
+        } elseif ($action === 'deactivate' || $action === 'activate') {
+            if ($tType === 1 && !has_permission('drivers.status')) {
+                json_out(['ok' => false, 'message' => 'شما مجوز تغییر وضعیت رانندگان را ندارید.'], 403);
+            }
+            if ($tType === 2 && !has_permission('cargos_users.status')) {
+                json_out(['ok' => false, 'message' => 'شما مجوز تغییر وضعیت صاحبان بار را ندارید.'], 403);
+            }
+        }
+    }
+}
+
 try {
     $pdo->beginTransaction();
 

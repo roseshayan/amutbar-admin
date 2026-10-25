@@ -6,6 +6,7 @@ set_time_limit(600); // 10 minutes for backup/restore operations
 ini_set('memory_limit', '512M');
 
 require_once __DIR__ . '/../includes/init.php';
+require_super_admin();
 require_once __DIR__ . '/../includes/backup_service.php';
 require_once __DIR__ . '/../includes/FilesIrClient.php';
 
@@ -89,6 +90,21 @@ try {
     }
 
     // -------------------------------------------------------------
+    // ACTION: import_restore
+    // -------------------------------------------------------------
+    if ($action === 'import_restore') {
+        if (empty($_FILES['backup_file'])) {
+            echo json_encode(['ok' => false, 'message' => 'فایلی برای آپلود و بازیابی ارسال نشده است.'], JSON_UNESCAPED_UNICODE);
+            exit(0);
+        }
+
+        $autoBackup = !isset($_POST['auto_backup']) || !empty($_POST['auto_backup']);
+        $res = backup_import_uploaded_file($_FILES['backup_file'], $autoBackup);
+        echo json_encode($res, JSON_UNESCAPED_UNICODE);
+        exit(0);
+    }
+
+    // -------------------------------------------------------------
     // ACTION: restore
     // -------------------------------------------------------------
     if ($action === 'restore') {
@@ -98,7 +114,8 @@ try {
             exit(0);
         }
 
-        $res = backup_restore($filename);
+        $autoBackup = !isset($_POST['auto_backup']) || !empty($_POST['auto_backup']);
+        $res = backup_restore($filename, $autoBackup);
         echo json_encode($res, JSON_UNESCAPED_UNICODE);
         exit(0);
     }

@@ -352,7 +352,7 @@ do {
 
             // Clean up old handle
             curl_multi_remove_handle($mh, $ch);
-            curl_close($ch);
+            unset($ch);
             unset($handles[$hKey]);
 
             // Add new handle if test is still running
@@ -499,7 +499,7 @@ do {
 // Clean up remaining handles if stopped early
 foreach ($handles as $h) {
     curl_multi_remove_handle($mh, $h['handle']);
-    curl_close($h['handle']);
+    unset($h['handle']);
 }
 curl_multi_close($mh);
 

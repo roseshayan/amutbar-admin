@@ -15,7 +15,24 @@ require_once __DIR__ . '/includes/jdf.php';
 $user = users_get($id);
 if (!$user) {
     redirect("users_list.php");
+}
+
+// بررسی دسترسی کارمند برای راننده یا صاحب بار
+$userType = (int)($user['user_type'] ?? 0);
+if (is_staff()) {
+    if ($userType === 1 && !has_permission('drivers.view', 'drivers.edit')) {
+        redirect("users_list.php");
+    }
+    if ($userType === 2 && !has_permission('cargos_users.view', 'cargos_users.edit')) {
+        redirect("users_list.php");
+    }
 }
+
+$canEditBasic = is_super_admin() || ($userType === 1 ? has_permission('drivers.edit') : has_permission('cargos_users.edit'));
+$canEditIdentity = is_super_admin() || has_permission('drivers.edit_identity');
+$canEditFinancial = is_super_admin() || has_permission('drivers.edit_financial');
+$canChangeStatus = is_super_admin() || ($userType === 1 ? has_permission('drivers.status') : has_permission('cargos_users.status'));
+
 
 // اگر کاربر راننده است، اطلاعات راننده را بگیر
 $driverInfo = null;

@@ -5,6 +5,22 @@ require_once __DIR__ . '/includes/init.php';
 require_once __DIR__ . '/includes/jdf.php';
 require_admin();
 
+if (!has_permission('dashboard.view')) {
+    if (has_permission('loads.view')) {
+        header('Location: ' . url_path('loads_list.php'));
+        exit;
+    }
+    if (has_permission('drivers.view') || has_permission('cargos_users.view')) {
+        header('Location: ' . url_path('users_list.php'));
+        exit;
+    }
+    if (has_permission('tickets.view')) {
+        header('Location: ' . url_path('support_tickets.php'));
+        exit;
+    }
+    die('شما به داشبورد دسترسی ندارید. لطفاً با مدیر کل هماهنگ کنید.');
+}
+
 $pdo = db();
 $isSuper = is_super_admin();
 $role = admin_role();

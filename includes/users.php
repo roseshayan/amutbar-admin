@@ -47,12 +47,58 @@ function users_get(int $id): ?array
     ");
     $st->execute([$id]);
     $r = $st->fetch();
-    return $r ?: null;
+    if (!$r) return null;
+
+    // اگر کاربر جاری کارمند باشد، به هیچ عنوان اجازه مشاهده اطلاعات ادمین‌ها را ندارد
+    if (is_staff()) {
+        $isTargetAdmin = ((int)$r['user_type'] === 3 || in_array($r['admin_role'] ?? '', ['super_admin', 'staff'], true));
+        if ($isTargetAdmin) {
+            return null;
+        }
+    }
+
+    return $r;
 }
 
 function users_soft_delete(int $id): bool
 {
     $pdo = db();
+
+    // بررسی امنیتی کاربر هدف
+    $stTarget = $pdo->prepare("SELECT id, user_type, admin_role FROM users WHERE id = ? LIMIT 1");
+    $stTarget->execute([$id]);
+    $target = $stTarget->fetch();
+    if (!$target) {
+        return false;
+    }
+
+    $isTargetAdmin = ((int)$target['user_type'] === 3 || in_array($target['admin_role'] ?? '', ['super_admin', 'staff'], true));
+
+    // قانون ۱: کارمندان به هیچ عنوان مجاز به حذف حساب‌های مدیریتی نیستند
+    if (is_staff() && $isTargetAdmin) {
+        throw new RuntimeException('کارمندان اجازه حذف یا تغییر وضعیت حساب‌های مدیران و کارمندان را ندارند.');
+    }
+
+    // قانون ۲: مدیر کل اصلی سیستم (id=1) تحت هیچ شرایطی حذف نمی‌شود
+    if ((int)$id === 1 || ($target['admin_role'] ?? '') === 'super_admin' && (int)$target['id'] === 1) {
+        throw new RuntimeException('امکان حذف مدیر کل اصلی سیستم وجود ندارد.');
+    }
+
+    // قانون ۳: کاربر نمی‌تواند حساب خودش را حذف کند
+    if ($id === (int)admin_id()) {
+        throw new RuntimeException('امکان حذف حساب کاربری خودتان وجود ندارد.');
+    }
+
+    // قانون ۴: بررسی مجوزهای کارمند برای راننده و صاحب بار
+    if (is_staff()) {
+        if ((int)$target['user_type'] === 1 && !has_permission('drivers.delete')) {
+            throw new RuntimeException('شما مجوز حذف رانندگان را ندارید.');
+        }
+        if ((int)$target['user_type'] === 2 && !has_permission('cargos_users.delete')) {
+            throw new RuntimeException('شما مجوز حذف صاحبان بار را ندارید.');
+        }
+    }
+
     $ownsTransaction = !$pdo->inTransaction();
 
     if ($ownsTransaction) {
@@ -256,6 +302,31 @@ function users_datatable(array $req): array
     $where = "deleted_at IS NULL";
     $params = [];
 
+    // فیلتر امنیتی سطح دسترسی:
+    // ۱. کارمندان تحت هیچ شرایطی نباید به اطلاعات و لیست مدیران و کارمندان دیگر دسترسی داشته باشند.
+    // ۲. نمایش رانندگان و صاحبان بار منوط به داشتن مجوزهای مربوطه است.
+    $baseCountSql = "SELECT COUNT(*) FROM users WHERE deleted_at IS NULL";
+    if (is_staff()) {
+        $allowedTypes = [];
+        if (has_permission('drivers.view')) {
+            $allowedTypes[] = 1;
+        }
+        if (has_permission('cargos_users.view')) {
+            $allowedTypes[] = 2;
+        }
+
+        if (empty($allowedTypes)) {
+            $where .= " AND 1=0";
+            $baseCountSql .= " AND 1=0";
+        } elseif (count($allowedTypes) === 1) {
+            $where .= " AND user_type = " . (int)$allowedTypes[0];
+            $baseCountSql .= " AND user_type = " . (int)$allowedTypes[0];
+        } else {
+            $where .= " AND user_type IN (1, 2)";
+            $baseCountSql .= " AND user_type IN (1, 2)";
+        }
+    }
+
     if ($search !== '') {
         $where .= " AND (full_name LIKE ? OR phone LIKE ? OR email LIKE ? OR code_meli LIKE ? OR display_name LIKE ?)";
         $like = "%{$search}%";
@@ -266,7 +337,7 @@ function users_datatable(array $req): array
         $params[] = $like;
     }
 
-    $total = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE deleted_at IS NULL")->fetchColumn();
+    $total = (int)$pdo->query($baseCountSql)->fetchColumn();
 
     $st = $pdo->prepare("SELECT COUNT(*) FROM users WHERE {$where}");
     $st->execute($params);

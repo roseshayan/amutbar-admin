@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/includes/init.php';
 require_admin();
+require_permission('drivers.view', 'cargos_users.view');
 require_once "views/panel/header.php";
 require_once "views/panel/sidebar.php";
 ?>
@@ -21,9 +22,11 @@ require_once "views/panel/sidebar.php";
                 </div>
             </div>
             <div class="btn-list">
+                <?php if (is_super_admin() || has_permission('drivers.create', 'cargos_users.create')): ?>
                 <a href="user_create.php" class="btn btn-primary btn-wave">
                     <i class="ri-user-add-line align-middle"></i> افزودن کاربر
                 </a>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -67,6 +70,14 @@ require_once "views/panel/sidebar.php";
 
 <script>
     const BASE_URL = "<?= base_url(); ?>";
+    const CAN_EDIT_DRIVER = <?= (is_super_admin() || has_permission('drivers.edit')) ? 'true' : 'false' ?>;
+    const CAN_STATUS_DRIVER = <?= (is_super_admin() || has_permission('drivers.status')) ? 'true' : 'false' ?>;
+    const CAN_DELETE_DRIVER = <?= (is_super_admin() || has_permission('drivers.delete')) ? 'true' : 'false' ?>;
+    const CAN_EDIT_CARGO = <?= (is_super_admin() || has_permission('cargos_users.edit')) ? 'true' : 'false' ?>;
+    const CAN_STATUS_CARGO = <?= (is_super_admin() || has_permission('cargos_users.status')) ? 'true' : 'false' ?>;
+    const CAN_DELETE_CARGO = <?= (is_super_admin() || has_permission('cargos_users.delete')) ? 'true' : 'false' ?>;
+    const CAN_VIEW_ACTIVITIES = <?= (is_super_admin() || has_permission('driver_activities.view')) ? 'true' : 'false' ?>;
+
 
     function loader(title) {
         Swal.fire({
@@ -134,17 +145,28 @@ require_once "views/panel/sidebar.php";
                     orderable: false,
                     searchable: false,
                     render: function(row) {
-                        // مدیریت دکمه وضعیت تکی فعال یا غیرفعال
-                        const statusBtn = row.status == 1 ?
-                            `<button class="btn btn-sm btn-outline-warning ms-1" onclick="toggleStatus(${row.id}, 'deactivate')">غیرفعال کردن</button>` :
-                            `<button class="btn btn-sm btn-outline-success ms-1" onclick="toggleStatus(${row.id}, 'activate')">فعال کردن</button>`;
+                        const isDriver = (row.user_type == 1);
+                        const canEdit = isDriver ? CAN_EDIT_DRIVER : CAN_EDIT_CARGO;
+                        const canStatus = isDriver ? CAN_STATUS_DRIVER : CAN_STATUS_CARGO;
+                        const canDelete = isDriver ? CAN_DELETE_DRIVER : CAN_DELETE_CARGO;
 
-                        return `
-                            <a class="btn btn-sm btn-outline-primary" href="user_edit.php?id=${row.id}">ویرایش</a>
-                            <a class="btn btn-sm btn-outline-info ms-1" href="driver-activities.php?user_id=${row.id}">فعالیت‌ها</a>
-                            ${statusBtn}
-                            <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteUser(${row.id})">حذف دائم</button>
-                        `;
+                        let html = '';
+                        if (canEdit) {
+                            html += `<a class="btn btn-sm btn-outline-primary" href="user_edit.php?id=${row.id}">ویرایش</a>`;
+                        }
+                        if (isDriver && CAN_VIEW_ACTIVITIES) {
+                            html += `<a class="btn btn-sm btn-outline-info ms-1" href="driver-activities.php?user_id=${row.id}">فعالیت‌ها</a>`;
+                        }
+                        if (canStatus) {
+                            const statusBtn = row.status == 1 ?
+                                `<button class="btn btn-sm btn-outline-warning ms-1" onclick="toggleStatus(${row.id}, 'deactivate')">غیرفعال کردن</button>` :
+                                `<button class="btn btn-sm btn-outline-success ms-1" onclick="toggleStatus(${row.id}, 'activate')">فعال کردن</button>`;
+                            html += statusBtn;
+                        }
+                        if (canDelete) {
+                            html += `<button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteUser(${row.id})">حذف دائم</button>`;
+                        }
+                        return html || '<span class="text-muted small">بدون عملیات</span>';
                     }
                 }
             ],

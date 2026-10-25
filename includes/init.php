@@ -13,10 +13,17 @@ if (class_exists(\Dotenv\Dotenv::class)) {
 }
 
 $debug = (string)env('APP_DEBUG', '0') === '1';
-$displayErrors = $debug && !defined('AMUTBAR_API_REQUEST');
+
+// اگر درخواست AJAX یا API است، خطای HTML چاپ نمی‌شود تا ساختار JSON خراب نشود
+$isAjaxOrApi = defined('AMUTBAR_API_REQUEST')
+    || (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower((string)$_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+    || str_contains((string)($_SERVER['SCRIPT_NAME'] ?? ''), '/ajax/')
+    || str_contains((string)($_SERVER['REQUEST_URI'] ?? ''), '/ajax/');
+
+$displayErrors = $debug && !$isAjaxOrApi;
 ini_set('display_errors', $displayErrors ? '1' : '0');
 ini_set('html_errors', $displayErrors ? '1' : '0');
-error_reporting($debug ? E_ALL : 0);
+error_reporting($debug ? (E_ALL & ~E_DEPRECATED) : 0);
 
 ini_set('log_errors', '1');
 ini_set('error_log', BASE_PATH . '/storage/logs/php-error.log');
@@ -63,6 +70,7 @@ require_once __DIR__ . '/audit.php';
 require_once __DIR__ . '/auth_log.php';
 require_once __DIR__ . '/driver_activity.php';
 require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/permissions.php';
 require_once __DIR__ . '/sms.php';
 require_once __DIR__ . '/otp.php';
 
