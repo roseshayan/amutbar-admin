@@ -794,7 +794,7 @@ function save_user_file(int $userId, int $fileType, array $file, ?int $relatedId
         'video/webm' => ['kind' => 'video', 'extension' => 'webm'],
     ];
 
-    $maxImageSize = 5 * 1024 * 1024; // 5MB
+    $maxImageSize = 15 * 1024 * 1024; // 15MB
     $maxVideoSize = 50 * 1024 * 1024; // 50MB
 
     if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
@@ -828,8 +828,62 @@ function save_user_file(int $userId, int $fileType, array $file, ?int $relatedId
         @mkdir(dirname($uploadPath), 0775, true);
     }
 
-    if (move_uploaded_file($tmpName, $uploadPath)) {
-        @chmod($uploadPath, 0640);
+    $saved = false;
+    // فارسی: بهینه‌سازی و فشرده‌سازی خودکار تصویر در سمت سرور بدون افت کیفیت
+    if ($isImage && extension_loaded('gd')) {
+        try {
+            $rawBytes = @file_get_contents($tmpName);
+            $srcImg = $rawBytes !== false ? @imagecreatefromstring($rawBytes) : false;
+            if ($srcImg !== false) {
+                // تصحیح جهت چرخش بر اساس متادیتای EXIF دوربین گوشی
+                if (function_exists('exif_read_data')) {
+                    $exif = @exif_read_data($tmpName);
+                    $orientation = $exif['Orientation'] ?? 1;
+                    if ($orientation == 3) {
+                        $srcImg = imagerotate($srcImg, 180, 0);
+                    } elseif ($orientation == 6) {
+                        $srcImg = imagerotate($srcImg, -90, 0);
+                    } elseif ($orientation == 8) {
+                        $srcImg = imagerotate($srcImg, 90, 0);
+                    }
+                }
+
+                $w = imagesx($srcImg);
+                $h = imagesy($srcImg);
+                $maxDim = 1920;
+
+                if ($w > $maxDim || $h > $maxDim) {
+                    $ratio = min($maxDim / $w, $maxDim / $h);
+                    $newW = (int)round($w * $ratio);
+                    $newH = (int)round($h * $ratio);
+                    $dstImg = imagecreatetruecolor($newW, $newH);
+                    imagecopyresampled($dstImg, $srcImg, 0, 0, 0, 0, $newW, $newH, $w, $h);
+                    imagedestroy($srcImg);
+                    $srcImg = $dstImg;
+                }
+
+                if ($extension === 'png' && !imageistruecolor($srcImg)) {
+                    imagepng($srcImg, $uploadPath, 8);
+                } else {
+                    imagejpeg($srcImg, $uploadPath, 86);
+                }
+                imagedestroy($srcImg);
+                $saved = file_exists($uploadPath) && filesize($uploadPath) > 0;
+                if ($saved) {
+                    $size = filesize($uploadPath);
+                }
+            }
+        } catch (Throwable $e) {
+            error_log("Image optimization error: " . $e->getMessage());
+        }
+    }
+
+    if (!$saved) {
+        $saved = move_uploaded_file($tmpName, $uploadPath);
+    }
+
+    if ($saved) {
+        @chmod($uploadPath, 0664);
         $pdo = db();
 
         $metadata = json_encode([
