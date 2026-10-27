@@ -1,0 +1,1 @@
+{"run_id":"run_c6029f3a067e","status":"running","mode":"duration","scenario":"mixed","target_vus":1000,"duration_target_sec":900,"requests_target":10000,"start_time":"2026-10-11 19:06:34","elapsed_sec":0,"remaining_sec":900,"progress_percent":0,"total_requests":0,"current_rps":0,"latency_p95_ms":0,"status_codes":[]}

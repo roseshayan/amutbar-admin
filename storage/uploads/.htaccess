@@ -1,0 +1,14 @@
+Options -Indexes
+
+<FilesMatch "\.(php[0-9]?|phtml|phar|cgi|pl|py|sh)$">
+  Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Content-Security-Policy "default-src 'none'; img-src 'self' data: *; media-src 'self' blob: *;"
+  <FilesMatch "\.(?i:mp4|webm|ogg|m4v)$">
+    Header always set Access-Control-Allow-Origin "*"
+    Header always set Accept-Ranges "bytes"
+  </FilesMatch>
+</IfModule>

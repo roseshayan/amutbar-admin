@@ -1,0 +1,223 @@
+[01-Aug-2026 19:22:04 Asia/Tehran] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [1045] Access denied for user 'darvishi_adminamutbar'@'localhost' (using password: YES) in C:\laragon\www\amutbar-admin\includes\db.php:16
+Stack trace:
+#0 C:\laragon\www\amutbar-admin\includes\db.php(16): PDO->__construct('mysql:host=127....', 'darvishi_admina...', Object(SensitiveParameterValue), Array)
+#1 C:\laragon\www\amutbar-admin\includes\auth.php(7): db()
+#2 C:\laragon\www\amutbar-admin\index.php(7): admin_id()
+#3 {main}
+  thrown in C:\laragon\www\amutbar-admin\includes\db.php on line 16
+[01-Aug-2026 19:23:40 Asia/Tehran] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [1049] Unknown database 'darvishi_amutbar' in C:\laragon\www\amutbar-admin\includes\db.php:16
+Stack trace:
+#0 C:\laragon\www\amutbar-admin\includes\db.php(16): PDO->__construct('mysql:host=127....', 'root', Object(SensitiveParameterValue), Array)
+#1 C:\laragon\www\amutbar-admin\includes\auth.php(7): db()
+#2 C:\laragon\www\amutbar-admin\index.php(7): admin_id()
+#3 {main}
+  thrown in C:\laragon\www\amutbar-admin\includes\db.php on line 16
+[01-Aug-2026 19:27:27 Asia/Tehran] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [1045] Access denied for user 'darvishi_adminamutbar'@'localhost' (using password: YES) in C:\laragon\www\amutbar-admin\includes\db.php:16
+Stack trace:
+#0 C:\laragon\www\amutbar-admin\includes\db.php(16): PDO->__construct('mysql:host=127....', 'darvishi_admina...', Object(SensitiveParameterValue), Array)
+#1 C:\laragon\www\amutbar-admin\includes\auth.php(7): db()
+#2 C:\laragon\www\amutbar-admin\includes\auth.php(49): admin_id()
+#3 C:\laragon\www\amutbar-admin\includes\init.php(79): require_admin()
+#4 C:\laragon\www\amutbar-admin\ajax\get_header_notifs.php(4): require_once('C:\\laragon\\www\\...')
+#5 {main}
+  thrown in C:\laragon\www\amutbar-admin\includes\db.php on line 16
+[01-Aug-2026 19:27:41 Asia/Tehran] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [1045] Access denied for user 'darvishi_adminamutbar'@'localhost' (using password: YES) in C:\laragon\www\amutbar-admin\includes\db.php:16
+Stack trace:
+#0 C:\laragon\www\amutbar-admin\includes\db.php(16): PDO->__construct('mysql:host=127....', 'darvishi_admina...', Object(SensitiveParameterValue), Array)
+#1 C:\laragon\www\amutbar-admin\includes\auth.php(7): db()
+#2 C:\laragon\www\amutbar-admin\includes\auth.php(49): admin_id()
+#3 C:\laragon\www\amutbar-admin\includes\init.php(79): require_admin()
+#4 C:\laragon\www\amutbar-admin\ajax\get_header_notifs.php(4): require_once('C:\\laragon\\www\\...')
+#5 {main}
+  thrown in C:\laragon\www\amutbar-admin\includes\db.php on line 16
+[01-Aug-2026 19:27:56 Asia/Tehran] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [1045] Access denied for user 'darvishi_adminamutbar'@'localhost' (using password: YES) in C:\laragon\www\amutbar-admin\includes\db.php:16
+Stack trace:
+#0 C:\laragon\www\amutbar-admin\includes\db.php(16): PDO->__construct('mysql:host=127....', 'darvishi_admina...', Object(SensitiveParameterValue), Array)
+#1 C:\laragon\www\amutbar-admin\includes\auth.php(7): db()
+#2 C:\laragon\www\amutbar-admin\includes\auth.php(49): admin_id()
+#3 C:\laragon\www\amutbar-admin\includes\init.php(79): require_admin()
+#4 C:\laragon\www\amutbar-admin\ajax\get_header_notifs.php(4): require_once('C:\\laragon\\www\\...')
+#5 {main}
+  thrown in C:\laragon\www\amutbar-admin\includes\db.php on line 16
+[01-Aug-2026 19:28:11 Asia/Tehran] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [1045] Access denied for user 'darvishi_adminamutbar'@'localhost' (using password: YES) in C:\laragon\www\amutbar-admin\includes\db.php:16
+Stack trace:
+#0 C:\laragon\www\amutbar-admin\includes\db.php(16): PDO->__construct('mysql:host=127....', 'darvishi_admina...', Object(SensitiveParameterValue), Array)
+#1 C:\laragon\www\amutbar-admin\includes\auth.php(7): db()
+#2 C:\laragon\www\amutbar-admin\includes\auth.php(49): admin_id()
+#3 C:\laragon\www\amutbar-admin\includes\init.php(79): require_admin()
+#4 C:\laragon\www\amutbar-admin\ajax\get_header_notifs.php(4): require_once('C:\\laragon\\www\\...')
+#5 {main}
+  thrown in C:\laragon\www\amutbar-admin\includes\db.php on line 16
+[01-Aug-2026 19:28:17 Asia/Tehran] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [1045] Access denied for user 'darvishi_adminamutbar'@'localhost' (using password: YES) in C:\laragon\www\amutbar-admin\includes\db.php:16
+Stack trace:
+#0 C:\laragon\www\amutbar-admin\includes\db.php(16): PDO->__construct('mysql:host=127....', 'darvishi_admina...', Object(SensitiveParameterValue), Array)
+#1 C:\laragon\www\amutbar-admin\includes\auth.php(7): db()
+#2 C:\laragon\www\amutbar-admin\includes\auth.php(49): admin_id()
+#3 C:\laragon\www\amutbar-admin\views\panel\header.php(3): require_admin()
+#4 C:\laragon\www\amutbar-admin\dashboard.php(2): require_once('C:\\laragon\\www\\...')
+#5 {main}
+  thrown in C:\laragon\www\amutbar-admin\includes\db.php on line 16
+[22-Aug-2026 13:48:04 Asia/Tehran] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [1049] Unknown database 'darvishi_amutbar' in C:\laragon\www\amutbar-admin\includes\db.php:17
+Stack trace:
+#0 C:\laragon\www\amutbar-admin\includes\db.php(17): PDO->__construct('mysql:host=127....', 'root', '', Array)
+#1 C:\laragon\www\amutbar-admin\includes\auth.php(7): db()
+#2 C:\laragon\www\amutbar-admin\index.php(7): admin_id()
+#3 {main}
+  thrown in C:\laragon\www\amutbar-admin\includes\db.php on line 17
+[20-Sep-2026 14:56:59 Asia/Tehran] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'amutbar.users' doesn't exist in C:\laragon\www\amutbar-admin\includes\auth.php:12
+Stack trace:
+#0 C:\laragon\www\amutbar-admin\includes\auth.php(12): PDO->prepare('SELECT id FROM ...')
+#1 C:\laragon\www\amutbar-admin\includes\auth.php(49): admin_id()
+#2 C:\laragon\www\amutbar-admin\includes\init.php(81): require_admin()
+#3 C:\laragon\www\amutbar-admin\ajax\get_header_notifs.php(4): require_once('C:\\laragon\\www\\...')
+#4 {main}
+  thrown in C:\laragon\www\amutbar-admin\includes\auth.php on line 12
+[20-Sep-2026 17:23:59 Asia/Tehran] External API [api_ir] request=8ee2397cab77c08b81f9690b0234c088 error=provider_rejected http=200 provider_code=403
+[20-Sep-2026 17:24:16 Asia/Tehran] External API [api_ir] request=f5e572570a6a2303149a3eba57faa210 error=provider_rejected http=200 provider_code=403
+[13-Oct-2026 18:22:10 Asia/Tehran] PHP Warning:  Undefined array key 0 in Command line code on line 1
+[13-Oct-2026 18:22:10 Asia/Tehran] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '' at line 1 in Command line code:1
+Stack trace:
+#0 Command line code(1): PDO->query('SELECT COUNT(*)...')
+#1 {main}
+  thrown in Command line code on line 1
+[13-Oct-2026 18:22:39 Asia/Tehran] PHP Warning:  Undefined array key "table_name" in Command line code on line 1
+[13-Oct-2026 18:22:39 Asia/Tehran] PHP Warning:  Undefined array key "table_name" in Command line code on line 1
+[13-Oct-2026 18:22:39 Asia/Tehran] PHP Warning:  Undefined array key "table_name" in Command line code on line 1
+[13-Oct-2026 18:22:39 Asia/Tehran] PHP Warning:  Undefined array key "table_name" in Command line code on line 1
+[13-Oct-2026 18:22:39 Asia/Tehran] PHP Warning:  Undefined array key "table_name" in Command line code on line 1
+[13-Oct-2026 18:22:39 Asia/Tehran] PHP Warning:  Undefined array key "table_name" in Command line code on line 1
+[13-Oct-2026 18:22:39 Asia/Tehran] PHP Warning:  Undefined array key "table_name" in Command line code on line 1
+[13-Oct-2026 18:22:39 Asia/Tehran] PHP Warning:  Undefined array key "table_name" in Command line code on line 1
+[13-Oct-2026 18:22:39 Asia/Tehran] PHP Warning:  Undefined array key "table_name" in Command line code on line 1
+[13-Oct-2026 18:22:39 Asia/Tehran] PHP Warning:  Undefined array key "table_name" in Command line code on line 1
+[18-Oct-2026 16:04:07 Asia/Tehran] PHP Deprecated:  Case statements followed by a semicolon (;) are deprecated, use a colon (:) instead in C:\laragon\www\amutbar-admin\includes\jdf.php on line 104
+[18-Oct-2026 16:22:52 Asia/Tehran] PHP Deprecated:  Function curl_close() is deprecated since 8.5, as it has no effect since PHP 8.0 in C:\laragon\www\amutbar-admin\includes\sms.php on line 36
+[18-Oct-2026 16:24:24 Asia/Tehran] PHP Deprecated:  Function curl_close() is deprecated since 8.5, as it has no effect since PHP 8.0 in C:\laragon\www\amutbar-admin\includes\sms.php on line 36
+[18-Oct-2026 16:27:49 Asia/Tehran] PHP Deprecated:  Function curl_close() is deprecated since 8.5, as it has no effect since PHP 8.0 in C:\laragon\www\amutbar-admin\includes\sms.php on line 36
+[18-Oct-2026 16:28:14 Asia/Tehran] PHP Deprecated:  Function curl_close() is deprecated since 8.5, as it has no effect since PHP 8.0 in C:\laragon\www\amutbar-admin\includes\sms.php on line 36
+[18-Oct-2026 16:30:04 Asia/Tehran] PHP Fatal error:  Cannot redeclare payamak_send_otp() (previously declared in C:\laragon\www\amutbar-admin\includes\sms.php:5) in C:\laragon\www\amutbar-admin\includes\sms.php on line 5
+[18-Oct-2026 16:30:17 Asia/Tehran] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it in C:\laragon\www\amutbar-admin\includes\db.php:16
+Stack trace:
+#0 C:\laragon\www\amutbar-admin\includes\db.php(16): PDO->__construct('mysql:host=127....', 'root', Object(SensitiveParameterValue), Array)
+#1 C:\laragon\www\amutbar-admin\includes\auth.php(7): db()
+#2 C:\laragon\www\amutbar-admin\includes\auth.php(49): admin_id()
+#3 C:\laragon\www\amutbar-admin\includes\init.php(87): require_admin()
+#4 C:\laragon\www\amutbar-admin\ajax\get_header_notifs.php(4): require_once('C:\\laragon\\www\\...')
+#5 {main}
+  thrown in C:\laragon\www\amutbar-admin\includes\db.php on line 16
+[18-Oct-2026 16:30:21 Asia/Tehran] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it in C:\laragon\www\amutbar-admin\includes\db.php:16
+Stack trace:
+#0 C:\laragon\www\amutbar-admin\includes\db.php(16): PDO->__construct('mysql:host=127....', 'root', Object(SensitiveParameterValue), Array)
+#1 C:\laragon\www\amutbar-admin\includes\auth.php(7): db()
+#2 C:\laragon\www\amutbar-admin\includes\auth.php(49): admin_id()
+#3 C:\laragon\www\amutbar-admin\views\panel\header.php(3): require_admin()
+#4 C:\laragon\www\amutbar-admin\site-settings.php(2): require_once('C:\\laragon\\www\\...')
+#5 {main}
+  thrown in C:\laragon\www\amutbar-admin\includes\db.php on line 16
+[18-Oct-2026 16:31:05 Asia/Tehran] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it in C:\laragon\www\amutbar-admin\includes\db.php:16
+Stack trace:
+#0 C:\laragon\www\amutbar-admin\includes\db.php(16): PDO->__construct('mysql:host=127....', 'root', Object(SensitiveParameterValue), Array)
+#1 C:\laragon\www\amutbar-admin\includes\auth.php(7): db()
+#2 C:\laragon\www\amutbar-admin\includes\auth.php(49): admin_id()
+#3 C:\laragon\www\amutbar-admin\views\panel\header.php(3): require_admin()
+#4 C:\laragon\www\amutbar-admin\site-settings.php(2): require_once('C:\\laragon\\www\\...')
+#5 {main}
+  thrown in C:\laragon\www\amutbar-admin\includes\db.php on line 16
+[18-Oct-2026 16:33:32 Asia/Tehran] api.unhandled request=34d792990331c99f4233c85270900806 type=PDOException
+[18-Oct-2026 16:33:55 Asia/Tehran] PHP Fatal error:  Cannot redeclare db() (previously declared in C:\laragon\www\amutbar-admin\includes\db.php:6) in C:\laragon\www\amutbar-admin\includes\db.php on line 4
+[18-Oct-2026 16:34:57 Asia/Tehran] PHP Deprecated:  Function curl_close() is deprecated since 8.5, as it has no effect since PHP 8.0 in C:\laragon\www\amutbar-admin\includes\sms.php on line 36
+[18-Oct-2026 16:35:19 Asia/Tehran] PHP Deprecated:  Function curl_close() is deprecated since 8.5, as it has no effect since PHP 8.0 in C:\laragon\www\amutbar-admin\includes\sms.php on line 36
+[18-Oct-2026 16:35:54 Asia/Tehran] PHP Fatal error:  Cannot redeclare settings_get() (previously declared in C:\laragon\www\amutbar-admin\includes\settings.php:9) in C:\laragon\www\amutbar-admin\includes\settings.php on line 9
+[18-Oct-2026 16:35:58 Asia/Tehran] PHP Fatal error:  Uncaught Error: Call to undefined function site_setting() in Command line code:1
+Stack trace:
+#0 {main}
+  thrown in Command line code on line 1
+[18-Oct-2026 16:36:01 Asia/Tehran] External API [api_ir] request=0815823dcd69298dc96d667021fe9325 error=provider_credentials_error http=0 provider_code=unknown
+[18-Oct-2026 16:36:51 Asia/Tehran] PHP Deprecated:  Function curl_close() is deprecated since 8.5, as it has no effect since PHP 8.0 in C:\laragon\www\amutbar-admin\ajax\site-settings.php on line 208
+[18-Oct-2026 16:36:54 Asia/Tehran] PHP Deprecated:  Function curl_close() is deprecated since 8.5, as it has no effect since PHP 8.0 in C:\laragon\www\amutbar-admin\ajax\site-settings.php on line 208
+[18-Oct-2026 16:36:58 Asia/Tehran] PHP Fatal error:  Cannot redeclare db() (previously declared in C:\laragon\www\amutbar-admin\includes\db.php:6) in C:\laragon\www\amutbar-admin\includes\db.php on line 4
+[18-Oct-2026 16:37:37 Asia/Tehran] External API [api_ir] request=e796e6fac11bf42c63ac314bbc3f82b1 error=provider_credentials_error http=0 provider_code=unknown
+[18-Oct-2026 16:49:45 Asia/Tehran] PHP Warning:  require_once(../includes/init.php): Failed to open stream: No such file or directory in C:\laragon\www\amutbar-admin\ajax\external-apis.php on line 6
+[18-Oct-2026 16:49:45 Asia/Tehran] PHP Fatal error:  Uncaught Error: Failed opening required '../includes/init.php' (include_path='.;C:/laragon/etc/php/pear') in C:\laragon\www\amutbar-admin\ajax\external-apis.php:6
+Stack trace:
+#0 Command line code(1): require()
+#1 {main}
+  thrown in C:\laragon\www\amutbar-admin\ajax\external-apis.php on line 6
+[18-Oct-2026 16:55:29 Asia/Tehran] External API [api_ir] request=f8f564d440b97b34848ac836b65eee0a error=provider_credentials_error http=0 provider_code=unknown
+[18-Oct-2026 17:04:38 Asia/Tehran] PHP Fatal error:  Cannot declare class ExternalApiHelper, because the name is already in use in C:\laragon\www\amutbar-admin\includes\ExternalApiHelper.php on line 3
+[18-Oct-2026 17:10:48 Asia/Tehran] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'amutbar.settings' doesn't exist in Command line code:1
+Stack trace:
+#0 Command line code(1): PDO->query('SELECT setting_...')
+#1 {main}
+  thrown in Command line code on line 1
+[18-Oct-2026 17:21:03 Asia/Tehran] PHP Fatal error:  Uncaught Error: Call to undefined function api_issue_token() in Command line code:2
+Stack trace:
+#0 {main}
+  thrown in Command line code on line 2
+[18-Oct-2026 17:21:13 Asia/Tehran] PHP Fatal error:  Uncaught Error: Call to undefined function api_issue_token() in Command line code:2
+Stack trace:
+#0 {main}
+  thrown in Command line code on line 2
+[18-Oct-2026 17:21:58 Asia/Tehran] PHP Deprecated:  Function curl_close() is deprecated since 8.5, as it has no effect since PHP 8.0 in C:\laragon\www\amutbar-admin\includes\ExternalApiHelper.php on line 239
+[18-Oct-2026 17:24:59 Asia/Tehran] PHP Deprecated:  Function curl_close() is deprecated since 8.5, as it has no effect since PHP 8.0 in C:\laragon\www\amutbar-admin\includes\ExternalApiHelper.php on line 239
+[18-Oct-2026 18:09:07 Asia/Tehran] PHP Deprecated:  Function curl_close() is deprecated since 8.5, as it has no effect since PHP 8.0 in C:\laragon\www\amutbar-admin\includes\sms.php on line 36
+[18-Oct-2026 18:09:40 Asia/Tehran] PHP Deprecated:  Function curl_close() is deprecated since 8.5, as it has no effect since PHP 8.0 in C:\laragon\www\amutbar-admin\includes\sms.php on line 36
+[18-Oct-2026 18:34:17 Asia/Tehran] PHP Deprecated:  Case statements followed by a semicolon (;) are deprecated, use a colon (:) instead in C:\laragon\www\amutbar-admin\includes\jdf.php on line 104
+[18-Oct-2026 18:34:17 Asia/Tehran] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'amutbar.admins' doesn't exist in C:\laragon\www\amutbar-admin\ajax\notifications.php:16
+Stack trace:
+#0 C:\laragon\www\amutbar-admin\ajax\notifications.php(16): PDO->query('\n        SELECT...')
+#1 {main}
+  thrown in C:\laragon\www\amutbar-admin\ajax\notifications.php on line 16
+[18-Oct-2026 18:38:52 Asia/Tehran] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'c.id' in 'field list' in Command line code:1
+Stack trace:
+#0 Command line code(1): PDO->query('SELECT c.id, c....')
+#1 {main}
+  thrown in Command line code on line 1
+[18-Oct-2026 18:43:17 Asia/Tehran] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'amutbar.admins' doesn't exist in C:\laragon\www\amutbar-admin\ajax\notifications.php:16
+Stack trace:
+#0 C:\laragon\www\amutbar-admin\ajax\notifications.php(16): PDO->query('\n        SELECT...')
+#1 Command line code(1): require('C:\\laragon\\www\\...')
+#2 {main}
+  thrown in C:\laragon\www\amutbar-admin\ajax\notifications.php on line 16
+[18-Oct-2026 19:06:22 Asia/Tehran] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'current_time, DATE_SUB(NOW(3), INTERVAL 5 MINUTE) as threshold FROM loads WHERE ' at line 1 in Command line code:1
+Stack trace:
+#0 Command line code(1): PDO->prepare('SELECT id, publ...')
+#1 {main}
+  thrown in Command line code on line 1
+[18-Oct-2026 19:06:50 Asia/Tehran] PHP Fatal error:  Cannot redeclare admin_id() (previously declared in C:\laragon\www\amutbar-admin\includes\auth.php:7) in C:\laragon\www\amutbar-admin\includes\auth.php on line 5
+[18-Oct-2026 19:07:22 Asia/Tehran] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function jwt_encode(), 1 passed in Command line code on line 1 and at least 3 expected in C:\laragon\www\amutbar-admin\includes\jwt.php:59
+Stack trace:
+#0 Command line code(1): jwt_encode(Array)
+#1 {main}
+  thrown in C:\laragon\www\amutbar-admin\includes\jwt.php on line 59
+[18-Oct-2026 19:08:15 Asia/Tehran] PHP Fatal error:  Uncaught Error: Call to undefined function api_create_tokens() in Command line code:1
+Stack trace:
+#0 {main}
+  thrown in Command line code on line 1
+[18-Oct-2026 19:41:04 Asia/Tehran] PHP Deprecated:  Function curl_close() is deprecated since 8.5, as it has no effect since PHP 8.0 in C:\laragon\www\amutbar-admin\includes\sms.php on line 36
+[18-Oct-2026 19:45:34 Asia/Tehran] PHP Deprecated:  Function curl_close() is deprecated since 8.5, as it has no effect since PHP 8.0 in C:\laragon\www\amutbar-admin\includes\sms.php on line 36
+[25-Oct-2026 17:33:11 Asia/Tehran] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it in C:\laragon\www\amutbar-admin\includes\db.php:17
+Stack trace:
+#0 C:\laragon\www\amutbar-admin\includes\db.php(17): PDO->__construct('mysql:host=127....', 'root', '', Array)
+#1 Command line code(1): db()
+#2 {main}
+  thrown in C:\laragon\www\amutbar-admin\includes\db.php on line 17
+[25-Oct-2026 18:05:31 Asia/Tehran] PHP Deprecated:  Function curl_close() is deprecated since 8.5, as it has no effect since PHP 8.0 in C:\laragon\www\amutbar-admin\includes\sms.php on line 36
+[25-Oct-2026 18:06:22 Asia/Tehran] Admin password reset OTP was not issued: status=429
+[25-Oct-2026 18:07:08 Asia/Tehran] PHP Deprecated:  Function curl_close() is deprecated since 8.5, as it has no effect since PHP 8.0 in C:\laragon\www\amutbar-admin\includes\sms.php on line 36
+[25-Oct-2026 18:07:28 Asia/Tehran] Admin password reset OTP was not issued: status=429
+[25-Oct-2026 18:09:00 Asia/Tehran] PHP Deprecated:  Case statements followed by a semicolon (;) are deprecated, use a colon (:) instead in C:\laragon\www\amutbar-admin\includes\jdf.php on line 104
+[25-Oct-2026 18:25:32 Asia/Tehran] Admin password reset OTP was not issued: status=429
+[25-Oct-2026 19:02:12 Asia/Tehran] PHP Fatal error:  Uncaught Error: Call to undefined function jdate() in C:\laragon\www\amutbar-admin\includes\helpers.php:210
+Stack trace:
+#0 C:\laragon\www\amutbar-admin\profile.php(69): jalali_date('2025-12-18 15:0...')
+#1 {main}
+  thrown in C:\laragon\www\amutbar-admin\includes\helpers.php on line 210
+[25-Oct-2026 19:02:49 Asia/Tehran] PHP Fatal error:  Uncaught Error: Call to undefined function jdate() in C:\laragon\www\amutbar-admin\includes\helpers.php:210
+Stack trace:
+#0 C:\laragon\www\amutbar-admin\profile-settings.php(253): jalali_date('2025/12/18')
+#1 {main}
+  thrown in C:\laragon\www\amutbar-admin\includes\helpers.php on line 210
+[25-Oct-2026 15:36:23 UTC] PHP Warning:  session_name(): Session name cannot be changed when a session is active in C:\laragon\www\amutbar-admin\includes\init.php on line 33
+[25-Oct-2026 15:36:23 UTC] PHP Warning:  session_set_cookie_params(): Session cookie parameters cannot be changed when a session is active in C:\laragon\www\amutbar-admin\includes\init.php on line 53
+[25-Oct-2026 15:36:23 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in C:\laragon\www\amutbar-admin\includes\init.php on line 56
