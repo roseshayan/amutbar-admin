@@ -2,7 +2,6 @@
 .idea/
 .vscode/
 .env
-/amutbar.sql
 /vendor/
 /node_modules/
 /storage/logs/*
@@ -16,6 +15,3 @@
 *.p12
 *.pfx
 *.jks
-
-node_modules/
-.env
