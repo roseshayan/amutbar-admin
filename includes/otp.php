@@ -43,8 +43,8 @@ function otp_issue(string $phone, int $purpose, int $expiresSec = 300, int $cool
     if ($maxPhoneDay <= 0) $maxPhoneDay = 20;
     if ($maxIpHour <= 0) $maxIpHour = 30;
 
-    $ip = $_SERVER['REMOTE_ADDR'] ?? null;
-    $ipBin = $ip ? @inet_pton($ip) : null;
+    $ip = function_exists('api_client_ip') ? api_client_ip() : ($_SERVER['REMOTE_ADDR'] ?? null);
+    $ipStr = ($ip && filter_var($ip, FILTER_VALIDATE_IP)) ? substr($ip, 0, 45) : null;
 
     $stHour = $pdo->prepare("SELECT COUNT(*) FROM otp_codes WHERE phone=? AND purpose=? AND created_at >= DATE_SUB(NOW(3), INTERVAL 1 HOUR)");
     $stHour->execute([$phone, $purpose]);
@@ -58,9 +58,9 @@ function otp_issue(string $phone, int $purpose, int $expiresSec = 300, int $cool
         return ['ok' => false, 'status' => 429, 'message' => 'تعداد درخواست امروز زیاد است. فردا دوباره تلاش کنید'];
     }
 
-    if ($ipBin !== null && $ipBin !== false) {
+    if ($ipStr !== null) {
         $stIp = $pdo->prepare("SELECT COUNT(*) FROM otp_codes WHERE ip_address=? AND created_at >= DATE_SUB(NOW(3), INTERVAL 1 HOUR)");
-        $stIp->execute([$ipBin]);
+        $stIp->execute([$ipStr]);
         if ((int)$stIp->fetchColumn() >= $maxIpHour) {
             return ['ok' => false, 'status' => 429, 'message' => 'تعداد درخواست زیاد است. کمی بعد تلاش کنید'];
         }
@@ -92,7 +92,7 @@ function otp_issue(string $phone, int $purpose, int $expiresSec = 300, int $cool
         INSERT INTO otp_codes (phone, purpose, code_hash, expires_at, attempt_count, ip_address, created_at)
         VALUES (?, ?, ?, DATE_ADD(NOW(3), INTERVAL ? SECOND), 0, ?, NOW(3))
     ");
-    $ins->execute([$phone, $purpose, $hash, $expiresSec, $ipBin ?: null]);
+    $ins->execute([$phone, $purpose, $hash, $expiresSec, $ipStr]);
     $otpId = (int)$pdo->lastInsertId();
 
     $useChannel = $channel ?? 'sms';
