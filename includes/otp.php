@@ -104,6 +104,13 @@ function otp_issue(string $phone, int $purpose, int $expiresSec = 300, int $cool
         if ($call['ok']) {
             $sent = true;
             $sentChannel = 'call';
+        } else {
+            return [
+                'ok' => false,
+                'status' => 502,
+                'message' => 'برقراری تماس صوتی ناموفق بود: ' . ($call['message'] ?? 'عدم برقراری تماس'),
+                'channel' => 'call',
+            ];
         }
     }
 

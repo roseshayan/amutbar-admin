@@ -164,7 +164,30 @@ class ExternalApiHelper {
                 $timeout = max($timeout, $request['timeout_ms']);
                 $url = ApiIrContract::BASE_URL . '/' . ltrim($endpoint, '/');
                 $method = 'POST';
-                $token = trim((string)(($credential['bearer_token'] ?? '') ?: ($credential['api_key'] ?? '')));
+                $token = trim((string)(env('API_IR_TOKEN', '') ?: (($credential['bearer_token'] ?? '') ?: ($credential['api_key'] ?? ''))));
+                if ($token === '' && !empty($credential['bearer_token_enc'])) {
+                    $fallbackKeys = [
+                        'CHANGE_ME_RANDOM_64_CHARACTERS',
+                        'local-only-encryption-key-change-me',
+                    ];
+                    foreach ($fallbackKeys as $fbKey) {
+                        $kNorm = strlen($fbKey) > 32 ? substr($fbKey, 0, 32) : (strlen($fbKey) < 32 ? hash('sha256', $fbKey) : $fbKey);
+                        $enc = $credential['bearer_token_enc'];
+                        if (str_starts_with($enc, 'v2:')) {
+                            $decoded = base64_decode(substr($enc, 3), true);
+                            if ($decoded !== false && strlen($decoded) >= 29) {
+                                $iv = substr($decoded, 0, 12);
+                                $tag = substr($decoded, 12, 16);
+                                $ciphertext = substr($decoded, 28);
+                                $dec = @openssl_decrypt($ciphertext, 'aes-256-gcm', $kNorm, OPENSSL_RAW_DATA, $iv, $tag);
+                                if ($dec !== false && $dec !== null && $dec !== '') {
+                                    $token = trim((string)$dec);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
                 if ($token === '' || preg_match('/[\r\n]/', $token)) throw new VerificationServiceException('provider_credentials_error', 'کلید سرویس احراز هویت نیاز به بررسی پشتیبانی دارد.', 503);
                 $token = preg_replace('/^Bearer\s+/i', '', $token);
                 $headers[] = 'Authorization: Bearer ' . $token;
